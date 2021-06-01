@@ -18,7 +18,6 @@ var HtmlContainers = /** @class */ (function () {
     };
     ;
     HtmlContainers.prototype.removeUsers = function () {
-        this.userTreemap.remove();
         this.userStatistics.remove();
         this.reflections.remove();
     };
@@ -320,6 +319,8 @@ function buildAnalyticsCharts(entries) {
                     .append("div")
                     .attr("class", "chart-container");
                 groupTimeline(d);
+                //Scroll
+                document.querySelector("#groups-statistics").scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
             //Enable sort
             var sortButton = chart.renderElements.svg.select(".y-label-container").attr("class", "y-label-container zoom");
@@ -508,132 +509,6 @@ function buildAnalyticsCharts(entries) {
                     userStatisticsCard.select(".card-body")
                         .attr("class", "card-body statistics-text")
                         .html("<b>Mean: </b>" + userMean + " (<span class=\"" + ((userMean - stats.mean) < 0 ? "negative" : "positive") + "\">" + ((userMean - stats.mean) < 0 ? "" : "+") + (userMean - stats.mean) + "</span> compared to the group mean)<br>\n                            <b>Min: </b>" + d3.min(userData.map(function (r) { return r.point; })) + "<br>\n                            <b>Min date: </b>" + d3.sort(userData, function (r) { return r.point; })[0].timestamp.toDateString() + "<br>\n                            <b>Max: </b>" + d3.max(userData.map(function (r) { return r.point; })) + "<br>\n                            <b>Max date: </b>" + d3.sort(userData, function (r) { return r.point; })[userData.length - 1].timestamp.toDateString() + "<br>\n                            <b>Total: </b>" + userData.length + "<br>\n                            <b>Std Deviation: </b>" + chartFunctions.data.roundDecimal(d3.deviation(userData.map(function (r) { return r.point; }))) + "<br>\n                            <b>Variance: </b>" + chartFunctions.data.roundDecimal(d3.variance(userData.map(function (r) { return r.point; }))) + "<br>\n                            <b>Oldest reflection: </b>" + d3.min(userData.map(function (r) { return r.timestamp; })).toDateString() + "<br>\n                            <b>Newest reflection: </b>" + d3.max(userData.map(function (r) { return r.timestamp; })).toDateString() + "<br>");
-                    //Draw user treemap
-                    htmlContainer.userTreemap = chartFunctions.appendDiv("user-treemap", "col-md-9 mt-3");
-                    chartFunctions.appendCard(htmlContainer.userTreemap, d.pseudonym + "'s meta tags", "user-treemap");
-                    d3.csv("analytics-data.csv").then(function (c) {
-                        var analyticsRawData = c.map(function (r) {
-                            return {
-                                metatag: r.metatag,
-                                phrasetag: r.phrasetag,
-                                value: r.value
-                            };
-                        });
-                        var analyticsDataGroup = Array.from(d3.group(analyticsRawData, function (d) { return d.metatag; }), function (_a) {
-                            var key = _a[0], value = _a[1];
-                            return ({ key: key, value: value });
-                        });
-                        var analyticsData = analyticsDataGroup.map(function (r) {
-                            return {
-                                tag: r.key,
-                                value: Math.round(d3.mean(r.value.map(function (d) { return d.value; }))),
-                                phraseTags: r.value.map(function (d) {
-                                    return {
-                                        tag: d.phrasetag,
-                                        value: d.value
-                                    };
-                                })
-                            };
-                        });
-                        var treemapChart = setTreemapChart();
-                        treemapPreRender(treemapChart);
-                        renderTreemap(treemapChart, analyticsData);
-                        function setTreemapChart() {
-                            var result = new Chart();
-                            result.id = "user-treemap";
-                            var containerDimensions = chartFunctions.getContainerDimension(result.id);
-                            result.width = containerDimensions.width;
-                            result.height = containerDimensions.height;
-                            result.padding.xAxis = 50;
-                            result.padding.top = 0;
-                            result.padding.yAxis = 0;
-                            result.padding.right = 0;
-                            return result;
-                        }
-                        function treemapPreRender(chart) {
-                            chart.renderElements.svg = chartFunctions.appendSVG(chart);
-                            chart.renderElements.contentContainer = chartFunctions.appendContentContainer(chart);
-                            chart.renderElements.legendContainer = chartFunctions.appendLegendContainer(chart);
-                        }
-                        function renderTreemap(chart, data) {
-                            var test = { "name": "test", "children": data };
-                            test.children = test.children.map(function (c) {
-                                return {
-                                    "tag": c.tag,
-                                    "children": c.phraseTags
-                                };
-                            });
-                            var color = d3.scaleOrdinal(d3.schemeCategory10);
-                            var legends = chart.renderElements.legendContainer.selectAll(".legends")
-                                .data(data)
-                                .enter()
-                                .append("g")
-                                .attr("class", "legends");
-                            legends.append("rect")
-                                .attr("y", 10)
-                                .attr("height", 15)
-                                .attr("width", 15)
-                                .style("fill", function (d) { return color(d.tag); });
-                            var legendText = legends.append("text")
-                                .attr("x", 25)
-                                .text(function (d) { return d.tag; });
-                            legendText.attr("y", legendText.node().getBBox().height);
-                            legends.attr("transform", function (d, i) { return "translate(" + (legends.node().getBBox().width + 20) * i + ", 0)"; });
-                            chart.renderElements.legendContainer.attr("transform", "translate(" + (chart.width - chart.padding.yAxis - chart.padding.right - chart.renderElements.legendContainer.node().getBBox().width) / 2 + ", " + (chart.height - chart.padding.xAxis) + ")");
-                            legendText.on("mouseover", legendMouseover)
-                                .on("mouseout", legendMouseout);
-                            function legendMouseover(e, d) {
-                                chart.renderElements.content
-                                    .attr("class", function (r) { return r.parent.data.tag == d.tag ? "tree-leaf active" : "tree-leaf inactive"; });
-                                var updateLeafsText = leafsText.filter(function (r) { return r.parent.data.tag == d.tag; });
-                                updateLeafsText.append("tspan")
-                                    .text(function (r) { return r.parent.data.tag == d.tag ? ": " + r.value : ""; });
-                                checkTextLenght(updateLeafsText);
-                                d3.select(this).append("tspan")
-                                    .attr("x", 25)
-                                    .attr("y", d3.select(this).node().getBBox().height * 2)
-                                    .text(d3.sum(d.phraseTags.map(function (r) { return r.value; })));
-                            }
-                            function legendMouseout(e, d) {
-                                chart.renderElements.content
-                                    .attr("class", "tree-leaf");
-                                leafsText.selectAll("tspan").remove();
-                                checkTextLenght(leafsText);
-                                d3.select(this).selectAll("tspan").remove();
-                            }
-                            var root = d3.hierarchy(test).sum(function (d) { return d.value; });
-                            console.log(root);
-                            d3.treemap()
-                                .size([chart.width - chart.padding.yAxis - chart.padding.right, chart.height - chart.padding.top - chart.padding.xAxis])
-                                .paddingInner(3)(root);
-                            var treeContainers = chart.renderElements.contentContainer.selectAll(chart.id + "-treemap")
-                                .data(root.leaves())
-                                .enter()
-                                .append("g")
-                                .attr("id", chart.id + "-treemap")
-                                .attr("transform", function (d) { return "translate(" + d.x0 + ", " + d.y0 + ")"; });
-                            chart.renderElements.content = treeContainers.append("rect")
-                                .attr("class", "tree-leaf")
-                                .attr("id", chart.id + "-leafs")
-                                .attr("width", function (d) { return d.x1 - d.x0; })
-                                .attr("height", function (d) { return d.y1 - d.y0; })
-                                .attr("fill", function (d) { while (d.depth > 1)
-                                d = d.parent; return color(d.data.tag); })
-                                .attr("stroke", function (d) { while (d.depth > 1)
-                                d = d.parent; return color(d.data.tag); });
-                            var leafsText = treeContainers.append("text")
-                                .attr("class", "click-text")
-                                .text(function (d) { return d.data.tag; });
-                            checkTextLenght(leafsText);
-                            function checkTextLenght(leafsText) {
-                                leafsText
-                                    .attr("y", function (d) { return (d.x1 - d.x0) < leafsText.node().getBBox().width ? "0" : leafsText.node().getBBox().height; })
-                                    .transition()
-                                    .duration(500)
-                                    .attr("transform", function (d) { return (d.x1 - d.x0) < leafsText.node().getBBox().width ? "rotate(90)" : ""; });
-                            }
-                        }
-                    });
                     //Draw user reflections container
                     htmlContainer.reflections = chartFunctions.appendDiv("reflections-list", "col-md-9 mt-3");
                     var reflectionsCard = chartFunctions.appendCard(htmlContainer.reflections, d.pseudonym + "'s reflections");
@@ -754,6 +629,7 @@ function buildAnalyticsCharts(entries) {
                 //Start drag soaring functions           
                 function dragStartSoaring(e, d) {
                     chart.renderElements.contentContainer.selectAll("." + chart.id + "-violin-text-container").remove();
+                    d3.select(this).attr("class", d3.select(this).attr("class") + " grabbing");
                 }
                 function draggingSoaring(e, d) {
                     if (chart.y.scale.invert(e.y) < 51 || chart.y.scale.invert(e.y) > 99) {
@@ -786,10 +662,12 @@ function buildAnalyticsCharts(entries) {
                         newT = 99;
                     }
                     chartFunctions.transitions.violin(chart, data, tDistressed, newT);
+                    d3.select(this).attr("class", d3.select(this).attr("class").replace(" grabbing", ""));
                 }
                 //Start drag distressed functions
                 function dragStartDistressed(e, d) {
                     chart.renderElements.contentContainer.selectAll("." + chart.id + "-violin-text-container").remove();
+                    d3.select(this).attr("class", d3.select(this).attr("class") + " grabbing");
                 }
                 function draggingDistressed(e, d) {
                     if (chart.y.scale.invert(e.y) < 1 || chart.y.scale.invert(e.y) > 49) {
@@ -824,6 +702,7 @@ function buildAnalyticsCharts(entries) {
                         newT = 49;
                     }
                     chartFunctions.transitions.violin(chart, data, newT, tSoaring);
+                    d3.select(this).attr("class", d3.select(this).attr("class").replace(" grabbing", ""));
                 }
             }
             function drawViolin(chart, data, tDistressed, tSoaring) {
@@ -958,11 +837,6 @@ var chartFunctions = {
             .attr("width", chart.width - chart.padding.yAxis)
             .attr("height", chart.height - chart.padding.xAxis - chart.padding.top);
         return result;
-    },
-    appendLegendContainer: function (chart) {
-        return chart.renderElements.svg.append("g")
-            .attr("class", "legend-container")
-            .attr("transform", "translate(" + (chart.width - chart.padding.yAxis - chart.padding.right) / 2 + ", " + (chart.height - chart.padding.xAxis) + ")");
     },
     setChart: function (id, data) {
         var result = new Chart();
@@ -1355,6 +1229,8 @@ var chartFunctions = {
     },
     zoom: {
         enableZoom: function (chart, zoomed) {
+            chart.renderElements.svg.selectAll(".zoom-rect")
+                .attr("class", "zoom-rect active");
             var zoom = d3.zoom()
                 .scaleExtent([1, 5])
                 .extent([[0, 0], [chart.width - chart.padding.yAxis, chart.height]])
@@ -1417,8 +1293,8 @@ var chartFunctions = {
                 return chart.y.scale(i == 0 ? tDistressed / 2 : i == 1 ? 50 : (100 - tSoaring) / 2 + tSoaring) - binTextBox.node().getBBox().height / 2;
             }
             function onMouseover(e, d) {
-                chartFunctions.tooltip.appendTooltipText(chart, d.bin.length.toString());
-                chartFunctions.tooltip.positionTooltipContainer(chart, bandwithScale(0) + (2 * binTextBox.node().getBBox().width), parseInt(d3.select(this).attr("y")) - binTextBox.node().getBBox().height);
+                chartFunctions.tooltip.appendTooltipText(chart, "Count: " + d.bin.length.toString());
+                chartFunctions.tooltip.positionTooltipContainer(chart, bandwithScale(0) + (3 * binTextBox.node().getBBox().width), parseInt(d3.select(this).attr("y")) - binTextBox.node().getBBox().height);
             }
             function onMouseout() {
                 chart.renderElements.svg.select(".tooltip-container").transition()
