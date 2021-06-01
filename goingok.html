@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" type="text/css" href="style.css" />
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" />
+        <title>D3.js Example</title>
+        <script src="https://d3js.org/d3.v6.min.js"></script>        
+    </head>
+    <body>            
+        <div class="wrapper">
+            <nav id="sidebar">
+                <div class="sidebar-header">
+                    <h3>BBBOOTSTRAP</h3>
+                    <hr>
+                </div>
+                <ul id="groups" class="list-unstyled components">
+                    <li>
+                        <input type="checkbox" id="group 1" value="group 1" checked />
+                        <label for="group 1">Group 1</label>
+                    </li>
+                    <li>
+                        <input type="checkbox" id="group 2" value="group 2" />
+                        <label for="group 2">Group 2</label>
+                    </li>
+                    <li>
+                        <input type="checkbox" id="group 3" value="group 3" />
+                        <label for="group 3">Group 3</label>
+                    </li>
+                </ul>
+                <ul class="list-unstyled CTAs">
+                    <li> <a href="#" class="download">Subscribe</a> </li>
+                </ul>
+            </nav>
+            <div class="content">
+                <button type="button" id="sidebar-btn" class="btn btn-info"> <i class="fa fa-align-justify"></i> </button> <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation"> <span class="navbar-toggler-icon"></span></button>
+                <div class="content-wrapper">
+                    <div class="container-fluid">            
+                        <div class="row" id="analytics-charts"></div>
+                    </div>
+                </div>
+            </div>
+        </div>       
+        
+        <!--Bootstrap-->
+        <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+        <script src="analytics-charts.js"></script>
+        <script>
+            function openSideNav(){
+                $("#groups").toggleClass("show");
+            }
+        </script>
+    </body>
+</html>
