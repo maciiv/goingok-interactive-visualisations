@@ -1,169 +1,256 @@
 import * as d3 from "d3";
 
-interface IAnalyticsChartsData {
-    group: string,
-    value: IReflectionAuthorEntry[]
-}
-
 interface IReflectionAuthorEntry {
-    timestamp: Date,
-    pseudonym: string,
-    point: number,
-    text: string
+    timestamp: Date;
+    pseudonym: string;
+    point: number;
+    text: string;
 }
 
-interface IMetatagsAnalytics extends IPhraseTagsAnalytics {
-    phraseTags: IPhraseTagsAnalytics[]
-}
-
-interface IPhraseTagsAnalytics {
-    tag: string,
-    value: number
+interface IAnalyticsChartsData {
+    group: string;
+    value: IReflectionAuthorEntry[];
 }
 
 interface IAnalyticsChartsDataStats extends IAnalyticsChartsData {
-    mean: number,
-    median: number,
-    q1: number,
-    q3: number,
-    max: number,
-    min: number,
-    variance: string,
-    deviation: string,
-    oldestReflection: Date,
-    newestReflection: Date,
-    avgReflectionsPerUser: string,
-    userMostReflective: number,
-    userLessReflective: number,
-    totalUsers: number
+    mean: number;
+    median: number;
+    q1: number;
+    q3: number;
+    max: number;
+    min: number;
+    variance: string;
+    deviation: string;
+    oldestReflection: Date;
+    newestReflection: Date;
+    avgReflectionsPerUser: string;
+    userMostReflective: number;
+    userLessReflective: number;
+    totalUsers: number;
+    roundDecimal(value: number): string;
 }
 
-class Chart implements IChart {
-    id: string;
-    width: number;
-    height: number;
-    x: IChartAxis;
-    y: IChartAxis;
-    renderElements = new ChartRenderElements();
-    padding: IChartPadding = { xAxis: 50, yAxis: 75, top: 25, right: 0 };
-    click: false;
-    private basicChart(id: string): Chart {
-        let result = new Chart();
-
-        result.id = id;
-        let containerDimensions = d3.select(`#${id} .chart-container`).node().getBoundingClientRect();       
-        result.width = containerDimensions.width;
-        result.height = containerDimensions.height;
-
-        result.y = new ChartAxis("State", [0, 100], [result.height - result.padding.xAxis - result.padding.top, 0], "left");
-
-        return result;
+class AnalyticsChartsDataStats implements IAnalyticsChartsDataStats {
+    group: string;
+    value: IReflectionAuthorEntry[];
+    mean: number;
+    median: number;
+    q1: number;
+    q3: number;
+    max: number;
+    min: number;
+    variance: string;
+    deviation: string;
+    oldestReflection: Date;
+    newestReflection: Date;
+    avgReflectionsPerUser: string;
+    userMostReflective: number;
+    userLessReflective: number;
+    totalUsers: number;
+    constructor(entries: IAnalyticsChartsData){
+        let uniqueUsers = Array.from(d3.rollup(entries.value, (d: IReflectionAuthorEntry[]) => d.length, (d: IReflectionAuthorEntry) => d.pseudonym), ([key, value]) => ({ key, value }));
+        this.value = entries.value;
+        this.group = entries.group;
+        this.mean = Math.round(d3.mean(entries.value.map(r => r.point))),
+        this.median = d3.median(entries.value.map(r => r.point)),
+        this.q1 = d3.quantile(entries.value.map(r => r.point), 0.25),
+        this.q3 = d3.quantile(entries.value.map(r => r.point), 0.75),
+        this.max = d3.max(entries.value.map(r => r.point)),
+        this.min = d3.min(entries.value.map(r => r.point)),
+        this.variance = this.roundDecimal(d3.variance(entries.value.map(r => r.point))),
+        this.deviation = this.roundDecimal(d3.deviation(entries.value.map(r => r.point))),
+        this.oldestReflection = d3.min(entries.value.map(r => new Date(r.timestamp))),
+        this.newestReflection = d3.max(entries.value.map(r => new Date(r.timestamp))),
+        this.avgReflectionsPerUser = this.roundDecimal(d3.mean(uniqueUsers.map(r => r.value))),
+        this.userMostReflective = d3.max(uniqueUsers.map(r => r.value)),
+        this.userLessReflective = d3.min(uniqueUsers.map(r => r.value)),
+        this.totalUsers = uniqueUsers.length        
     };
-    setChart(id: string, data: IAnalyticsChartsData[]): Chart {
-        let result = this.basicChart(id);
-        result.x = new ChartAxis("Group Code", data.map(r => r.group), [0, result.width - result.padding.yAxis - result.padding.right], "bottom");
-
-        return result;
-    };
-    setTimelineChart(id: string, data: IReflectionAuthorEntry[]): Chart {
-        let result = this.basicChart(id);
-
-        result.padding.xAxis = result.padding.xAxis + 25;
-        result.padding.top = 5;
-
-        result.x = new ChartAxis("Time", d3.extent(data.map(r => r.timestamp)), [0, result.width - result.padding.yAxis], "bottom");
-
-        return result;
-    };
-    setTimelineZoomChart(chart: IChart, data: IReflectionAuthorEntry[]): Chart {
-        let result = new Chart();
-        result.x = new ChartAxis("", d3.extent(data.map(r => r.timestamp)), [0, chart.width - chart.padding.yAxis - 5], "bottom");
-        result.y = new ChartAxis("", [0, 100], [25, 0], "left");
-        return result;
+    roundDecimal(value: number): string {
+        let p = d3.precisionFixed(0.1);
+        let f = d3.format("." + p + "f");
+        return f(value);
     }
 }
 
-interface IChart {
+// Basic interface for chart scales
+interface IChartScales {
+    x: ChartSeriesAxis | ChartTimeAxis;
+    y: ChartLinearAxis;
+}
+
+// Basic interface for charts
+interface IChart extends IChartScales {
     id: string;
     width: number;
     height: number;
-    x: IChartAxis;
-    y: IChartAxis;
-    renderElements: IChartRenderElements;
+    elements: IChartElements | IViolinChartElements;
     padding: IChartPadding;
     click: boolean;
-    setChart(id: string, data: IAnalyticsChartsData[]): Chart;
-    setTimelineChart(id: string, data: IReflectionAuthorEntry[]): Chart;
-    setTimelineZoomChart(chart: IChart, data: IReflectionAuthorEntry[]): Chart;
 }
 
-class ChartAxis implements IChartAxis {
-    scale: d3.ScaleBand<string> | d3.ScaleLinear<number, number, never> | d3.ScaleTime<number, number, never>;
-    axis: d3.Axis<d3.AxisDomain>;
-    label: string;
-    sorted: boolean;
-    constructor(label: string, domain: string[] | number[] | Date[], range: number[], position: string){
-        this.label = label;
+// Basic class for series charts
+class ChartSeries implements IChart {
+    id: string;
+    width: number;
+    height: number;
+    x: ChartSeriesAxis;
+    y: ChartLinearAxis;
+    elements: IChartElements;
+    padding: IChartPadding;
+    click: boolean;
+    constructor(id: string, domain: string[]) {
+        this.id = id;
+        let containerDimensions = d3.select(`#${id} .chart-container`).node().getBoundingClientRect();       
+        this.width = containerDimensions.width;
+        this.height = containerDimensions.height;
+        this.padding = new ChartPadding();
 
-        switch(typeof domain[0]) {
-            case "string":
-                this.scale = d3.scaleBand()
-                .domain(domain as string[])
-                .rangeRound(range)
-                .padding(0.25);
-                break;
-            case "number":
-                this.scale = d3.scaleLinear()
-                .domain(domain as number[])
-                .range(range);
-                break;
-            default:
-                this.scale = d3.scaleTime()
-                .domain(domain as Date[])
-                .range(range);
-        }
+        this.y = new ChartLinearAxis("State", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left");
+        this.x = new ChartSeriesAxis("Group Code", domain, [0, this.width - this.padding.yAxis - this.padding.right]);
 
-        this.axis = this.positionAxis(position, this.scale);
-        if (typeof domain == "number"){
-            let labels: Map<number | d3.AxisDomain, string> = new Map();
-            labels.set(0, "distressed");
-            labels.set(50, "going ok");
-            labels.set(100, "soaring");
-
-            this.axis.tickValues([0, 25, 50, 75, 100])
-                .tickFormat((d: d3.AxisDomain, i:number) => labels.get(d));
-        };
-    };
-    setThresholdAxis(chart: IChart, tDistressed: number, tSoaring: number) {
-        return d3.axisRight(chart.y.scale as d3.ScaleLinear<number, number, never>)
-            .tickValues([tDistressed, tSoaring])
-            .tickFormat((d: number) => d == tDistressed ? "Distressed" : d == tSoaring ? "Soaring" : "");
-    };
-    private positionAxis(position: string, scale: any) {
-        if (position == "left") {
-            return d3.axisLeft(scale);
-        }
-        else if (position == "top") {
-            return d3.axisTop(scale);
-        }
-        else if (position == "bottom") {
-            return d3.axisBottom(scale);
-        }
-        else if (position == "right") {
-            return d3.axisRight(scale);
-        }
+        this.elements = new ChartElements();
+        this.click = false;
     }
 }
 
+// Basic class for time series charts
+class ChartTime implements IChart {
+    id: string;
+    width: number;
+    height: number;
+    x: ChartTimeAxis;
+    y: ChartLinearAxis;
+    elements: IChartElements;
+    padding: IChartPadding;
+    click: boolean;
+    constructor(id: string, domain: Date[]) {
+        this.id = id;
+        let containerDimensions = d3.select(`#${id} .chart-container`).node().getBoundingClientRect();       
+        this.width = containerDimensions.width;
+        this.height = containerDimensions.height;
+        this.padding = new ChartPadding(75, 75, 5);
+
+        this.y = new ChartLinearAxis("State", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left");
+        this.x = new ChartTimeAxis("Time", domain, [0, this.width - this.padding.yAxis]);
+
+        this.elements = new ChartElements();
+        this.click = false;
+    }
+}
+
+// Basic class for time series zoom bar
+class ChartTimeZoom implements IChartScales {
+    x: ChartTimeAxis;
+    y: ChartLinearAxis;
+    constructor(chart: IChart, domain: Date[]) {
+        this.x = new ChartTimeAxis("", domain, [0, chart.width - chart.padding.yAxis - 5]);
+        this.y = new ChartLinearAxis("", [0, 100], [25, 0], "left");
+    }
+}
+
+// Interface for violin chart series
+interface IViolinChartSeries extends IChart {
+    elements: IViolinChartElements;
+    thresholdAxis: d3.Axis<d3.NumberValue>;
+}
+
+// Class for violin chart series
+class ViolinChartSeries extends ChartSeries implements IViolinChartSeries {
+    elements: IViolinChartElements;
+    thresholdAxis: d3.Axis<d3.NumberValue>;
+    constructor(id: string, domain: string[]) {
+        super(id, domain);
+        this.elements = new ViolinChartElements();
+        this.padding = new ChartPadding(50, 75, 25, 85);
+        this.thresholdAxis = this.y.setThresholdAxis(30, 70);
+    }
+}
+
+// Basic interface for chart axis scales
 interface IChartAxis {
     scale: d3.ScaleBand<string> | d3.ScaleLinear<number, number, never> | d3.ScaleTime<number, number, never>;
     axis: d3.Axis<d3.AxisDomain>;
     label: string;
     sorted: boolean;
-    setThresholdAxis(chart: IChart, tDistressed: number, tSoaring: number): d3.Axis<d3.NumberValue>;
 }
 
-class ChartRenderElements implements IChartRenderElements {
+// Basic class for series axis scale
+class ChartSeriesAxis implements IChartAxis {
+    scale: d3.ScaleBand<string>;
+    axis: d3.Axis<d3.AxisDomain>;
+    label: string;
+    sorted: boolean;
+    constructor(label: string, domain: string[], range: number[]) {
+        this.label = label;
+
+        this.scale = d3.scaleBand()
+            .domain(domain)
+            .rangeRound(range)
+            .padding(0.25);
+
+        this.axis = d3.axisBottom(this.scale);
+        this.sorted = false;
+    };
+}
+
+// Basic class for linear axis scale
+class ChartLinearAxis implements IChartAxis {
+    scale: d3.ScaleLinear<number, number, never>;
+    axis: d3.Axis<d3.AxisDomain>;
+    label: string;
+    sorted: boolean;
+    constructor(label: string, domain: number[], range: number[], position?: string) {
+        this.label = label;
+
+        this.scale = d3.scaleLinear()
+            .domain([d3.min(domain), d3.max(domain)])
+            .range(range);
+
+        if (position == "right") {
+            this.axis = d3.axisRight(this.scale);
+        }
+        else {
+            this.axis = d3.axisLeft(this.scale);
+        }
+
+        let labels: Map<number | d3.AxisDomain, string> = new Map();
+            labels.set(0, "distressed");
+            labels.set(50, "going ok");
+            labels.set(100, "soaring");
+        
+        this.axis.tickValues([0, 25, 50, 75, 100])
+            .tickFormat((d: d3.AxisDomain, i:number) => labels.get(d));
+
+        this.sorted = false;
+    };
+    setThresholdAxis(tDistressed: number, tSoaring: number) {
+        return d3.axisRight(this.scale)
+            .tickValues([tDistressed, tSoaring])
+            .tickFormat((d: number) => d == tDistressed ? "Distressed" : d == tSoaring ? "Soaring" : "");
+    }
+}
+
+// Basic class for time axis scale
+class ChartTimeAxis implements IChartAxis {
+    scale: d3.ScaleTime<number, number, never>;
+    axis: d3.Axis<d3.AxisDomain>;
+    label: string;
+    sorted: boolean;
+    constructor(label: string, domain: Date[], range: number[]) {
+        this.label = label;
+
+        this.scale = d3.scaleTime()
+            .domain(domain)
+            .range(range);
+
+        this.axis = d3.axisBottom(this.scale)
+        this.sorted = false;
+    };
+}
+
+// Basic interface for chart elements (includes zoom)
+interface IChartElements {
     svg: any;
     contentContainer: any;
     content: any;
@@ -171,15 +258,33 @@ class ChartRenderElements implements IChartRenderElements {
     yAxis: any;
     zoomSVG: any;
     zoomFocus: any;
+    preRender(chart: IChart): void;
+    appendSVG(chart: IChart): any;
+    appendContentContainer(chart: IChart): any;
+    appendXAxis(chart: IChart): any;
+    appendXAxisLabel(chart: IChart): any;
+    appendYAxis(chart: IChart): any;
+    appendYAxisLabel(chart: IChart): any;     
+}
+
+// Basic class for chart elements (includes zoom)
+class ChartElements implements IChartElements {
+    svg: any;
+    contentContainer: any;
+    content: any;
+    xAxis: any;
+    yAxis: any;
+    zoomSVG: any;
+    zoomFocus: any;   
     preRender(chart: IChart): void {
-        chart.renderElements.svg = this.appendSVG(chart);
-        chart.renderElements.contentContainer = this.appendContentContainer(chart);
-        chart.renderElements.xAxis = this.appendXAxis(chart);
+        chart.elements.svg = this.appendSVG(chart);
+        chart.elements.contentContainer = this.appendContentContainer(chart);
+        chart.elements.xAxis = this.appendXAxis(chart);
         this.appendXAxisLabel(chart);
         this.appendYAxis(chart);
         this.appendYAxisLabel(chart);
     }
-    appendSVG(chart: IChart): d3.Selection<d3.BaseType, unknown, HTMLElement, any> {
+    appendSVG(chart: IChart) {
         return d3.select(`#${chart.id}`)
             .select(".chart-container")
             .append("svg")
@@ -188,7 +293,7 @@ class ChartRenderElements implements IChartRenderElements {
             .attr("viewBox", `0 0 ${chart.width} ${chart.height}`);
     };
     appendContentContainer(chart: IChart) {
-        let result = chart.renderElements.svg.append("g")
+        let result = chart.elements.svg.append("g")
             .attr("class", "content-container")
             .attr("transform", `translate(${chart.padding.yAxis}, ${chart.padding.top})`)
             .attr("clip-path", `url(#clip-${chart.id})`);
@@ -208,57 +313,78 @@ class ChartRenderElements implements IChartRenderElements {
         return result;
     };
     appendXAxis(chart: IChart) {
-        return chart.renderElements.svg.append("g")
+        return chart.elements.svg.append("g")
             .attr("transform", `translate(${chart.padding.yAxis}, ${chart.height - chart.padding.xAxis})`)
             .attr("class", "x-axis")
             .attr("clip-path", `url(#clip-${chart.id})`)
             .call(chart.x.axis);
     };
     appendXAxisLabel(chart: IChart) {
-        return chart.renderElements.svg.append("g")
+        return chart.elements.svg.append("g")
             .attr("class", "x-label-container")
-            .attr("transform", "translate(" + (chart.renderElements.svg.select(".x-axis").node().getBBox().width / 2 + chart.padding.yAxis) + ", " + (chart.height - chart.padding.xAxis + chart.renderElements.svg.select(".x-axis").node().getBBox().height * 2) + ")")
+            .attr("transform", "translate(" + (chart.elements.svg.select(".x-axis").node().getBBox().width / 2 + chart.padding.yAxis) + ", " + (chart.height - chart.padding.xAxis + chart.elements.svg.select(".x-axis").node().getBBox().height * 2) + ")")
             .append("text")
             .attr("class", "x-label-text")
             .attr("text-anchor", "middle")
             .text(chart.x.label);
     };
     appendYAxis(chart: IChart) {
-        return chart.renderElements.svg.append("g")
+        return chart.elements.svg.append("g")
             .attr("transform", `translate(${chart.padding.yAxis}, ${chart.padding.top})`)
             .attr("class", "y-axis")
             .call(chart.y.axis);
     };
     appendYAxisLabel(chart: IChart) {
-        return chart.renderElements.svg.append("g")
+        return chart.elements.svg.append("g")
             .attr("class", "y-label-container")
-            .attr("transform", "translate(" + (chart.padding.yAxis - chart.renderElements.svg.select(".y-axis").node().getBBox().width) + ", " + (chart.padding.top + chart.renderElements.svg.select(".y-axis").node().getBBox().height / 2) + ") rotate(-90)")
+            .attr("transform", "translate(" + (chart.padding.yAxis - chart.elements.svg.select(".y-axis").node().getBBox().width) + ", " + (chart.padding.top + chart.elements.svg.select(".y-axis").node().getBBox().height / 2) + ") rotate(-90)")
             .append("text")
             .attr("class", "y-label-text")
             .attr("text-anchor", "middle")
             .text(chart.y.label);
+    } 
+}
+
+// Interface for violin charts
+interface IViolinChartElements extends IChartElements {
+    renderViolinThresholds(chart: ViolinChartSeries, threshold: number[]): void
+    appendThresholdAxis(chart: ViolinChartSeries): any;
+    appendThresholdLabel(chart: ViolinChartSeries): any;
+    appendThresholdIndicators(chart: ViolinChartSeries, thresholds: number[]): void;
+    appendThresholdLine(chart: ViolinChartSeries, thresholds: number[]): void;
+    appendThresholdPercentages(chart: ViolinChartSeries, bin: any, bandwithScale: any, tDistressed: number, tSoaring: number): void;
+    getThresholdsValues(chart: ViolinChartSeries): number[];
+}
+
+// Class for violin charts
+class ViolinChartElements extends ChartElements implements IViolinChartElements {
+    renderViolinThresholds(chart: ViolinChartSeries, threshold: number[]): void {
+        this.appendThresholdAxis(chart);
+        this.appendThresholdIndicators(chart, threshold);
+        this.appendThresholdLabel(chart);
+        this.appendThresholdLine(chart, threshold);
     };
-    appendThresholdAxis(chart: IChart, axis: any) {
-        return chart.renderElements.contentContainer.append("g")
+    appendThresholdAxis(chart: ViolinChartSeries) {
+        return chart.elements.contentContainer.append("g")
             .attr("transform", `translate(${chart.width - chart.padding.yAxis - chart.padding.right}, 0)`)
             .attr("class", "threshold-axis")
-            .call(axis);
+            .call(chart.thresholdAxis);
     };
-    appendThresholdLabel(chart: IChart) {
-        let label = chart.renderElements.svg.append("g")
+    appendThresholdLabel(chart: ViolinChartSeries) {
+        let label = chart.elements.svg.append("g")
             .attr("class", "threshold-label-container")
         label.append("text")
             .attr("class", "y-label-text")
             .attr("text-anchor", "middle")
             .text("Thresholds");
-        label.attr("transform", `translate(${chart.width - chart.padding.right + chart.renderElements.contentContainer.select(".threshold-axis").node().getBBox().width + label.node().getBBox().height}, ${chart.padding.top + chart.renderElements.svg.select(".y-axis").node().getBBox().height / 2}) rotate(-90)`);
+        label.attr("transform", `translate(${chart.width - chart.padding.right + chart.elements.contentContainer.select(".threshold-axis").node().getBBox().width + label.node().getBBox().height}, ${chart.padding.top + chart.elements.svg.select(".y-axis").node().getBBox().height / 2}) rotate(-90)`);
 
         return label;
     };
-    appendThresholdIndicators(chart: IChart, thresholds: number[]): void {
+    appendThresholdIndicators(chart: ViolinChartSeries, thresholds: number[]): void {
         let yScale = chart.y.scale as d3.ScaleLinear<number, number, never>;
         thresholds.forEach((c, i) => {
-            let indicator = chart.renderElements.contentContainer.append("g")
+            let indicator = chart.elements.contentContainer.append("g")
                 .attr("class", `threshold-indicator-container ${i == 0 ? "distressed" : "soaring"}`)
                 .attr("transform", `translate(${chart.width - chart.padding.yAxis - chart.padding.right + 5}, ${yScale(c) + 25})`);
             let box = indicator.append("rect")
@@ -271,34 +397,108 @@ class ChartRenderElements implements IChartRenderElements {
                 .attr("height", text.node().getBBox().height + 5)
                 .attr("y", -text.node().getBBox().height);
         });
-    }   
-}
+    };
+    appendThresholdLine(chart: ViolinChartSeries, thresholds: number[]): void {
+        let yScale = chart.y.scale as d3.ScaleLinear<number, number, never>;
+        thresholds.forEach((c, i) => {
+            chart.elements.contentContainer.append("line")
+                .attr("class", `threshold-line ${i == 0 ? "distressed" : "soaring"}`)
+                .attr("x1", 0)
+                .attr("x2", chart.width - chart.padding.yAxis - chart.padding.right)
+                .attr("y1", yScale(c))
+                .attr("y2", yScale(c))
+        });
+    };
+    appendThresholdPercentages(chart: ViolinChartSeries, bin: d3.HistogramGeneratorNumber<number, number>, bandwithScale: any, tDistressed: number, tSoaring: number): void {
+        let yScale = chart.y.scale as d3.ScaleLinear<number, number, never>;
+        let binData = function (data: IReflectionAuthorEntry[]) {
+            let bins = bin(data.map(r => r.point));
+            let result = [] as IBinData[]
+            bins.forEach((c: number[]) => {
+                result.push({ bin: c, percentage: c.length / data.length * 100 });
+            })
+            return result;
+        };
 
-interface IChartRenderElements {
-    svg: any;
-    contentContainer: any;
-    content: any;
-    xAxis: any;
-    yAxis: any;
-    zoomSVG: any;
-    zoomFocus: any;
-    preRender(chart: IChart): void;
-    appendSVG(chart: IChart): d3.Selection<d3.BaseType, unknown, HTMLElement, any>;
-    appendContentContainer(chart: IChart): any;
-    appendXAxis(chart: IChart): any;
-    appendXAxisLabel(chart: IChart): any;
-    appendYAxis(chart: IChart): any;
-    appendYAxisLabel(chart: IChart): any;
-    appendThresholdAxis(chart: IChart, axis: any): any;
-    appendThresholdLabel(chart: IChart): any;
-    appendThresholdIndicators(chart: IChart, thresholds: number[]): void;
-}
+        let binContainer = chart.elements.contentContainer.selectAll(`.${chart.id}-violin-container`);
 
+        binContainer.selectAll(`.${chart.id}-violin-text-container`).remove();
+
+        let binTextContainer = binContainer.append("g")
+            .attr("class", `${chart.id}-violin-text-container`);
+
+        let binTextBox = binTextContainer.selectAll("rect")
+            .data((d: IAnalyticsChartsData) => binData(d.value))
+            .enter()
+            .append("rect")
+            .attr("class", "violin-text-box");
+
+        let binText = binTextContainer.selectAll("text")
+            .data((d: IAnalyticsChartsData) => binData(d.value))
+            .enter()
+            .append("text")
+            .attr("class", "violin-text")
+            .text((d: IBinData) => Math.round(d.percentage) + "%");
+
+        binTextBox.attr("width", binText.node().getBBox().width + 10)
+            .attr("height", binText.node().getBBox().height + 5);
+        binTextBox.attr("y", (d: IBinData, i: number) => positionY(i))
+            .attr("x", bandwithScale(0) - binTextBox.node().getBBox().width / 2);
+        binText.attr("y", (d: IBinData, i: number) => positionY(i) + binText.node().getBBox().height)
+            .attr("x", bandwithScale(0) - binText.node().getBBox().width / 2)
+            .on("mouseover", onMouseover)
+            .on("mouseout", onMouseout);
+
+        function positionY(i: number) {
+            return yScale(i == 0 ? tDistressed / 2 : i == 1 ? 50 : (100 - tSoaring) / 2 + tSoaring) - binTextBox.node().getBBox().height / 2
+        }
+
+        function onMouseover(e: any, d: IBinData) {
+            chartFunctions.tooltip.appendTooltipText(chart, `Count: ${d.bin.length.toString()}`);
+            chartFunctions.tooltip.positionTooltipContainer(chart, bandwithScale(0) + (3 * binTextBox.node().getBBox().width), parseInt(d3.select(this).attr("y")) - binTextBox.node().getBBox().height);
+        }
+        function onMouseout() {
+            chart.elements.svg.select(".tooltip-container").transition()
+                .style("opacity", 0);
+            chartFunctions.tooltip.removeTooltip(chart);
+        }
+    };
+    getThresholdsValues(chart: ViolinChartSeries): number[] {
+        let result: number[] = [30, 70];
+
+        let dThreshold = chart.elements.contentContainer.select(".threshold-line.distressed");
+        if (dThreshold != undefined) {
+            result[0] = chart.y.scale.invert(dThreshold.attr("y1"));
+        }
+        let sThreshold = chart.elements.contentContainer.select(".threshold-line.soaring");
+        if (sThreshold != undefined) {
+            result[1] = chart.y.scale.invert(sThreshold.attr("y1"));
+        }
+
+        return result;
+    };
+}   
+
+// Basic interface for chart padding
 interface IChartPadding {
     xAxis: number;
     yAxis: number;
     top: number;
     right: number;
+}
+
+// Basin class for chart paddinf
+class ChartPadding implements IChartPadding {
+    xAxis: number;
+    yAxis: number;
+    top: number;
+    right: number;
+    constructor(xAxis?: number, yAxis?: number, top?: number, right?: number) {
+        this.xAxis = xAxis == undefined ? 50 : xAxis;
+        this.yAxis = yAxis == undefined ? 75 : yAxis;
+        this.top = top == undefined ? 25 : top;
+        this.right = right == undefined ? 0 : right;
+    }
 }
 
 interface ITooltipValues {
@@ -311,6 +511,23 @@ interface IBinData {
     percentage: number
 }
 
+// Basic interface for Html containers
+interface IHtmlContainers {
+    groupsChart: any,
+    groupStatistics: any,
+    groupTimeline: any,
+    groupViolin: any,
+    userViolin: any,
+    compare: any
+    userStatistics: any;
+    reflections: any;
+    remove(): void;
+    removeUsers(): void;
+    appendDiv(id: string, css: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
+    appendCard(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, header: string, id?: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
+}
+
+// Basic class for Html containers
 class HtmlContainers implements IHtmlContainers {
     groupsChart: any;
     groupStatistics: any;
@@ -320,16 +537,31 @@ class HtmlContainers implements IHtmlContainers {
     compare: any;
     userStatistics: any;
     reflections: any;
-    remove() {
-        this.groupStatistics.remove();
-        this.groupTimeline.remove();
-        this.groupViolin.remove();
-        this.userViolin.remove();
-        this.compare.remove();
+    remove(){
+        if (this.groupStatistics != undefined){
+            this.groupStatistics.remove();
+        }
+        if (this.groupTimeline != undefined){
+            this.groupTimeline.remove();
+        }
+        if (this.groupViolin != undefined){
+            this.groupViolin.remove();
+        }
+        if (this.userViolin != undefined){
+            this.userViolin.remove();
+        }
+        if (this.compare != undefined){
+            this.compare.remove();
+        }   
+        this.removeUsers();    
     };
-    removeUsers() {
-        this.userStatistics.remove();
-        this.reflections.remove();
+    removeUsers(){
+        if (this.userStatistics != undefined){
+            this.userStatistics.remove();
+        }
+        if (this.reflections != undefined){
+            this.reflections.remove();
+        }      
     };
     appendDiv(id: string, css: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any> {
         return d3.select("#analytics-charts").append("div")
@@ -351,24 +583,10 @@ class HtmlContainers implements IHtmlContainers {
     };
 }
 
-interface IHtmlContainers {
-    groupsChart: any,
-    groupStatistics: any,
-    groupTimeline: any,
-    groupViolin: any,
-    userViolin: any,
-    compare: any
-    userStatistics: any;
-    reflections: any;
-    remove(): void;
-    removeUsers(): void;
-    appendDiv(id: string, css: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
-    appendCard(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, header: string, id?: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
-}
-
 export function buildControlAdminAnalyticsCharts(entries: IAnalyticsChartsData[]){
     //Handle sidebar button
     sidebarFunctions.sidebarBtn();
+    drawCharts(entries);
 
     function drawCharts(entries: IAnalyticsChartsData[]){
         let htmlContainer = new HtmlContainers();
@@ -379,11 +597,12 @@ export function buildControlAdminAnalyticsCharts(entries: IAnalyticsChartsData[]
         htmlContainer.appendCard(htmlContainer.groupsChart, "Reflections box plot by group");
 
         //Create data with current entries
-        let data = chartFunctions.data.processEntries(entries);
+        let data = entries.map(d => new AnalyticsChartsDataStats(d));
 
         //Create group chart with current data
-        let groupChart = new Chart().setChart("groups-chart", data);
+        let groupChart = new ChartSeries("groups-chart", data.map(d => d.group));
 
+        groupChart.elements.preRender(groupChart);
         adminAnalyticsCharts.renderGroupChart(groupChart, data);
     }
 }
@@ -408,16 +627,17 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
             });
 
             //Process entries to be drawn
-            entries = d3.filter(allEntries, (d: IAnalyticsChartsData) => selectedGroups.includes(d.group));
+            entries = d3.filter(allEntries, d => selectedGroups.includes(d.group));
         };
 
         //Handle add or remove groups
         addRemoveGroups();
         function addRemoveGroups() {
-            d3.selectAll("#groups input").on("change", (e: any) => {
-                if (e.target.checked) {
+            d3.selectAll("#groups input").on("change", (e: Event) => {
+                let target = e.target as HTMLInputElement;
+                if (target.checked) {
                     //Add group code to the list
-                    selectedGroups.push(e.target.value);
+                    selectedGroups.push(target.value);
 
                     //Update data
                     updateData();
@@ -433,13 +653,13 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
                 }
                 else {
                     //Remove group code from the list
-                    selectedGroups.splice(selectedGroups.indexOf(e.target.value), 1);
+                    selectedGroups.splice(selectedGroups.indexOf(target.value), 1);
 
                     //Update data
                     updateData();
 
                     //Remove clicks that are not in the list
-                    groupChart.renderElements.contentContainer.selectAll(`#${groupChart.id} .content-container .click-container`)
+                    groupChart.elements.contentContainer.selectAll(`#${groupChart.id} .content-container .click-container`)
                         .data(data)
                         .exit()
                         .remove();
@@ -447,7 +667,7 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
                     //Handle there is an active click in the group chart
                     if (groupChart.click) {
                         //Handle if the removed code group was clicked
-                        if (e.target.value == htmlContainer.groupStatistics.select(".card").attr("id")) {
+                        if (target.value == htmlContainer.groupStatistics.select(".card").attr("id")) {
                             //Remove click
                             chartFunctions.click.removeClick(groupChart);
 
@@ -456,12 +676,6 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
 
                             //Remove drilldown html containers
                             htmlContainer.remove();
-
-                            //If users html containers exists remove them
-                            if (htmlContainer.userStatistics != undefined) {
-                                //Remove users html containers
-                                htmlContainer.removeUsers();
-                            }
                         }
                         else {
                             //Update click text
@@ -471,16 +685,16 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
                             let currentCompareGroups = groupCompare(data, htmlContainer.groupStatistics.select(".card").attr("id"));
 
                             //Remove removed group code from the compare groups
-                            currentCompareGroups.splice(currentCompareGroups.indexOf(e.target.value), 1);
+                            currentCompareGroups.splice(currentCompareGroups.indexOf(target.value), 1);
 
                             //Update violin data
-                            let violinData = d3.filter(allEntries, (d: IAnalyticsChartsData) => currentCompareGroups.includes(d.group)) as IAnalyticsChartsData[];
+                            let violinData = d3.filter(allEntries, d => currentCompareGroups.includes(d.group));
 
                             //Update violin chart series scale
-                            violinChart.x = new ChartAxis("Group Code", violinData.map(r => r.group), [0, violinChart.width - violinChart.padding.yAxis - violinChart.padding.right], "bottom");
+                            violinChart.x = new ChartSeriesAxis("Group Code", violinData.map(r => r.group), [0, violinChart.width - violinChart.padding.yAxis - violinChart.padding.right]);
 
                             //Update violin users chart series scale
-                            violinUsersChart.x = new ChartAxis("Group Code", violinData.map(r => r.group), [0, violinUsersChart.width - violinUsersChart.padding.yAxis - violinUsersChart.padding.right], "bottom");
+                            violinUsersChart.x = new ChartSeriesAxis("Group Code", violinData.map(r => r.group), [0, violinUsersChart.width - violinUsersChart.padding.yAxis - violinUsersChart.padding.right]);
 
                             //Render violin with updated data
                             renderViolin(violinChart, violinData);
@@ -500,13 +714,13 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
 
             function updateData() {
                 //Update entries with the new group code list
-                entries = d3.filter(allEntries, (d: IAnalyticsChartsData) => selectedGroups.includes(d.group)) as IAnalyticsChartsData[];
+                entries = d3.filter(allEntries, d => selectedGroups.includes(d.group));
 
                 //Update data with the updated entries
-                data = chartFunctions.data.processEntries(entries);
+                data = entries.map(d => new AnalyticsChartsDataStats(d));
 
                 //Update group chart series scale
-                groupChart.x = new ChartAxis("Group Code", data.map(r => r.group), [0, groupChart.width - groupChart.padding.yAxis - groupChart.padding.right], "bottom");
+                groupChart.x = new ChartSeriesAxis("Group Code", data.map(r => r.group), [0, groupChart.width - groupChart.padding.yAxis - groupChart.padding.right]);
 
                 //Transition group chart series
                 chartFunctions.transitions.axis(groupChart, data);
@@ -521,22 +735,18 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
         htmlContainer.appendCard(htmlContainer.groupsChart, "Reflections box plot by group");
 
         //Create data with current entries
-        let data = chartFunctions.data.processEntries(entries);
+        let data = entries.map(d => new AnalyticsChartsDataStats(d));
 
         //Create group chart with current data
-        let groupChart = new Chart().setChart("groups-chart", data);
+        let groupChart = new ChartSeries("groups-chart", data.map(d => d.group));
 
         //Render svg, containers, standard axis and labels
-        groupChart.renderElements.preRender(groupChart);
+        groupChart.elements.preRender(groupChart);
         renderGroupChart(groupChart, data);
 
-        function renderGroupChart(chart: IChart, data: IAnalyticsChartsDataStats[]) {
-            //Set scale types
-            let xScale = chart.x.scale as d3.ScaleBand<string>;
-            let yScale = chart.y.scale as d3.ScaleLinear<number, number, never>;
-
+        function renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]) {
             //Select existing minMax lines
-            let minMax = chart.renderElements.contentContainer.selectAll(`#${chart.id}-data-min-max`)
+            let minMax = chart.elements.contentContainer.selectAll(`#${chart.id}-data-min-max`)
                 .data(data);
 
             //Remove old minMax lines
@@ -547,16 +757,16 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
                 .append("line")
                 .attr("id", `${chart.id}-data-min-max`)
                 .attr("class", "box-line")
-                .attr("x1", (d: IAnalyticsChartsDataStats) => xScale(d.group) + (xScale.bandwidth() / 2))
-                .attr("x2", (d: IAnalyticsChartsDataStats) => xScale(d.group) + (xScale.bandwidth() / 2))
-                .attr("y1", (d: IAnalyticsChartsDataStats) => yScale(d.min))
-                .attr("y2", (d: IAnalyticsChartsDataStats) => yScale(d.max));
+                .attr("x1", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
+                .attr("x2", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
+                .attr("y1", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.min))
+                .attr("y2", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.max));
 
             //Merge existing and new minMax lines
             minMax.merge(minMaxEnter);
 
             //Select existing median lines
-            let median = chart.renderElements.contentContainer.selectAll(`#${chart.id}-data-median`)
+            let median = chart.elements.contentContainer.selectAll(`#${chart.id}-data-median`)
                 .data(data);
 
             //Remove old median lines
@@ -567,16 +777,16 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
                 .append("line")
                 .attr("id", `${chart.id}-data-median`)
                 .attr("class", "box-line")
-                .attr("x1", (d: IAnalyticsChartsDataStats) => xScale(d.group))
-                .attr("x2", (d: IAnalyticsChartsDataStats) => xScale(d.group) + xScale.bandwidth())
-                .attr("y1", (d: IAnalyticsChartsDataStats) => yScale(d.median))
-                .attr("y2", (d: IAnalyticsChartsDataStats) => yScale(d.median));
+                .attr("x1", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group))
+                .attr("x2", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group) + chart.x.scale.bandwidth())
+                .attr("y1", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.median))
+                .attr("y2", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.median));
 
             //Merge existing and new median lines
             median.merge(medianEnter);
 
             //Select existing boxes
-            let boxes = chart.renderElements.contentContainer.selectAll(`#${chart.id}-data`)
+            let boxes = chart.elements.contentContainer.selectAll(`#${chart.id}-data`)
                 .data(data);
 
             //Remove old boxes
@@ -587,10 +797,10 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
                 .append("rect")
                 .attr("id", `${chart.id}-data`)
                 .classed("bar", true)
-                .attr("y", (d: IAnalyticsChartsDataStats) => yScale(d.q3))
-                .attr("x", (d: IAnalyticsChartsDataStats) => xScale(d.group))
-                .attr("width", (d: IAnalyticsChartsDataStats) => xScale.bandwidth())
-                .attr("height", (d: IAnalyticsChartsDataStats) => yScale(d.q1) - yScale(d.q3));
+                .attr("y", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.q3))
+                .attr("x", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group))
+                .attr("width", (d: IAnalyticsChartsDataStats) => chart.x.scale.bandwidth())
+                .attr("height", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.q1) - chart.y.scale(d.q3));
 
             //Merge existing and new boxes
             boxes.merge(boxesEnter);
@@ -599,11 +809,11 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
             chartFunctions.transitions.bars(chart, data);
 
             //Set render elements content to boxes
-            chart.renderElements.content = chart.renderElements.contentContainer.selectAll(`#${chart.id}-data`);
+            chart.elements.content = chart.elements.contentContainer.selectAll(`#${chart.id}-data`);
 
             //Enable tooltip
             chartFunctions.tooltip.enableTooltip(chart, onMouseover, onMouseout);
-            function onMouseover(e: any, d: IAnalyticsChartsDataStats): void {
+            function onMouseover(e: Event, d: IAnalyticsChartsDataStats): void {
                 //If box is clicked not append tooltip
                 if (d3.select(this).attr("class").includes("clicked")) {
                     return;
@@ -616,29 +826,29 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
                 chartFunctions.tooltip.positionTooltipContainer(chart, xTooltip(d.group, tooltipBox), yTooltip(d.q3, tooltipBox));
                 function xTooltip(x: string, tooltipBox: any) {
                     //Position tooltip right of the box
-                    let xTooltip = xScale(x) + xScale.bandwidth();
+                    let xTooltip = chart.x.scale(x) + chart.x.scale.bandwidth();
 
                     //If tooltip does not fit position left of the box
                     if (chart.width - chart.padding.yAxis < xTooltip + tooltipBox.node().getBBox().width) {
-                        return xTooltip - xScale.bandwidth() - tooltipBox.node().getBBox().width;
+                        return xTooltip - chart.x.scale.bandwidth() - tooltipBox.node().getBBox().width;
                     }
 
                     return xTooltip
                 }
                 function yTooltip(y: number, tooltipBox: any) {
                     //Position tooltip on top of the box
-                    let yTooltip = yScale(y) - (tooltipBox.node().getBBox().height / 2);
+                    let yTooltip = chart.y.scale(y) - (tooltipBox.node().getBBox().height / 2);
 
                     //If tooltip does not fit position at the same height as the box
-                    if (yScale.invert(yTooltip) < 0) {
-                        return yScale(y + yScale.invert(yTooltip));
+                    if (chart.y.scale.invert(yTooltip) < 0) {
+                        return chart.y.scale(y + chart.y.scale.invert(yTooltip));
                     }
                     return yTooltip;
                 }
             }
             function onMouseout(): void {
                 //Transition tooltip to opacity 0
-                chart.renderElements.svg.select(".tooltip-container").transition()
+                chart.elements.svg.select(".tooltip-container").transition()
                     .style("opacity", 0);
 
                 //Remove tooltip
@@ -658,12 +868,6 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
 
                     //Remove drilldown html containers
                     htmlContainer.remove();
-
-                    //If users html containers exists remove them
-                    if (htmlContainer.userStatistics != undefined) {
-                        //Remove users html containers
-                        htmlContainer.removeUsers();
-                    }
                     return;
                 }
 
@@ -673,17 +877,8 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
                 //Remove existing click classes
                 chartFunctions.click.removeClickClass(chart, "bar");
 
-                //If drilldown html containers exists remove them
-                if (htmlContainer.groupStatistics != undefined) {
-                    //Remove drilldown html containers
-                    htmlContainer.remove();
-                }
-
-                //If users html containers exists remove them
-                if (htmlContainer.userStatistics != undefined) {
-                    //Remove users html containers
-                    htmlContainer.removeUsers();
-                }
+                //Remove HTML containers
+                htmlContainer.remove();
 
                 //Set chat click to true
                 chart.click = true;
@@ -754,11 +949,11 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
 
 
             //Enable sort
-            let sortButton = chart.renderElements.svg.select(".y-label-container").attr("class", "y-label-container zoom");
+            let sortButton = chart.elements.svg.select(".y-label-container").attr("class", "y-label-container zoom");
             let yArrow = chartFunctions.sort.appendArrow(sortButton, chart, false, true);
             sortButton.on("click", function () {
                 chart.y.sorted = chart.y.sorted == false ? true : false;
-                chartFunctions.sort.arrowTransition(chart.renderElements.svg, chart, yArrow, false, true);
+                chartFunctions.sort.arrowTransition(chart.elements.svg, chart, yArrow, false, true);
                 data = data.sort(function (a, b) {
                     return chartFunctions.sort.sortData(a.mean, b.mean, chart.y.sorted);
                 });
@@ -772,19 +967,16 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
         }
 
         function groupTimeline(data: IAnalyticsChartsDataStats) {
-            let timelineChart = new Chart().setTimelineChart("group-timeline", data.value);
-            timelineChart.renderElements.preRender(timelineChart);
+            let timelineChart = new ChartTime("group-timeline", d3.extent(data.value.map(d => d.timestamp)));
+            timelineChart.elements.preRender(timelineChart);
             renderTimelineDensity(timelineChart, data.value);
-            let timelineZoomChart = new Chart().setTimelineZoomChart(timelineChart, data.value);
+            let timelineZoomChart = new ChartTimeZoom(timelineChart, d3.extent(data.value.map(d => d.timestamp)));
 
             d3.select("#group-timeline #timeline-plot").on("click", (e: any) => {
                 var selectedOption = e.target.control.value;
                 if (selectedOption == "density") {
-                    //If users html containers exists remove them
-                    if (htmlContainer.userStatistics != undefined) {
-                        //Remove users html containers
-                        htmlContainer.removeUsers();
-                    }
+                    //Remove users html containers
+                    htmlContainer.removeUsers();
                     renderTimelineDensity(timelineChart, data.value);
                 }
                 if (selectedOption == "scatter") {
@@ -792,26 +984,22 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
                 }
             });
 
-            function renderTimelineDensity(chart: IChart, data: IReflectionAuthorEntry[]) {
-                //Set scale types
-                let xScale = chart.x.scale as d3.ScaleTime<number, number, never>;
-                let yScale = chart.y.scale as d3.ScaleLinear<number, number, never>;
-
+            function renderTimelineDensity(chart: ChartTime, data: IReflectionAuthorEntry[]) {
                 //Remove scatter plot
-                chart.renderElements.contentContainer.selectAll(`#${chart.id}-timeline-circles`).remove();
-                chart.renderElements.svg.selectAll(".zoom-container").remove();
+                chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles`).remove();
+                chart.elements.svg.selectAll(".zoom-container").remove();
 
                 //Remove click
                 chartFunctions.click.removeClick(chart);
-                chart.renderElements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`).remove();
+                chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`).remove();
 
                 //Create density data
-                let densityData = createDensityData(xScale);
+                let densityData = createDensityData();
                 
-                function createDensityData(xScale: d3.ScaleTime<number, number, never>){
+                function createDensityData(){
                     return d3.contourDensity<IReflectionAuthorEntry>()
-                    .x((d: IReflectionAuthorEntry) => xScale(d.timestamp))
-                    .y((d: IReflectionAuthorEntry) => yScale(d.point))
+                    .x(d => chart.x.scale(d.timestamp))
+                    .y(d => chart.y.scale(d.point))
                     .bandwidth(5)
                     .thresholds(20)
                     .size([chart.width - chart.padding.yAxis, chart.height - chart.padding.xAxis - chart.padding.top])
@@ -819,25 +1007,25 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
                 }
 
                 //Draw contours
-                chart.renderElements.content = chart.renderElements.contentContainer.selectAll(`${chart.id}-timeline-contours`)
+                chart.elements.content = chart.elements.contentContainer.selectAll(`${chart.id}-timeline-contours`)
                     .data(densityData)
                     .enter()
                     .append("path")
                     .attr("id", `${chart.id}-timeline-contours`)
                     .attr("class", "contour")
                     .attr("d", d3.geoPath())
-                    .attr("stroke", (d: any) => d3.interpolateBlues(d.value * 25))
-                    .attr("fill", (d: any) => d3.interpolateBlues(d.value * 20));
+                    .attr("stroke", (d: d3.ContourMultiPolygon) => d3.interpolateBlues(d.value * 25))
+                    .attr("fill", (d: d3.ContourMultiPolygon) => d3.interpolateBlues(d.value * 20));
 
                 //Enable zoom
                 chartFunctions.zoom.enableZoom(chart, zoomed);
                 function zoomed(e: any) {
                     let newChartRange = [0, chart.width - chart.padding.yAxis].map(d => e.transform.applyX(d));
-                    xScale.rangeRound(newChartRange);
+                    chart.x.scale.rangeRound(newChartRange);
 
-                    let newDensityData = createDensityData(xScale);
+                    let newDensityData = createDensityData();
 
-                    let zoomContours = chart.renderElements.contentContainer.selectAll(`#${chart.id}-timeline-contours`)
+                    let zoomContours = chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-contours`)
                         .data(newDensityData);
 
                     zoomContours.exit().remove();
@@ -847,50 +1035,46 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
                         .attr("id", `${chart.id}-timeline-contours`)
                         .attr("class", "contour")
                         .attr("d", d3.geoPath())
-                        .attr("stroke", (d: any) => d3.interpolateBlues(d.value * 25))
-                        .attr("fill", (d: any) => d3.interpolateBlues(d.value * 20));
+                        .attr("stroke", (d: d3.ContourMultiPolygon) => d3.interpolateBlues(d.value * 25))
+                        .attr("fill", (d: d3.ContourMultiPolygon) => d3.interpolateBlues(d.value * 20));
 
                     zoomContours.attr("d", d3.geoPath())
-                        .attr("stroke", (d: any) => d3.interpolateBlues(d.value * 25))
-                        .attr("fill", (d: any) => d3.interpolateBlues(d.value * 20));
+                        .attr("stroke", (d: d3.ContourMultiPolygon) => d3.interpolateBlues(d.value * 25))
+                        .attr("fill", (d: d3.ContourMultiPolygon) => d3.interpolateBlues(d.value * 20));
 
                     zoomContours.merge(zoomContoursEnter);
 
                     chart.x.axis.ticks(newChartRange[1] / 75);
-                    chart.renderElements.xAxis.call(chart.x.axis);
+                    chart.elements.xAxis.call(chart.x.axis);
                 }
             }
 
-            function renderTimelineScatter(chart: IChart, zoomChart: IChart, data: IReflectionAuthorEntry[], stats: IAnalyticsChartsDataStats) {
-                //Set scale types
-                let xScale = chart.x.scale as d3.ScaleTime<number, number, never>;
-                let yScale = chart.y.scale as d3.ScaleLinear<number, number, never>;
-                
+            function renderTimelineScatter(chart: ChartTime, zoomChart: ChartTimeZoom, data: IReflectionAuthorEntry[], stats: IAnalyticsChartsDataStats) {             
                 //Remove density plot
-                chart.renderElements.contentContainer.selectAll(`#${chart.id}-timeline-contours`).remove();
+                chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-contours`).remove();
 
                 //Draw circles
-                chart.renderElements.content = chart.renderElements.contentContainer.selectAll(`${chart.id}-timeline-circles`)
+                chart.elements.content = chart.elements.contentContainer.selectAll(`${chart.id}-timeline-circles`)
                     .data(data)
                     .enter()
                     .append("circle")
                     .classed("line-circle", true)
                     .attr("id", `${chart.id}-timeline-circles`)
                     .attr("r", 5)
-                    .attr("cx", (d: IReflectionAuthorEntry) => xScale(d.timestamp))
-                    .attr("cy", (d: IReflectionAuthorEntry) => yScale(d.point));
+                    .attr("cx", (d: IReflectionAuthorEntry) => chart.x.scale(d.timestamp))
+                    .attr("cy", (d: IReflectionAuthorEntry) => chart.y.scale(d.point));
 
                 //Enable tooltip
                 chartFunctions.tooltip.enableTooltip(chart, onMouseover, onMouseout);
-                function onMouseover(e: any, d: IReflectionAuthorEntry) {
+                function onMouseover(e: Event, d: IReflectionAuthorEntry) {
                     if (d3.select(this).attr("class").includes("clicked")) {
                         return;
                     }
-                    let tooltipBox = chartFunctions.tooltip.appendTooltipText(chart, (d.timestamp as Date).toDateString(), [{ label: "State", value: d.point as number }]);
-                    chartFunctions.tooltip.positionTooltipContainer(chart, xTooltip(d.timestamp as Date, tooltipBox), yTooltip(d.point as number, tooltipBox));
+                    let tooltipBox = chartFunctions.tooltip.appendTooltipText(chart, d.timestamp.toDateString(), [{ label: "State", value: d.point}]);
+                    chartFunctions.tooltip.positionTooltipContainer(chart, xTooltip(d.timestamp, tooltipBox), yTooltip(d.point, tooltipBox));
 
                     function xTooltip(x: Date, tooltipBox: any) {
-                        let xTooltip = xScale(x);
+                        let xTooltip = chart.x.scale(x);
                         if (chart.width - chart.padding.yAxis < xTooltip + tooltipBox.node().getBBox().width) {
                             return xTooltip - tooltipBox.node().getBBox().width;
                         }
@@ -898,48 +1082,45 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
                     };
 
                     function yTooltip(y: number, tooltipBox: any) {
-                        var yTooltip = yScale(y) - tooltipBox.node().getBBox().height - 10;
+                        var yTooltip = chart.y.scale(y) - tooltipBox.node().getBBox().height - 10;
                         if (yTooltip < 0) {
                             return yTooltip + tooltipBox.node().getBBox().height + 20;
                         }
                         return yTooltip;
                     };
 
-                    chartFunctions.tooltip.appendLine(chart, 0, yScale(d.point), xScale(d.timestamp), yScale(d.point));
-                    chartFunctions.tooltip.appendLine(chart, xScale(d.timestamp), yScale(0), xScale(d.timestamp), yScale(d.point));
+                    chartFunctions.tooltip.appendLine(chart, 0, chart.y.scale(d.point), chart.x.scale(d.timestamp), chart.y.scale(d.point));
+                    chartFunctions.tooltip.appendLine(chart, chart.x.scale(d.timestamp), chart.y.scale(0), chart.x.scale(d.timestamp), chart.y.scale(d.point));
                 }
                 function onMouseout() {
-                    chart.renderElements.svg.select(".tooltip-container").transition()
+                    chart.elements.svg.select(".tooltip-container").transition()
                         .style("opacity", 0);
                     chartFunctions.tooltip.removeTooltip(chart);
                 }
 
                 //Enable click
                 chartFunctions.click.enableClick(chart, onClick);
-                function onClick(e: any, d: IReflectionAuthorEntry) {
+                function onClick(e: Event, d: IReflectionAuthorEntry) {
                     if (d3.select(this).attr("class") == "line-circle clicked") {
                         chartFunctions.click.removeClick(chart);
-                        chart.renderElements.content.attr("class", "line-circle");
-                        chart.renderElements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`).remove();
+                        chart.elements.content.attr("class", "line-circle");
+                        chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`).remove();
                         htmlContainer.removeUsers();
                         return;
                     }
 
                     chartFunctions.click.removeClick(chart);
-                    chart.renderElements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`).remove();
-                    //If users html containers exists remove them
-                    if (htmlContainer.userStatistics != undefined) {
-                        //Remove users html containers
-                        htmlContainer.removeUsers();
-                    }
-                    chart.renderElements.content.attr("class", (data: IReflectionAuthorEntry) => `line-circle ${data.pseudonym == d.pseudonym ? "clicked" : ""}`);
+                    chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`).remove();
+                    //Remove users html containers
+                    htmlContainer.removeUsers();
+                    chart.elements.content.attr("class", (data: IReflectionAuthorEntry) => `line-circle ${data.pseudonym == d.pseudonym ? "clicked" : ""}`);
                     let userData = data.filter(c => c.pseudonym == d.pseudonym);
 
                     let line = d3.line<IReflectionAuthorEntry>()
-                        .x((d: IReflectionAuthorEntry) => xScale(d.timestamp))
-                        .y((d: IReflectionAuthorEntry) => yScale(d.point));
+                        .x(d => chart.x.scale(d.timestamp))
+                        .y(d => chart.y.scale(d.point));
 
-                    chart.renderElements.contentContainer.append("path")
+                    chart.elements.contentContainer.append("path")
                         .datum(d3.sort(userData, (d: IReflectionAuthorEntry) => d.timestamp))
                         .classed("line", true)
                         .attr("id", `${chart.id}-timeline-circles-line`)
@@ -956,9 +1137,9 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
                         .attr("class", "card-body statistics-text")
                         .html(`<b>Mean: </b>${userMean} (<span class="${(userMean - stats.mean) < 0 ? "negative" : "positive"}">${(userMean - stats.mean) < 0 ? "" : "+"}${userMean - stats.mean}</span> compared to the group mean)<br>
                             <b>Min: </b>${d3.min(userData.map(r => r.point))}<br>
-                            <b>Min date: </b>${((d3.sort(userData, (r: IReflectionAuthorEntry) => r.point)[0] as IReflectionAuthorEntry).timestamp).toDateString()}<br>
+                            <b>Min date: </b>${((d3.sort(userData, (r: IReflectionAuthorEntry) => r.point)[0]).timestamp).toDateString()}<br>
                             <b>Max: </b>${d3.max(userData.map(r => r.point))}<br>
-                            <b>Max date: </b>${((d3.sort(userData, (r: IReflectionAuthorEntry) => r.point)[userData.length - 1] as IReflectionAuthorEntry).timestamp).toDateString()}<br>
+                            <b>Max date: </b>${((d3.sort(userData, (r: IReflectionAuthorEntry) => r.point)[userData.length - 1]).timestamp).toDateString()}<br>
                             <b>Total: </b>${userData.length}<br>
                             <b>Std Deviation: </b>${chartFunctions.data.roundDecimal(d3.deviation(userData.map(r => r.point)))}<br>
                             <b>Variance: </b>${chartFunctions.data.roundDecimal(d3.variance(userData.map(r => r.point)))}<br>
@@ -969,7 +1150,7 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
                     htmlContainer.reflections = htmlContainer.appendDiv("reflections-list", "col-md-9 mt-3");
                     let reflectionsCard = htmlContainer.appendCard(htmlContainer.reflections, `${d.pseudonym}'s reflections`);
                     let reflectionsCardText: string = "";
-                    d3.sort(userData, (r: IReflectionAuthorEntry) => r.timestamp).forEach((c: IReflectionAuthorEntry) => {
+                    d3.sort(userData, r => r.timestamp).forEach(c => {
                         reflectionsCardText = reflectionsCardText + `<p><b>${c.timestamp.toDateString()} - State: ${c.point}</b><br>${c.text}</p>`
                     })
                     reflectionsCard.select(".card-body")
@@ -981,169 +1162,142 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
                 }
 
                 //Append zoom bar
-                chart.renderElements.zoomSVG = chartFunctions.zoom.appendZoomBar(chart);
-                chart.renderElements.zoomFocus = chart.renderElements.zoomSVG.append("g")
+                chart.elements.zoomSVG = chartFunctions.zoom.appendZoomBar(chart);
+                chart.elements.zoomFocus = chart.elements.zoomSVG.append("g")
                     .attr("class", "zoom-focus");
 
-                //Set zoom scale types
-                let zoomXScale = zoomChart.x.scale as d3.ScaleTime<number, number, never>;
-                let zoomYScale = zoomChart.y.scale as d3.ScaleLinear<number, number, never>;
-
                 //Draw in zoom bar
-                chart.renderElements.zoomSVG.selectAll(chart.id + "zoom-bar-content")
+                chart.elements.zoomSVG.selectAll(chart.id + "zoom-bar-content")
                     .data(data)
                     .enter()
                     .append("circle")
                     .classed("zoom-line-circle", true)
                     .attr("id", chart.id + "zoom-bar-content")
                     .attr("r", 2)
-                    .attr("cx", (d: IReflectionAuthorEntry) => zoomXScale(d.timestamp))
-                    .attr("cy", (d: IReflectionAuthorEntry) => zoomYScale(d.point));
+                    .attr("cx", (d: IReflectionAuthorEntry) => zoomChart.x.scale(d.timestamp))
+                    .attr("cy", (d: IReflectionAuthorEntry) => zoomChart.y.scale(d.point));
 
                 //Draw hidden content that will handle the borders
-                chart.renderElements.zoomFocus.selectAll(chart.id + "zoom-content")
+                chart.elements.zoomFocus.selectAll(chart.id + "zoom-content")
                     .data(data)
                     .enter()
                     .append("circle")
                     .classed("zoom-content", true)
                     .attr("id", chart.id + "zoom-bar-content")
                     .attr("r", 2)
-                    .attr("cx", (d: IReflectionAuthorEntry) => zoomXScale(d.timestamp))
-                    .attr("cy", (d: IReflectionAuthorEntry) => zoomYScale(d.point));
+                    .attr("cx", (d: IReflectionAuthorEntry) => zoomChart.x.scale(d.timestamp))
+                    .attr("cy", (d: IReflectionAuthorEntry) => zoomChart.y.scale(d.point));
 
                 //Enable zoom
                 chartFunctions.zoom.enableZoom(chart, zoomed);
                 function zoomed(e: any) {
                     let newChartRange = [0, chart.width - chart.padding.yAxis].map(d => e.transform.applyX(d));
-                    xScale.rangeRound(newChartRange);
-                    zoomXScale.rangeRound([0, chart.width - chart.padding.yAxis - 5].map(d => e.transform.invertX(d)));
+                    chart.x.scale.rangeRound(newChartRange);
+                    zoomChart.x.scale.rangeRound([0, chart.width - chart.padding.yAxis - 5].map(d => e.transform.invertX(d)));
                     let newLine = d3.line<IReflectionAuthorEntry>()
-                        .x((d: IReflectionAuthorEntry) => xScale(d.timestamp))
-                        .y((d: IReflectionAuthorEntry) => yScale(d.point));
+                        .x(d => chart.x.scale(d.timestamp))
+                        .y(d => chart.y.scale(d.point));
 
-                    chart.renderElements.contentContainer.selectAll(`#${chart.id}-timeline-circles`)
-                        .attr("cx", (d: IReflectionAuthorEntry) => xScale(d.timestamp));
+                    chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles`)
+                        .attr("cx", (d: IReflectionAuthorEntry) => chart.x.scale(d.timestamp));
 
-                    chart.renderElements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`)
+                    chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`)
                         .attr("d", (d: IReflectionAuthorEntry[]) => newLine(d));
 
-                    chart.renderElements.contentContainer.selectAll(".click-container")
-                        .attr("transform", (d: IReflectionAuthorEntry) => `translate(${xScale(d.timestamp)}, ${yScale(d.point)})`)
+                    chart.elements.contentContainer.selectAll(".click-container")
+                        .attr("transform", (d: IReflectionAuthorEntry) => `translate(${chart.x.scale(d.timestamp)}, ${chart.y.scale(d.point)})`)
 
-                    chart.renderElements.zoomFocus.selectAll(".zoom-content")
-                        .attr("cx", (d: IReflectionAuthorEntry) => zoomXScale(d.timestamp));
+                    chart.elements.zoomFocus.selectAll(".zoom-content")
+                        .attr("cx", (d: IReflectionAuthorEntry) => zoomChart.x.scale(d.timestamp));
 
                     chart.x.axis.ticks(newChartRange[1] / 75);
-                    chart.renderElements.xAxis.call(chart.x.axis);
+                    chart.elements.xAxis.call(chart.x.axis);
                 }
             }
         }
 
         //Global variables for the violin chart
-        let violinChart: IChart;
-        let violinUsersChart: IChart;
-        let thresholdAxis: any;
+        let violinChart: ViolinChartSeries;
+        let violinUsersChart: ViolinChartSeries;
 
         function groupViolinChart(data: IAnalyticsChartsData[], groups: string[]) {
-            let groupData = d3.filter(data, (d: IAnalyticsChartsData) => groups.includes(d.group));
+            let groupData = d3.filter(data, d => groups.includes(d.group));
             let currentData = [] as IAnalyticsChartsData[];
-            groupData.forEach((c: IAnalyticsChartsData) => {
-                let userMean = Array.from(d3.rollup(c.value, (d: IReflectionAuthorEntry[]) => Math.round(d3.mean(d.map(r => r.point))), (d: IReflectionAuthorEntry) => d.pseudonym), ([pseudonym, point]) => ({ pseudonym, point }) as IReflectionAuthorEntry);
+            groupData.forEach(c => {
+                let userMean = Array.from(d3.rollup(c.value, d => Math.round(d3.mean(d.map(r => r.point))), d => d.pseudonym), ([pseudonym, point]) => ({ pseudonym, point }) as IReflectionAuthorEntry);
                 currentData.push({ group: c.group, value: userMean });
             });
 
-            violinChart = new Chart().setChart("group-violin-chart", groupData);
-            violinChart.padding.right = 85;
-            violinChart.x = new ChartAxis("Group Code", groupData.map(r => r.group), [0, violinChart.width - violinChart.padding.yAxis - violinChart.padding.right], "bottom");
-            violinChart.renderElements.preRender(violinChart);
-            renderViolinThresholds(violinChart, groupData, 30, 70);
+            violinChart = new ViolinChartSeries("group-violin-chart", groupData.map(d => d.group));
+            violinChart.x = new ChartSeriesAxis("Group Code", groupData.map(r => r.group), [0, violinChart.width - violinChart.padding.yAxis - violinChart.padding.right]);
+            violinChart.elements.preRender(violinChart);
+            violinChart.elements.renderViolinThresholds(violinChart, [30, 70]);
             renderViolin(violinChart, groupData);
 
-            violinUsersChart = new Chart().setChart("group-violin-users-chart", currentData);
+            violinUsersChart = new ViolinChartSeries("group-violin-users-chart", currentData.map(d => d.group));
             violinUsersChart.padding.right = 85;
-            violinUsersChart.x = new ChartAxis("Group Code", groupData.map(r => r.group), [0, violinUsersChart.width - violinUsersChart.padding.yAxis - violinUsersChart.padding.right], "bottom");
-            violinUsersChart.renderElements.preRender(violinUsersChart);
-            renderViolinThresholds(violinUsersChart, currentData, 30, 70);
+            violinUsersChart.x = new ChartSeriesAxis("Group Code", groupData.map(r => r.group), [0, violinUsersChart.width - violinUsersChart.padding.yAxis - violinUsersChart.padding.right]);
+            violinUsersChart.elements.preRender(violinUsersChart);
+            violinUsersChart.elements.renderViolinThresholds(violinUsersChart, [30, 70]);
             renderViolin(violinUsersChart, currentData);
-
-            function renderViolinThresholds(chart: IChart, data: IAnalyticsChartsData[], tDistressed: number, tSoaring: number) {
-                //Create threshold axis
-                thresholdAxis = chart.y.setThresholdAxis(chart, tDistressed, tSoaring);
-
-                //Draw threshold axis
-                chart.renderElements.appendThresholdAxis(chart, thresholdAxis);
-
-                //Draw threshold indicators
-                chart.renderElements.appendThresholdIndicators(chart, [tDistressed, tSoaring]);
-
-                //Draw threshold label
-                chart.renderElements.appendThresholdLabel(chart);
-
-                //Draw threshold lines
-                chartFunctions.drag.appendThresholdLine(chart, [tDistressed, tSoaring]);
-            }
         }
 
-        function renderViolin(chart: IChart, data: IAnalyticsChartsData[]) {
-            //Set scale types
-            let xScale = chart.x.scale as d3.ScaleBand<string>;
-            let yScale = chart.y.scale as d3.ScaleLinear<number, number, never>;
-
-            let thresholds = chartFunctions.drag.getThresholdsValues(chart);
+        function renderViolin(chart: ViolinChartSeries, data: IAnalyticsChartsData[]) {
+            let thresholds = chart.elements.getThresholdsValues(chart);
             let tDistressed = thresholds[0];
             let tSoaring = thresholds[1];
 
             dragViolinThresholds(chart, data, tDistressed, tSoaring);
             drawViolin(chart, data, tDistressed, tSoaring);
 
-            function dragViolinThresholds(chart: IChart, data: IAnalyticsChartsData[], tDistressed: number, tSoaring: number) {
+            function dragViolinThresholds(chart: ViolinChartSeries, data: IAnalyticsChartsData[], tDistressed: number, tSoaring: number) {
                 //Add drag functions to the distressed threshold
-                chart.renderElements.contentContainer.select(".threshold-line.distressed")
+                chart.elements.contentContainer.select(".threshold-line.distressed")
                     .call(d3.drag()
                         .on("start", dragStartDistressed)
                         .on("drag", draggingDistressed)
                         .on("end", dragEndDistressed));
 
                 //Add drag functions to the soaring threshold
-                chart.renderElements.contentContainer.select(".threshold-line.soaring")
+                chart.elements.contentContainer.select(".threshold-line.soaring")
                     .call(d3.drag()
                         .on("start", dragStartSoaring)
                         .on("drag", draggingSoaring)
                         .on("end", dragEndSoaring));
 
                 //Start drag soaring functions           
-                function dragStartSoaring(e: any, d: IAnalyticsChartsData) {
-                    chart.renderElements.contentContainer.selectAll(`.${chart.id}-violin-text-container`).remove();
+                function dragStartSoaring(e: Event, d: IAnalyticsChartsData) {
+                    chart.elements.contentContainer.selectAll(`.${chart.id}-violin-text-container`).remove();
                     d3.select(this).attr("class", d3.select(this).attr("class") + " grabbing")
                 }
-                function draggingSoaring(e: any, d: IAnalyticsChartsData) {
-                    if (yScale.invert(e.y) < 51 || yScale.invert(e.y) > 99) {
+                function draggingSoaring(e: MouseEvent, d: IAnalyticsChartsData) {
+                    if (chart.y.scale.invert(e.y) < 51 || chart.y.scale.invert(e.y) > 99) {
                         return;
                     }
                     d3.select(this)
-                        .attr("y1", yScale(yScale.invert(e.y)))
-                        .attr("y2", yScale(yScale.invert(e.y)));
+                        .attr("y1", chart.y.scale(chart.y.scale.invert(e.y)))
+                        .attr("y2", chart.y.scale(chart.y.scale.invert(e.y)));
 
-                    tSoaring = yScale.invert(e.y);
-                    thresholdAxis.tickValues([tDistressed, yScale.invert(e.y)])
-                        .tickFormat((d: number) => d == tDistressed ? "Distressed" : d == yScale.invert(e.y) ? "Soaring" : "");
+                    tSoaring = chart.y.scale.invert(e.y);
+                    chart.thresholdAxis.tickValues([tDistressed, chart.y.scale.invert(e.y)])
+                        .tickFormat((d: number) => d == tDistressed ? "Distressed" : d == chart.y.scale.invert(e.y) ? "Soaring" : "");
 
-                    chart.renderElements.contentContainer.selectAll(".threshold-axis")
-                        .call(thresholdAxis);
+                    chart.elements.contentContainer.selectAll(".threshold-axis")
+                        .call(chart.thresholdAxis);
 
                     let positionX = chart.width - chart.padding.yAxis - chart.padding.right + 5;
-                    let positionY = yScale(tSoaring) + 25;
-                    let indicator = chart.renderElements.contentContainer.select(".threshold-indicator-container.soaring");
-                    if (positionY + indicator.node().getBBox().height > yScale(tDistressed)) {
-                        positionY = yScale(tSoaring) - 15;
+                    let positionY = chart.y.scale(tSoaring) + 25;
+                    let indicator = chart.elements.contentContainer.select(".threshold-indicator-container.soaring");
+                    if (positionY + indicator.node().getBBox().height > chart.y.scale(tDistressed)) {
+                        positionY = chart.y.scale(tSoaring) - 15;
                     }
                     indicator.attr("transform", `translate(${positionX}, ${positionY})`);
                     indicator.select("text")
                         .text(Math.round(tSoaring));
 
                 }
-                function dragEndSoaring(e: any, d: IAnalyticsChartsData) {
-                    let newT = yScale.invert(e.y);
+                function dragEndSoaring(e: MouseEvent, d: IAnalyticsChartsData) {
+                    let newT = chart.y.scale.invert(e.y);
                     if (newT < 51) {
                         newT = 51;
                     }
@@ -1155,39 +1309,39 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
                 }
 
                 //Start drag distressed functions
-                function dragStartDistressed(e: any, d: IAnalyticsChartsData) {
-                    chart.renderElements.contentContainer.selectAll(`.${chart.id}-violin-text-container`).remove();
+                function dragStartDistressed(e: Event, d: IAnalyticsChartsData) {
+                    chart.elements.contentContainer.selectAll(`.${chart.id}-violin-text-container`).remove();
                     d3.select(this).attr("class", d3.select(this).attr("class") + " grabbing");
                 }
-                function draggingDistressed(e: any, d: IAnalyticsChartsData) {
-                    if (yScale.invert(e.y) < 1 || yScale.invert(e.y) > 49) {
+                function draggingDistressed(e: MouseEvent, d: IAnalyticsChartsData) {
+                    if (chart.y.scale.invert(e.y) < 1 || chart.y.scale.invert(e.y) > 49) {
                         return;
                     }
                     d3.select(this)
-                        .attr("y1", yScale(yScale.invert(e.y)))
-                        .attr("y2", yScale(yScale.invert(e.y)));
+                        .attr("y1", chart.y.scale(chart.y.scale.invert(e.y)))
+                        .attr("y2", chart.y.scale(chart.y.scale.invert(e.y)));
 
-                    tDistressed = yScale.invert(e.y);
-                    thresholdAxis.tickValues([yScale.invert(e.y), tSoaring])
-                        .tickFormat((d: number) => d == yScale.invert(e.y) ? "Distressed" : d == tSoaring ? "Soaring" : "");
+                    tDistressed = chart.y.scale.invert(e.y);
+                    chart.thresholdAxis.tickValues([chart.y.scale.invert(e.y), tSoaring])
+                        .tickFormat((d: number) => d == chart.y.scale.invert(e.y) ? "Distressed" : d == tSoaring ? "Soaring" : "");
 
-                    chart.renderElements.contentContainer.selectAll(".threshold-axis")
-                        .call(thresholdAxis);
+                    chart.elements.contentContainer.selectAll(".threshold-axis")
+                        .call(chart.thresholdAxis);
 
-                    let soaringIndicator = chart.renderElements.contentContainer.select(".threshold-indicator-container.soaring");
-                    if (yScale(tDistressed) < yScale(tSoaring) + soaringIndicator.node().getBBox().height + 25) {
-                        soaringIndicator.attr("transform", `translate(${chart.width - chart.padding.yAxis - chart.padding.right + 5}, ${yScale(tSoaring) - 15})`);
+                    let soaringIndicator = chart.elements.contentContainer.select(".threshold-indicator-container.soaring");
+                    if (chart.y.scale(tDistressed) < chart.y.scale(tSoaring) + soaringIndicator.node().getBBox().height + 25) {
+                        soaringIndicator.attr("transform", `translate(${chart.width - chart.padding.yAxis - chart.padding.right + 5}, ${chart.y.scale(tSoaring) - 15})`);
                     } else {
-                        soaringIndicator.attr("transform", `translate(${chart.width - chart.padding.yAxis - chart.padding.right + 5}, ${yScale(tSoaring) + 25})`);
+                        soaringIndicator.attr("transform", `translate(${chart.width - chart.padding.yAxis - chart.padding.right + 5}, ${chart.y.scale(tSoaring) + 25})`);
                     }
 
-                    let indicator = chart.renderElements.contentContainer.select(".threshold-indicator-container.distressed")
-                        .attr("transform", `translate(${chart.width - chart.padding.yAxis - chart.padding.right + 5}, ${yScale(tDistressed) + 25})`)
+                    let indicator = chart.elements.contentContainer.select(".threshold-indicator-container.distressed")
+                        .attr("transform", `translate(${chart.width - chart.padding.yAxis - chart.padding.right + 5}, ${chart.y.scale(tDistressed) + 25})`)
                     indicator.select("text")
                         .text(Math.round(tDistressed));
                 }
-                function dragEndDistressed(e: any, d: IAnalyticsChartsData) {
-                    let newT = yScale.invert(e.y);
+                function dragEndDistressed(e: MouseEvent, d: IAnalyticsChartsData) {
+                    let newT = chart.y.scale.invert(e.y);
                     if (newT < 1) {
                         newT = 1;
                     }
@@ -1199,21 +1353,17 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
                 }
             }
 
-            function drawViolin(chart: IChart, data: IAnalyticsChartsData[], tDistressed: number, tSoaring: number) {
-                //Set scale types
-                let xScale = chart.x.scale as d3.ScaleBand<string>;
-                let yScale = chart.y.scale as d3.ScaleLinear<number, number, never>;
-
+            function drawViolin(chart: ViolinChartSeries, data: IAnalyticsChartsData[], tDistressed: number, tSoaring: number) {
                 //Create bandwidth scale
                 let bandwithScale = d3.scaleLinear()
-                    .range([0, xScale.bandwidth()])
+                    .range([0, chart.x.scale.bandwidth()])
                     .domain([-d3.max(data.map(r => r.value.length)), d3.max(data.map(r => r.value.length))]);
 
                 //Create bins             
                 let bin = d3.bin().domain([0, 100]).thresholds([0, tDistressed, tSoaring]);
 
                 //Select existing bin containers
-                let binContainer = chart.renderElements.contentContainer.selectAll(`.${chart.id}-violin-container`)
+                let binContainer = chart.elements.contentContainer.selectAll(`.${chart.id}-violin-container`)
                     .data(data);
 
                 //Remove old bin containers
@@ -1223,7 +1373,7 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
                 let binContainerEnter = binContainer.enter()
                     .append("g")
                     .attr("class", `${chart.id}-violin-container`)
-                    .attr("transform", (d: IAnalyticsChartsData) => `translate(${xScale(d.group)}, 0)`);
+                    .attr("transform", (d: IAnalyticsChartsData) => `translate(${chart.x.scale(d.group)}, 0)`);
 
                 //Draw violins
                 binContainerEnter.append("path")
@@ -1233,13 +1383,13 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
                     .attr("d", d3.area()
                         .x0((d: number[]) => bandwithScale(-d.length))
                         .x1((d: number[]) => bandwithScale(d.length))
-                        .y((d: number[], i: number) => yScale(i == 0 ? 0 : i == 1 ? 50 : 100))
+                        .y((d: number[], i: number) => chart.y.scale(i == 0 ? 0 : i == 1 ? 50 : 100))
                         .curve(d3.curveCatmullRom));
 
                 //Transision bin containers
                 binContainer.transition()
                     .duration(750)
-                    .attr("transform", (d: IAnalyticsChartsData) => `translate(${xScale(d.group)}, 0)`);
+                    .attr("transform", (d: IAnalyticsChartsData) => `translate(${chart.x.scale(d.group)}, 0)`);
 
                 //Merge existing with new bin containers
                 binContainer.merge(binContainerEnter);
@@ -1278,23 +1428,24 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
             });
 
             //Handle change group inputs
-            d3.selectAll("#group-compare input").on("change", (e: any) => {
-                if (e.target.checked) {
-                    currentGroups.push(e.target.value);
+            d3.selectAll("#group-compare input").on("change", (e: Event) => {
+                let target = e.target as HTMLInputElement;
+                if (target.checked) {
+                    currentGroups.push(target.value);
                 }
                 else {
-                    currentGroups.splice(currentGroups.indexOf(e.target.value), 1);
+                    currentGroups.splice(currentGroups.indexOf(target.value), 1);
                 }
 
-                let groupData = d3.filter(data, (d: IAnalyticsChartsData) => currentGroups.includes(d.group));
+                let groupData = d3.filter(data, d => currentGroups.includes(d.group));
                 let currentData = [] as IAnalyticsChartsData[];
-                groupData.forEach((c: IAnalyticsChartsData) => {
-                    let userMean = Array.from(d3.rollup(c.value, (d: IReflectionAuthorEntry[]) => Math.round(d3.mean(d.map(r => r.point))), (d: IReflectionAuthorEntry) => d.pseudonym), ([pseudonym, point]) => ({ pseudonym, point }) as IReflectionAuthorEntry);
+                groupData.forEach(c => {
+                    let userMean = Array.from(d3.rollup(c.value, d => Math.round(d3.mean(d.map(r => r.point))), d => d.pseudonym), ([pseudonym, point]) => ({ pseudonym, point }) as IReflectionAuthorEntry);
                     currentData.push({ group: c.group, value: userMean });
                 });
 
-                violinChart.x = new ChartAxis("Group Code", groupData.map(r => r.group), [0, violinChart.width - violinChart.padding.yAxis - violinChart.padding.right], "bottom");
-                violinUsersChart.x = new ChartAxis("Group Code", groupData.map(r => r.group), [0, violinUsersChart.width - violinUsersChart.padding.yAxis - violinUsersChart.padding.right], "bottom");
+                violinChart.x = new ChartSeriesAxis("Group Code", groupData.map(r => r.group), [0, violinChart.width - violinChart.padding.yAxis - violinChart.padding.right]);
+                violinUsersChart.x = new ChartSeriesAxis("Group Code", groupData.map(r => r.group), [0, violinUsersChart.width - violinUsersChart.padding.yAxis - violinUsersChart.padding.right]);
                 chartFunctions.transitions.axis(violinChart, groupData);
                 chartFunctions.transitions.axis(violinUsersChart, groupData);
 
@@ -1327,56 +1478,31 @@ var sidebarFunctions = {
     }
 };
 
-var chartFunctions = {    
+var chartFunctions = {  
     data: {
-        processEntries: function (entries: IAnalyticsChartsData[]) {
-            let result = [] as IAnalyticsChartsDataStats[]
-            entries.forEach(c => {
-                let uniqueUsers = Array.from(d3.rollup(c.value, (d: IReflectionAuthorEntry[]) => d.length, (d: IReflectionAuthorEntry) => d.pseudonym), ([key, value]) => ({ key, value }));
-                result.push({
-                    value: c.value.map(r => { return { timestamp: new Date(r.timestamp), point: r.point, pseudonym: r.pseudonym, text: r.text } }),
-                    group: c.group,
-                    mean: Math.round(d3.mean(c.value.map(r => r.point))),
-                    median: d3.median(c.value.map(r => r.point)),
-                    q1: d3.quantile(c.value.map(r => r.point), 0.25),
-                    q3: d3.quantile(c.value.map(r => r.point), 0.75),
-                    max: d3.max(c.value.map(r => r.point)),
-                    min: d3.min(c.value.map(r => r.point)),
-                    variance: chartFunctions.data.roundDecimal(d3.variance(c.value.map(r => r.point))),
-                    deviation: chartFunctions.data.roundDecimal(d3.deviation(c.value.map(r => r.point))),
-                    oldestReflection: d3.min(c.value.map(r => new Date(r.timestamp))),
-                    newestReflection: d3.max(c.value.map(r => new Date(r.timestamp))),
-                    avgReflectionsPerUser: chartFunctions.data.roundDecimal(d3.mean(uniqueUsers.map(r => r.value))),
-                    userMostReflective: d3.max(uniqueUsers.map(r => r.value)),
-                    userLessReflective: d3.min(uniqueUsers.map(r => r.value)),
-                    totalUsers: uniqueUsers.length
-                })
-            });
-            return result;
-        },
-        roundDecimal: function (value: number) {
+        roundDecimal: function(value: number): string {
             let p = d3.precisionFixed(0.1);
             let f = d3.format("." + p + "f");
             return f(value);
         }
-    },
+    },  
     tooltip: {
         enableTooltip: function (chart: IChart, onMouseover: any, onMouseout: any) {
             this.appendTooltipContainer(chart);
 
-            chart.renderElements.content.on("mouseover", onMouseover)
+            chart.elements.content.on("mouseover", onMouseover)
                 .on("mouseout", onMouseout);
         },
         appendTooltipContainer: function (chart: IChart) {
-            chart.renderElements.contentContainer.selectAll(".tooltip-container").remove();
-            return chart.renderElements.contentContainer.append("g")
+            chart.elements.contentContainer.selectAll(".tooltip-container").remove();
+            return chart.elements.contentContainer.append("g")
                 .attr("class", "tooltip-container");
         },
         appendTooltipText: function (chart: IChart, title: string, values: ITooltipValues[] = null) {
-            let result = chart.renderElements.contentContainer.select(".tooltip-container").append("rect")
+            let result = chart.elements.contentContainer.select(".tooltip-container").append("rect")
                 .attr("class", "tooltip-box");
 
-            let text = chart.renderElements.contentContainer.select(".tooltip-container").append("text")
+            let text = chart.elements.contentContainer.select(".tooltip-container").append("text")
                 .attr("class", "tooltip-text title")
                 .attr("x", 10)
                 .text(title);
@@ -1394,13 +1520,13 @@ var chartFunctions = {
                 });
             }
 
-            chart.renderElements.contentContainer.select(".tooltip-box").attr("width", text.node().getBBox().width + 20)
+            chart.elements.contentContainer.select(".tooltip-box").attr("width", text.node().getBBox().width + 20)
                 .attr("height", text.node().getBBox().height + 5);
 
             return result;
         },
         appendLine: function (chart: IChart, x1: number, y1: number, x2: number, y2: number) {
-            chart.renderElements.contentContainer.append("line")
+            chart.elements.contentContainer.append("line")
                 .attr("class", "tooltip-line")
                 .attr("x1", x1)
                 .attr("y1", y1)
@@ -1408,15 +1534,15 @@ var chartFunctions = {
                 .attr("y2", y2);
         },
         positionTooltipContainer: function (chart: IChart, x: number, y: number) {
-            chart.renderElements.contentContainer.select(".tooltip-container")
+            chart.elements.contentContainer.select(".tooltip-container")
                 .attr("transform", `translate(${x}, ${y})`)
                 .transition()
                 .style("opacity", 1);
         },
         removeTooltip: function (chart: IChart) {
-            chart.renderElements.contentContainer.selectAll(".tooltip-box").remove();
-            chart.renderElements.contentContainer.selectAll(".tooltip-text").remove();
-            chart.renderElements.contentContainer.selectAll(".tooltip-line").remove();
+            chart.elements.contentContainer.selectAll(".tooltip-box").remove();
+            chart.elements.contentContainer.selectAll(".tooltip-text").remove();
+            chart.elements.contentContainer.selectAll(".tooltip-line").remove();
         }
     },
     sort: {
@@ -1484,20 +1610,20 @@ var chartFunctions = {
     },
     click: {
         enableClick: function (chart: IChart, onClick: any) {
-            chart.renderElements.content.on("click", onClick)
+            chart.elements.content.on("click", onClick)
         },
         removeClick: function (chart: IChart) {
             chart.click = false;
-            chart.renderElements.contentContainer.selectAll(".click-text").remove();
-            chart.renderElements.contentContainer.selectAll(".click-line").remove();
-            chart.renderElements.contentContainer.selectAll(".click-container").remove();
+            chart.elements.contentContainer.selectAll(".click-text").remove();
+            chart.elements.contentContainer.selectAll(".click-line").remove();
+            chart.elements.contentContainer.selectAll(".click-container").remove();
         },
         removeClickClass: function (chart: IChart, css: string) {
             d3.selectAll(`#${chart.id} .content-container .${css}`)
                 .attr("class", css)
         },
         appendText: function (chart: IChart, d: IReflectionAuthorEntry, title: string, values: ITooltipValues[] = null) {
-            let container = chart.renderElements.contentContainer.append("g")
+            let container = chart.elements.contentContainer.append("g")
                 .datum(d)
                 .attr("class", "click-container");
 
@@ -1548,11 +1674,11 @@ var chartFunctions = {
             let xScale = chart.x.scale as d3.ScaleBand<string>;
             let yScale = chart.y.scale as d3.ScaleLinear<number, number, never>;
 
-            chart.renderElements.contentContainer.selectAll(".click-container text").remove();
+            chart.elements.contentContainer.selectAll(".click-container text").remove();
 
-            chart.renderElements.content.attr("class", (d: IAnalyticsChartsDataStats) => d.group == clickData.group ? "bar clicked" : "bar");
+            chart.elements.content.attr("class", (d: IAnalyticsChartsDataStats) => d.group == clickData.group ? "bar clicked" : "bar");
 
-            let clickContainer = chart.renderElements.contentContainer.selectAll(".click-container")
+            let clickContainer = chart.elements.contentContainer.selectAll(".click-container")
                 .data(data);
             clickContainer.enter()
                 .append("g")
@@ -1561,15 +1687,15 @@ var chartFunctions = {
                 .attr("transform", (c: IAnalyticsChartsDataStats) => `translate(${xScale(c.group) + xScale.bandwidth() / 2}, 0)`);
             clickContainer.exit().remove();
 
-            chart.renderElements.contentContainer.selectAll(".click-container").append("text")
+            chart.elements.contentContainer.selectAll(".click-container").append("text")
                 .attr("class", (c: IAnalyticsChartsDataStats) => this.comparativeText(clickData.q3, c.q3, clickData.group, c.group)[0])
                 .attr("y", (c: IAnalyticsChartsDataStats) => yScale(c.q3) - 5)
                 .text((c: IAnalyticsChartsDataStats) => `q3: ${this.comparativeText(clickData.q3, c.q3, clickData.group, c.group)[1]}`);
-            chart.renderElements.contentContainer.selectAll(".click-container").append("text")
+            chart.elements.contentContainer.selectAll(".click-container").append("text")
                 .attr("class", (c: IAnalyticsChartsDataStats) => this.comparativeText(clickData.median, c.median, clickData.group, c.group)[0])
                 .attr("y", (c: IAnalyticsChartsDataStats) => yScale(c.median) - 5)
                 .text((c: IAnalyticsChartsDataStats) => `Median: ${this.comparativeText(clickData.median, c.median, clickData.group, c.group)[1]}`);
-            chart.renderElements.contentContainer.selectAll(".click-container").append("text")
+            chart.elements.contentContainer.selectAll(".click-container").append("text")
                 .attr("class", (c: IAnalyticsChartsDataStats) => this.comparativeText(clickData.q1, c.q1, clickData.group, c.group)[0])
                 .attr("y", (c: IAnalyticsChartsDataStats) => yScale(c.q1) - 5)
                 .text((c: IAnalyticsChartsDataStats) => `q1: ${this.comparativeText(clickData.q1, c.q1, clickData.group, c.group)[1]}`);
@@ -1593,7 +1719,7 @@ var chartFunctions = {
     },
     zoom: {
         enableZoom: function (chart: IChart, zoomed: any) {
-            chart.renderElements.svg.selectAll(".zoom-rect")
+            chart.elements.svg.selectAll(".zoom-rect")
                 .attr("class", "zoom-rect active");
 
             let zoom = d3.zoom()
@@ -1602,97 +1728,14 @@ var chartFunctions = {
                 .translateExtent([[0, 0], [chart.width - chart.padding.yAxis, chart.height]])
                 .on("zoom", zoomed);
 
-            chart.renderElements.contentContainer.select(".zoom-rect").call(zoom);
+            chart.elements.contentContainer.select(".zoom-rect").call(zoom);
         },
         appendZoomBar: function (chart: IChart) {
-            return chart.renderElements.svg.append("g")
+            return chart.elements.svg.append("g")
                 .attr("class", "zoom-container")
                 .attr("height", 30)
                 .attr("width", chart.width - chart.padding.yAxis)
                 .attr("transform", `translate(${chart.padding.yAxis}, ${chart.height - 30})`);
-        }
-    },
-    drag: {
-        appendThresholdLine: function (chart: IChart, thresholds: number[]) {
-            let yScale = chart.y.scale as d3.ScaleLinear<number, number, never>;
-            thresholds.forEach((c, i) => {
-                chart.renderElements.contentContainer.append("line")
-                    .attr("class", `threshold-line ${i == 0 ? "distressed" : "soaring"}`)
-                    .attr("x1", 0)
-                    .attr("x2", chart.width - chart.padding.yAxis - chart.padding.right)
-                    .attr("y1", yScale(c))
-                    .attr("y2", yScale(c))
-            });
-        },
-        appendThresholdPercentages: function (chart: IChart, bin: any, bandwithScale: any, tDistressed: number, tSoaring: number) {
-            let yScale = chart.y.scale as d3.ScaleLinear<number, number, never>;
-            let binData = function (data: IReflectionAuthorEntry[]) {
-                let bins = bin(data.map(r => r.point));
-                let result = [] as IBinData[]
-                bins.forEach((c: number[]) => {
-                    result.push({ bin: c, percentage: c.length / data.length * 100 });
-                })
-                return result;
-            };
-
-            let binContainer = chart.renderElements.contentContainer.selectAll(`.${chart.id}-violin-container`);
-
-            binContainer.selectAll(`.${chart.id}-violin-text-container`).remove();
-
-            let binTextContainer = binContainer.append("g")
-                .attr("class", `${chart.id}-violin-text-container`);
-
-            let binTextBox = binTextContainer.selectAll("rect")
-                .data((d: IAnalyticsChartsData) => binData(d.value))
-                .enter()
-                .append("rect")
-                .attr("class", "violin-text-box");
-
-            let binText = binTextContainer.selectAll("text")
-                .data((d: IAnalyticsChartsData) => binData(d.value))
-                .enter()
-                .append("text")
-                .attr("class", "violin-text")
-                .text((d: IBinData) => Math.round(d.percentage) + "%");
-
-            binTextBox.attr("width", binText.node().getBBox().width + 10)
-                .attr("height", binText.node().getBBox().height + 5);
-            binTextBox.attr("y", (d: IBinData, i: number) => positionY(i))
-                .attr("x", bandwithScale(0) - binTextBox.node().getBBox().width / 2);
-            binText.attr("y", (d: IBinData, i: number) => positionY(i) + binText.node().getBBox().height)
-                .attr("x", bandwithScale(0) - binText.node().getBBox().width / 2)
-                .on("mouseover", onMouseover)
-                .on("mouseout", onMouseout);
-
-            function positionY(i: number) {
-                return yScale(i == 0 ? tDistressed / 2 : i == 1 ? 50 : (100 - tSoaring) / 2 + tSoaring) - binTextBox.node().getBBox().height / 2
-            }
-
-            function onMouseover(e: any, d: IBinData) {
-                chartFunctions.tooltip.appendTooltipText(chart, `Count: ${d.bin.length.toString()}`);
-                chartFunctions.tooltip.positionTooltipContainer(chart, bandwithScale(0) + (3 * binTextBox.node().getBBox().width), parseInt(d3.select(this).attr("y")) - binTextBox.node().getBBox().height);
-            }
-            function onMouseout() {
-                chart.renderElements.svg.select(".tooltip-container").transition()
-                    .style("opacity", 0);
-                chartFunctions.tooltip.removeTooltip(chart);
-            }
-        },
-        getThresholdsValues: function (chart: IChart) {
-            let yScale = chart.y.scale as d3.ScaleLinear<number, number, never>;
-
-            let result: number[] = [30, 70];
-
-            let dThreshold = chart.renderElements.contentContainer.select(".threshold-line.distressed");
-            if (dThreshold != undefined) {
-                result[0] = yScale.invert(dThreshold.attr("y1"));
-            }
-            let sThreshold = chart.renderElements.contentContainer.select(".threshold-line.soaring");
-            if (sThreshold != undefined) {
-                result[1] = yScale.invert(sThreshold.attr("y1"));
-            }
-
-            return result;
         }
     },
     transitions: {
@@ -1743,34 +1786,31 @@ var chartFunctions = {
                 .attr("x2", (d: IAnalyticsChartsDataStats) => xScale(d.group) + xScale.bandwidth())
                 .attr("y2", (d: IAnalyticsChartsDataStats) => yScale(d.median));
         },
-        violin: function (chart: IChart, data: IAnalyticsChartsData[], tDistressed: number, tSoaring: number) {
-            let xScale = chart.x.scale as d3.ScaleBand<string>;
-            let yScale = chart.y.scale as d3.ScaleLinear<number, number, never>;
-
+        violin: function (chart: ViolinChartSeries, data: IAnalyticsChartsData[], tDistressed: number, tSoaring: number) {
             //Create bandwidth scale
             let bandwithScale = d3.scaleLinear()
-                .range([0, xScale.bandwidth()])
+                .range([0, chart.x.scale.bandwidth()])
                 .domain([-d3.max(data.map(r => r.value.length)), d3.max(data.map(r => r.value.length))]);
 
             //Create bins             
             let bin = d3.bin().domain([0, 100]).thresholds([0, tDistressed, tSoaring]);
 
             //Draw violins
-            chart.renderElements.contentContainer.selectAll(`.${chart.id}-violin-container`).select("path")
+            chart.elements.contentContainer.selectAll(`.${chart.id}-violin-container`).select("path")
                 .datum((d: IAnalyticsChartsData) => bin(d.value.map(d => d.point)))
                 .transition()
                 .duration(750)
                 .attr("d", d3.area()
                     .x0((d: number[]) => bandwithScale(-d.length))
                     .x1((d: number[]) => bandwithScale(d.length))
-                    .y((d: number[], i: number) => yScale(i == 0 ? 0 : i == 1 ? 50 : 100))
+                    .y((d: number[], i: number) => chart.y.scale(i == 0 ? 0 : i == 1 ? 50 : 100))
                     .curve(d3.curveCatmullRom));
 
             //Append tooltip container
             chartFunctions.tooltip.appendTooltipContainer(chart);
 
             //Draw threshold percentages
-            chartFunctions.drag.appendThresholdPercentages(chart, bin, bandwithScale, tDistressed, tSoaring);
+            chart.elements.appendThresholdPercentages(chart, bin, bandwithScale, tDistressed, tSoaring);
         }
     }
 };
@@ -1782,7 +1822,7 @@ var adminAnalyticsCharts = {
         let yScale = chart.y.scale as d3.ScaleLinear<number, number, never>;
 
         //Select existing minMax lines
-        let minMax = chart.renderElements.contentContainer.selectAll(`#${chart.id}-data-min-max`)
+        let minMax = chart.elements.contentContainer.selectAll(`#${chart.id}-data-min-max`)
             .data(data);
 
         //Remove old minMax lines
@@ -1802,7 +1842,7 @@ var adminAnalyticsCharts = {
         minMax.merge(minMaxEnter);
 
         //Select existing median lines
-        let median = chart.renderElements.contentContainer.selectAll(`#${chart.id}-data-median`)
+        let median = chart.elements.contentContainer.selectAll(`#${chart.id}-data-median`)
             .data(data);
 
         //Remove old median lines
@@ -1822,7 +1862,7 @@ var adminAnalyticsCharts = {
         median.merge(medianEnter);
 
         //Select existing boxes
-        let boxes = chart.renderElements.contentContainer.selectAll(`#${chart.id}-data`)
+        let boxes = chart.elements.contentContainer.selectAll(`#${chart.id}-data`)
             .data(data);
 
         //Remove old boxes
@@ -1845,7 +1885,7 @@ var adminAnalyticsCharts = {
         chartFunctions.transitions.bars(chart, data);
 
         //Set render elements content to boxes
-        chart.renderElements.content = chart.renderElements.contentContainer.selectAll(`#${chart.id}-data`);
+        chart.elements.content = chart.elements.contentContainer.selectAll(`#${chart.id}-data`);
 
         //Enable tooltip
         chartFunctions.tooltip.enableTooltip(chart, onMouseover, onMouseout);
@@ -1884,7 +1924,7 @@ var adminAnalyticsCharts = {
         }
         function onMouseout(): void {
             //Transition tooltip to opacity 0
-            chart.renderElements.svg.select(".tooltip-container").transition()
+            chart.elements.svg.select(".tooltip-container").transition()
                 .style("opacity", 0);
 
             //Remove tooltip
