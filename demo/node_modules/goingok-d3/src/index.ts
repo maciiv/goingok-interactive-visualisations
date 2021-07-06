@@ -10,6 +10,7 @@ interface IReflectionAuthorEntry {
 interface IAnalyticsChartsData {
     group: string;
     value: IReflectionAuthorEntry[];
+    selected: boolean;
 }
 
 interface IAnalyticsChartsDataStats extends IAnalyticsChartsData {
@@ -33,6 +34,7 @@ interface IAnalyticsChartsDataStats extends IAnalyticsChartsData {
 class AnalyticsChartsDataStats implements IAnalyticsChartsDataStats {
     group: string;
     value: IReflectionAuthorEntry[];
+    selected: boolean;
     mean: number;
     median: number;
     q1: number;
@@ -51,6 +53,7 @@ class AnalyticsChartsDataStats implements IAnalyticsChartsDataStats {
         let uniqueUsers = Array.from(d3.rollup(entries.value, (d: IReflectionAuthorEntry[]) => d.length, (d: IReflectionAuthorEntry) => d.pseudonym), ([key, value]) => ({ key, value }));
         this.value = entries.value;
         this.group = entries.group;
+        this.selected = entries.selected;
         this.mean = Math.round(d3.mean(entries.value.map(r => r.point))),
         this.median = d3.median(entries.value.map(r => r.point)),
         this.q1 = d3.quantile(entries.value.map(r => r.point), 0.25),
@@ -583,18 +586,195 @@ class HtmlContainers implements IHtmlContainers {
     };
 }
 
+interface IAdminControlCharts {
+    transitions: IAdminControlTransitions;
+    preloadGroups(allEntries: IAnalyticsChartsData[]): IAnalyticsChartsData[];
+    handleGroups(chart: ChartSeries, allEntries: IAnalyticsChartsData[]): void;
+    renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries;
+}
+
+class AdminControlCharts implements IAdminControlCharts {
+    transitions = new AdminControlTransitions();
+    preloadGroups(allEntries: IAnalyticsChartsData[]): IAnalyticsChartsData[] {
+        d3.selectAll("#groups input").each(function () {
+            d3.select(this).attr("checked") == null ? "" : allEntries.find(d => d.group == d3.select(this).attr("value")).selected = true;
+        });
+        return d3.filter(allEntries, d => d.selected == true);
+    };
+    handleGroups(chart: ChartSeries, allEntries: IAnalyticsChartsData[]): void {
+        d3.selectAll("#groups input").on("change", (e: Event) => {
+            let target = e.target as HTMLInputElement;
+            allEntries.find(d => d.selected == true).selected = false;
+            allEntries.find(d => d.group == target.value).selected = true;
+            let entries = d3.filter(allEntries, d => d.selected == true);
+            this.renderGroupChart(chart, entries.map(d => new AnalyticsChartsDataStats(d)))
+        })       
+    };
+    renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries {
+        //Select existing minMax lines
+        let minMax = chart.elements.contentContainer.selectAll(`#${chart.id}-data-min-max`)
+            .data(data);
+
+        //Remove old minMax lines
+        minMax.exit().remove();
+
+        //Append new minMax lines
+        let minMaxEnter = minMax.enter()
+            .append("line")
+            .attr("id", `${chart.id}-data-min-max`)
+            .attr("class", "box-line")
+            .attr("x1", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
+            .attr("x2", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
+            .attr("y1", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.min))
+            .attr("y2", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.max));
+
+        //Merge existing and new minMax lines
+        minMax.merge(minMaxEnter);
+
+        //Select existing median lines
+        let median = chart.elements.contentContainer.selectAll(`#${chart.id}-data-median`)
+            .data(data);
+
+        //Remove old median lines
+        median.exit().remove();
+
+        //Append new median lines
+        let medianEnter = median.enter()
+            .append("line")
+            .attr("id", `${chart.id}-data-median`)
+            .attr("class", "box-line")
+            .attr("x1", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group))
+            .attr("x2", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group) + chart.x.scale.bandwidth())
+            .attr("y1", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.median))
+            .attr("y2", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.median));
+
+        //Merge existing and new median lines
+        median.merge(medianEnter);
+
+        //Select existing boxes
+        let boxes = chart.elements.contentContainer.selectAll(`#${chart.id}-data`)
+            .data(data);
+
+        //Remove old boxes
+        boxes.exit().remove();
+
+        //Append new boxes
+        let boxesEnter = boxes.enter()
+            .append("rect")
+            .attr("id", `${chart.id}-data`)
+            .classed("bar", true)
+            .attr("y", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.q3))
+            .attr("x", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group))
+            .attr("width", (d: IAnalyticsChartsDataStats) => chart.x.scale.bandwidth())
+            .attr("height", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.q1) - chart.y.scale(d.q3));
+
+        //Merge existing and new boxes
+        boxes.merge(boxesEnter);
+
+        //Transition boxes and lines
+        this.transitions.bars(chart, data);
+
+        //Set render elements content to boxes
+        chart.elements.content = chart.elements.contentContainer.selectAll(`#${chart.id}-data`);
+
+        //Enable tooltip
+        chartFunctions.tooltip.enableTooltip(chart, onMouseover, onMouseout);
+        function onMouseover(e: any, d: IAnalyticsChartsDataStats): void {
+            //If box is clicked not append tooltip
+            if (d3.select(this).attr("class").includes("clicked")) {
+                return;
+            }
+
+            //Append tooltip box with text
+            let tooltipBox = chartFunctions.tooltip.appendTooltipText(chart, d.group, [{ label: "q1", value: d.q1 }, { label: "q3", value: d.q3 }, { label: "Median", value: d.median }, { label: "Mean", value: d.mean }, { label: "Max", value: d.max }, { label: "Min", value: d.min }]);
+
+            //Position tooltip container
+            chartFunctions.tooltip.positionTooltipContainer(chart, xTooltip(d.group, tooltipBox), yTooltip(d.q3, tooltipBox));
+            function xTooltip(x: string, tooltipBox: any) {
+                //Position tooltip right of the box
+                let xTooltip = chart.x.scale(x) + chart.x.scale.bandwidth();
+
+                //If tooltip does not fit position left of the box
+                if (chart.width - chart.padding.yAxis < xTooltip + tooltipBox.node().getBBox().width) {
+                    return xTooltip - chart.x.scale.bandwidth() - tooltipBox.node().getBBox().width;
+                }
+
+                return xTooltip
+            }
+            function yTooltip(y: number, tooltipBox: any) {
+                //Position tooltip on top of the box
+                let yTooltip = chart.y.scale(y) - (tooltipBox.node().getBBox().height / 2);
+
+                //If tooltip does not fit position at the same height as the box
+                if (chart.y.scale.invert(yTooltip) < 0) {
+                    return chart.y.scale(y + chart.y.scale.invert(yTooltip));
+                }
+                return yTooltip;
+            }
+        }
+        function onMouseout(): void {
+            //Transition tooltip to opacity 0
+            chart.elements.svg.select(".tooltip-container").transition()
+                .style("opacity", 0);
+
+            //Remove tooltip
+            chartFunctions.tooltip.removeTooltip(chart);
+        }
+        
+        return chart;
+    }
+}
+
+interface IAdminControlTransitions {
+    bars (chart: ChartSeries, data: IAnalyticsChartsDataStats[]): void
+}
+
+class AdminControlTransitions implements IAdminControlTransitions {
+    bars (chart: ChartSeries, data: IAnalyticsChartsDataStats[]): void {
+        d3.selectAll(`#${chart.id} .content-container #${chart.id}-data`)
+            .data(data)
+            .transition()
+            .duration(750)
+            .attr("width", (d: IAnalyticsChartsDataStats) => chart.x.scale.bandwidth())
+            .attr("height", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.q1) - chart.y.scale(d.q3))
+            .attr("y", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.q3))
+            .attr("x", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group));
+
+        d3.selectAll(`#${chart.id} #${chart.id}-data-min-max`)
+            .data(data)
+            .transition()
+            .duration(750)
+            .attr("x1", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
+            .attr("y1", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.min))
+            .attr("x2", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
+            .attr("y2", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.max));
+
+        d3.selectAll(`#${chart.id} #${chart.id}-data-median`)
+            .data(data)
+            .transition()
+            .duration(750)
+            .attr("x1", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group))
+            .attr("y1", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.median))
+            .attr("x2", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group) + chart.x.scale.bandwidth())
+            .attr("y2", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.median));
+    }
+}
+
 export function buildControlAdminAnalyticsCharts(entries: IAnalyticsChartsData[]){
     //Handle sidebar button
     sidebarFunctions.sidebarBtn();
     drawCharts(entries);
 
-    function drawCharts(entries: IAnalyticsChartsData[]){
+    function drawCharts(allEntries: IAnalyticsChartsData[]){
         let htmlContainer = new HtmlContainers();
-        let selectedGroups: string[] = [];
+        let adminControlCharts = new AdminControlCharts();
 
         //Append groups chart container
         htmlContainer.groupsChart = htmlContainer.appendDiv("groups-chart", "col-md-9");
         htmlContainer.appendCard(htmlContainer.groupsChart, "Reflections box plot by group");
+
+        //Preloaded groups
+        let entries = adminControlCharts.preloadGroups(allEntries);       
 
         //Create data with current entries
         let data = entries.map(d => new AnalyticsChartsDataStats(d));
@@ -603,7 +783,8 @@ export function buildControlAdminAnalyticsCharts(entries: IAnalyticsChartsData[]
         let groupChart = new ChartSeries("groups-chart", data.map(d => d.group));
 
         groupChart.elements.preRender(groupChart);
-        adminAnalyticsCharts.renderGroupChart(groupChart, data);
+        adminControlCharts.renderGroupChart(groupChart, data);
+        adminControlCharts.handleGroups(groupChart, allEntries);
     }
 }
 
@@ -1814,123 +1995,3 @@ var chartFunctions = {
         }
     }
 };
-
-var adminAnalyticsCharts = {
-    renderGroupChart: function (chart: IChart, data: IAnalyticsChartsDataStats[]) {
-        //Set scale types
-        let xScale = chart.x.scale as d3.ScaleBand<string>;
-        let yScale = chart.y.scale as d3.ScaleLinear<number, number, never>;
-
-        //Select existing minMax lines
-        let minMax = chart.elements.contentContainer.selectAll(`#${chart.id}-data-min-max`)
-            .data(data);
-
-        //Remove old minMax lines
-        minMax.exit().remove();
-
-        //Append new minMax lines
-        let minMaxEnter = minMax.enter()
-            .append("line")
-            .attr("id", `${chart.id}-data-min-max`)
-            .attr("class", "box-line")
-            .attr("x1", (d: IAnalyticsChartsDataStats) => xScale(d.group) + (xScale.bandwidth() / 2))
-            .attr("x2", (d: IAnalyticsChartsDataStats) => xScale(d.group) + (xScale.bandwidth() / 2))
-            .attr("y1", (d: IAnalyticsChartsDataStats) => yScale(d.min))
-            .attr("y2", (d: IAnalyticsChartsDataStats) => yScale(d.max));
-
-        //Merge existing and new minMax lines
-        minMax.merge(minMaxEnter);
-
-        //Select existing median lines
-        let median = chart.elements.contentContainer.selectAll(`#${chart.id}-data-median`)
-            .data(data);
-
-        //Remove old median lines
-        median.exit().remove();
-
-        //Append new median lines
-        let medianEnter = median.enter()
-            .append("line")
-            .attr("id", `${chart.id}-data-median`)
-            .attr("class", "box-line")
-            .attr("x1", (d: IAnalyticsChartsDataStats) => xScale(d.group))
-            .attr("x2", (d: IAnalyticsChartsDataStats) => xScale(d.group) + xScale.bandwidth())
-            .attr("y1", (d: IAnalyticsChartsDataStats) => yScale(d.median))
-            .attr("y2", (d: IAnalyticsChartsDataStats) => yScale(d.median));
-
-        //Merge existing and new median lines
-        median.merge(medianEnter);
-
-        //Select existing boxes
-        let boxes = chart.elements.contentContainer.selectAll(`#${chart.id}-data`)
-            .data(data);
-
-        //Remove old boxes
-        boxes.exit().remove();
-
-        //Append new boxes
-        let boxesEnter = boxes.enter()
-            .append("rect")
-            .attr("id", `${chart.id}-data`)
-            .classed("bar", true)
-            .attr("y", (d: IAnalyticsChartsDataStats) => yScale(d.q3))
-            .attr("x", (d: IAnalyticsChartsDataStats) => xScale(d.group))
-            .attr("width", (d: IAnalyticsChartsDataStats) => xScale.bandwidth())
-            .attr("height", (d: IAnalyticsChartsDataStats) => yScale(d.q1) - yScale(d.q3));
-
-        //Merge existing and new boxes
-        boxes.merge(boxesEnter);
-
-        //Transition boxes and lines
-        chartFunctions.transitions.bars(chart, data);
-
-        //Set render elements content to boxes
-        chart.elements.content = chart.elements.contentContainer.selectAll(`#${chart.id}-data`);
-
-        //Enable tooltip
-        chartFunctions.tooltip.enableTooltip(chart, onMouseover, onMouseout);
-        function onMouseover(e: any, d: IAnalyticsChartsDataStats): void {
-            //If box is clicked not append tooltip
-            if (d3.select(this).attr("class").includes("clicked")) {
-                return;
-            }
-
-            //Append tooltip box with text
-            let tooltipBox = chartFunctions.tooltip.appendTooltipText(chart, d.group, [{ label: "q1", value: d.q1 }, { label: "q3", value: d.q3 }, { label: "Median", value: d.median }, { label: "Mean", value: d.mean }, { label: "Max", value: d.max }, { label: "Min", value: d.min }]);
-
-            //Position tooltip container
-            chartFunctions.tooltip.positionTooltipContainer(chart, xTooltip(d.group, tooltipBox), yTooltip(d.q3, tooltipBox));
-            function xTooltip(x: string, tooltipBox: any) {
-                //Position tooltip right of the box
-                let xTooltip = xScale(x) + xScale.bandwidth();
-
-                //If tooltip does not fit position left of the box
-                if (chart.width - chart.padding.yAxis < xTooltip + tooltipBox.node().getBBox().width) {
-                    return xTooltip - xScale.bandwidth() - tooltipBox.node().getBBox().width;
-                }
-
-                return xTooltip
-            }
-            function yTooltip(y: number, tooltipBox: any) {
-                //Position tooltip on top of the box
-                let yTooltip = yScale(y) - (tooltipBox.node().getBBox().height / 2);
-
-                //If tooltip does not fit position at the same height as the box
-                if (yScale.invert(yTooltip) < 0) {
-                    return yScale(y + yScale.invert(yTooltip));
-                }
-                return yTooltip;
-            }
-        }
-        function onMouseout(): void {
-            //Transition tooltip to opacity 0
-            chart.elements.svg.select(".tooltip-container").transition()
-                .style("opacity", 0);
-
-            //Remove tooltip
-            chartFunctions.tooltip.removeTooltip(chart);
-        }
-        
-        return chart;
-    }
-}
