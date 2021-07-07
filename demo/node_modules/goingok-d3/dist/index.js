@@ -17,29 +17,45 @@ var __extends = (this && this.__extends) || (function () {
 //Object.defineProperty(exports, "__esModule", { value: true });
 //exports.buildExperimentAdminAnalyticsCharts = exports.buildControlAdminAnalyticsCharts = void 0;
 //var d3 = require("d3");
-var AnalyticsChartsDataStats = /** @class */ (function () {
+var AnalyticsChartsData = /** @class */ (function () {
+    function AnalyticsChartsData(group, value, selected) {
+        if (selected === void 0) { selected = false; }
+        this.group = group;
+        this.value = value;
+        this.selected = selected;
+    }
+    AnalyticsChartsData.prototype.getUsersData = function (data) {
+        var usersMean = Array.from(d3.rollup(data.value, function (d) { return Math.round(d3.mean(d.map(function (r) { return r.point; }))); }, function (d) { return d.pseudonym; }), function (_a) {
+            var pseudonym = _a[0], point = _a[1];
+            return ({ pseudonym: pseudonym, point: point });
+        });
+        return new AnalyticsChartsData(data.group, usersMean);
+    };
+    return AnalyticsChartsData;
+}());
+var AnalyticsChartsDataStats = /** @class */ (function (_super) {
+    __extends(AnalyticsChartsDataStats, _super);
     function AnalyticsChartsDataStats(entries) {
+        var _this_1 = _super.call(this, entries.group, entries.value, entries.selected) || this;
         var uniqueUsers = Array.from(d3.rollup(entries.value, function (d) { return d.length; }, function (d) { return d.pseudonym; }), function (_a) {
             var key = _a[0], value = _a[1];
             return ({ key: key, value: value });
         });
-        this.value = entries.value;
-        this.group = entries.group;
-        this.selected = entries.selected;
-        this.mean = Math.round(d3.mean(entries.value.map(function (r) { return r.point; }))),
-            this.median = d3.median(entries.value.map(function (r) { return r.point; })),
-            this.q1 = d3.quantile(entries.value.map(function (r) { return r.point; }), 0.25),
-            this.q3 = d3.quantile(entries.value.map(function (r) { return r.point; }), 0.75),
-            this.max = d3.max(entries.value.map(function (r) { return r.point; })),
-            this.min = d3.min(entries.value.map(function (r) { return r.point; })),
-            this.variance = this.roundDecimal(d3.variance(entries.value.map(function (r) { return r.point; }))),
-            this.deviation = this.roundDecimal(d3.deviation(entries.value.map(function (r) { return r.point; }))),
-            this.oldestReflection = d3.min(entries.value.map(function (r) { return new Date(r.timestamp); })),
-            this.newestReflection = d3.max(entries.value.map(function (r) { return new Date(r.timestamp); })),
-            this.avgReflectionsPerUser = this.roundDecimal(d3.mean(uniqueUsers.map(function (r) { return r.value; }))),
-            this.userMostReflective = d3.max(uniqueUsers.map(function (r) { return r.value; })),
-            this.userLessReflective = d3.min(uniqueUsers.map(function (r) { return r.value; })),
-            this.totalUsers = uniqueUsers.length;
+        _this_1.mean = Math.round(d3.mean(entries.value.map(function (r) { return r.point; }))),
+            _this_1.median = d3.median(entries.value.map(function (r) { return r.point; })),
+            _this_1.q1 = d3.quantile(entries.value.map(function (r) { return r.point; }), 0.25),
+            _this_1.q3 = d3.quantile(entries.value.map(function (r) { return r.point; }), 0.75),
+            _this_1.max = d3.max(entries.value.map(function (r) { return r.point; })),
+            _this_1.min = d3.min(entries.value.map(function (r) { return r.point; })),
+            _this_1.variance = _this_1.roundDecimal(d3.variance(entries.value.map(function (r) { return r.point; }))),
+            _this_1.deviation = _this_1.roundDecimal(d3.deviation(entries.value.map(function (r) { return r.point; }))),
+            _this_1.oldestReflection = d3.min(entries.value.map(function (r) { return new Date(r.timestamp); })),
+            _this_1.newestReflection = d3.max(entries.value.map(function (r) { return new Date(r.timestamp); })),
+            _this_1.avgReflectionsPerUser = _this_1.roundDecimal(d3.mean(uniqueUsers.map(function (r) { return r.value; }))),
+            _this_1.userMostReflective = d3.max(uniqueUsers.map(function (r) { return r.value; })),
+            _this_1.userLessReflective = d3.min(uniqueUsers.map(function (r) { return r.value; })),
+            _this_1.totalUsers = uniqueUsers.length;
+        return _this_1;
     }
     ;
     AnalyticsChartsDataStats.prototype.roundDecimal = function (value) {
@@ -48,7 +64,7 @@ var AnalyticsChartsDataStats = /** @class */ (function () {
         return f(value);
     };
     return AnalyticsChartsDataStats;
-}());
+}(AnalyticsChartsData));
 // Basic class for series charts
 var ChartSeries = /** @class */ (function () {
     function ChartSeries(id, domain) {
@@ -72,6 +88,7 @@ var ChartTime = /** @class */ (function () {
         this.width = containerDimensions.width;
         this.height = containerDimensions.height;
         this.padding = new ChartPadding(75, 75, 5);
+        this.htmlContainers = new HtmlContainers();
         this.y = new ChartLinearAxis("State", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left");
         this.x = new ChartTimeAxis("Time", domain, [0, this.width - this.padding.yAxis]);
         this.elements = new ChartElements();
@@ -91,11 +108,12 @@ var ChartTimeZoom = /** @class */ (function () {
 var ViolinChartSeries = /** @class */ (function (_super) {
     __extends(ViolinChartSeries, _super);
     function ViolinChartSeries(id, domain) {
-        var _this = _super.call(this, id, domain) || this;
-        _this.elements = new ViolinChartElements();
-        _this.padding = new ChartPadding(50, 75, 25, 85);
-        _this.thresholdAxis = _this.y.setThresholdAxis(30, 70);
-        return _this;
+        var _this_1 = _super.call(this, id, domain) || this;
+        _this_1.elements = new ViolinChartElements();
+        _this_1.padding = new ChartPadding(50, 75, 25, 85);
+        _this_1.x = new ChartSeriesAxis("Group Code", domain, [0, _this_1.width - _this_1.padding.yAxis - _this_1.padding.right]);
+        _this_1.thresholdAxis = _this_1.y.setThresholdAxis(30, 70);
+        return _this_1;
     }
     return ViolinChartSeries;
 }(ChartSeries));
@@ -262,11 +280,10 @@ var ViolinChartElements = /** @class */ (function (_super) {
     };
     ;
     ViolinChartElements.prototype.appendThresholdIndicators = function (chart, thresholds) {
-        var yScale = chart.y.scale;
         thresholds.forEach(function (c, i) {
             var indicator = chart.elements.contentContainer.append("g")
                 .attr("class", "threshold-indicator-container " + (i == 0 ? "distressed" : "soaring"))
-                .attr("transform", "translate(" + (chart.width - chart.padding.yAxis - chart.padding.right + 5) + ", " + (yScale(c) + 25) + ")");
+                .attr("transform", "translate(" + (chart.width - chart.padding.yAxis - chart.padding.right + 5) + ", " + (chart.y.scale(c) + 25) + ")");
             var box = indicator.append("rect")
                 .attr("class", "threshold-indicator-box " + (i == 0 ? "distressed" : "soaring"));
             var text = indicator.append("text")
@@ -280,19 +297,17 @@ var ViolinChartElements = /** @class */ (function (_super) {
     };
     ;
     ViolinChartElements.prototype.appendThresholdLine = function (chart, thresholds) {
-        var yScale = chart.y.scale;
         thresholds.forEach(function (c, i) {
             chart.elements.contentContainer.append("line")
                 .attr("class", "threshold-line " + (i == 0 ? "distressed" : "soaring"))
                 .attr("x1", 0)
                 .attr("x2", chart.width - chart.padding.yAxis - chart.padding.right)
-                .attr("y1", yScale(c))
-                .attr("y2", yScale(c));
+                .attr("y1", chart.y.scale(c))
+                .attr("y2", chart.y.scale(c));
         });
     };
     ;
     ViolinChartElements.prototype.appendThresholdPercentages = function (chart, bin, bandwithScale, tDistressed, tSoaring) {
-        var yScale = chart.y.scale;
         var binData = function (data) {
             var bins = bin(data.map(function (r) { return r.point; }));
             var result = [];
@@ -325,7 +340,7 @@ var ViolinChartElements = /** @class */ (function (_super) {
             .on("mouseover", onMouseover)
             .on("mouseout", onMouseout);
         function positionY(i) {
-            return yScale(i == 0 ? tDistressed / 2 : i == 1 ? 50 : (100 - tSoaring) / 2 + tSoaring) - binTextBox.node().getBBox().height / 2;
+            return chart.y.scale(i == 0 ? tDistressed / 2 : i == 1 ? 50 : (100 - tSoaring) / 2 + tSoaring) - binTextBox.node().getBBox().height / 2;
         }
         function onMouseover(e, d) {
             chartFunctions.tooltip.appendTooltipText(chart, "Count: " + d.bin.length.toString());
@@ -419,24 +434,36 @@ var HtmlContainers = /** @class */ (function () {
 }());
 var AdminControlCharts = /** @class */ (function () {
     function AdminControlCharts() {
-        this.transitions = new AdminControlTransitions();
+        this.interactions = new AdminControlInteractions();
     }
     AdminControlCharts.prototype.preloadGroups = function (allEntries) {
         d3.selectAll("#groups input").each(function () {
-            var _this = this;
-            d3.select(this).attr("checked") == null ? "" : allEntries.find(function (d) { return d.group == d3.select(_this).attr("value"); }).selected = true;
+            var _this_1 = this;
+            d3.select(this).attr("checked") == null ? "" : allEntries.find(function (d) { return d.group == d3.select(_this_1).attr("value"); }).selected = true;
         });
         return d3.filter(allEntries, function (d) { return d.selected == true; });
     };
     ;
-    AdminControlCharts.prototype.handleGroups = function (chart, allEntries) {
-        var _this = this;
+    AdminControlCharts.prototype.handleGroups = function (boxPlot, violin, usersViolin, allEntries) {
+        var _this_1 = this;
         d3.selectAll("#groups input").on("change", function (e) {
             var target = e.target;
             allEntries.find(function (d) { return d.selected == true; }).selected = false;
             allEntries.find(function (d) { return d.group == target.value; }).selected = true;
             var entries = d3.filter(allEntries, function (d) { return d.selected == true; });
-            _this.renderGroupChart(chart, entries.map(function (d) { return new AnalyticsChartsDataStats(d); }));
+            boxPlot.x = new ChartSeriesAxis("Group Code", entries.map(function (r) { return r.group; }), [0, boxPlot.width - boxPlot.padding.yAxis - boxPlot.padding.right]);
+            _this_1.interactions.axis(boxPlot, entries);
+            _this_1.renderGroupChart(boxPlot, entries.map(function (d) { return new AnalyticsChartsDataStats(d); }));
+            _this_1.renderGroupStats(d3.select("#groups-statistics"), new AnalyticsChartsDataStats(entries[0]));
+            violin.x = new ChartSeriesAxis("Group Code", entries.map(function (r) { return r.group; }), [0, violin.width - violin.padding.yAxis - violin.padding.right]);
+            _this_1.interactions.axis(violin, entries);
+            _this_1.renderViolin(violin, entries);
+            usersViolin.x = new ChartSeriesAxis("Group Code", entries.map(function (r) { return r.group; }), [0, usersViolin.width - usersViolin.padding.yAxis - usersViolin.padding.right]);
+            _this_1.interactions.axis(usersViolin, entries);
+            var usersData = entries.map(function (d) {
+                return d.getUsersData(d);
+            });
+            _this_1.renderViolin(usersViolin, usersData);
         });
     };
     ;
@@ -490,20 +517,26 @@ var AdminControlCharts = /** @class */ (function () {
         //Merge existing and new boxes
         boxes.merge(boxesEnter);
         //Transition boxes and lines
-        this.transitions.bars(chart, data);
+        var _this = this;
+        _this.interactions.bars(chart, data);
         //Set render elements content to boxes
         chart.elements.content = chart.elements.contentContainer.selectAll("#" + chart.id + "-data");
         //Enable tooltip
-        chartFunctions.tooltip.enableTooltip(chart, onMouseover, onMouseout);
+        this.interactions.tooltip.enableTooltip(chart, onMouseover, onMouseout);
         function onMouseover(e, d) {
             //If box is clicked not append tooltip
             if (d3.select(this).attr("class").includes("clicked")) {
                 return;
             }
             //Append tooltip box with text
-            var tooltipBox = chartFunctions.tooltip.appendTooltipText(chart, d.group, [{ label: "q1", value: d.q1 }, { label: "q3", value: d.q3 }, { label: "Median", value: d.median }, { label: "Mean", value: d.mean }, { label: "Max", value: d.max }, { label: "Min", value: d.min }]);
+            var tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.group, [new TooltipValues("q1", d.q1),
+                new TooltipValues("q3", d.q3),
+                new TooltipValues("Median", d.median),
+                new TooltipValues("Mean", d.mean),
+                new TooltipValues("Max", d.max),
+                new TooltipValues("Min", d.min)]);
             //Position tooltip container
-            chartFunctions.tooltip.positionTooltipContainer(chart, xTooltip(d.group, tooltipBox), yTooltip(d.q3, tooltipBox));
+            _this.interactions.tooltip.positionTooltipContainer(chart, xTooltip(d.group, tooltipBox), yTooltip(d.q3, tooltipBox));
             function xTooltip(x, tooltipBox) {
                 //Position tooltip right of the box
                 var xTooltip = chart.x.scale(x) + chart.x.scale.bandwidth();
@@ -528,15 +561,214 @@ var AdminControlCharts = /** @class */ (function () {
             chart.elements.svg.select(".tooltip-container").transition()
                 .style("opacity", 0);
             //Remove tooltip
-            chartFunctions.tooltip.removeTooltip(chart);
+            _this.interactions.tooltip.removeTooltip(chart);
         }
         return chart;
+    };
+    AdminControlCharts.prototype.renderGroupStats = function (div, data) {
+        div.select(".card-body").html("");
+        return div.select(".card-body")
+            .attr("class", "card-body statistics-text")
+            .html("<b>Q1: </b>" + data.q1 + "<br>\n                        <b>Median: </b>" + data.median + "<br>\n                        <b>Q3: </b>" + data.q3 + "<br>\n                        <b>Mean: </b>" + data.mean + "<br>\n                        <b>Total Reflections: </b>" + data.value.length + "<br>\n                        <b>Variance: </b>" + data.variance + "<br>\n                        <b>Std Deviation: </b>" + data.deviation + "<br>\n                        <b>Max: </b>" + data.max + "<br>\n                        <b>Min: </b>" + data.min + "<br>\n                        <b>Reflections per user: </b>" + data.avgReflectionsPerUser + "<br>\n                        <b>Max reflections per user: </b>" + data.userMostReflective + "<br>\n                        <b>Min reflections per user: </b>" + data.userLessReflective + "<br>\n                        <b>Total Users: </b>" + data.totalUsers + "<br>\n                        <b>Oldest reflection</b><br>" + data.oldestReflection.toDateString() + "<br>\n                        <b>Newest reflection</b><br>" + data.newestReflection.toDateString() + "<br>");
+    };
+    ;
+    AdminControlCharts.prototype.renderViolin = function (chart, data) {
+        var thresholds = chart.elements.getThresholdsValues(chart);
+        var tDistressed = thresholds[0];
+        var tSoaring = thresholds[1];
+        //Create bandwidth scale
+        var bandwithScale = d3.scaleLinear()
+            .range([0, chart.x.scale.bandwidth()])
+            .domain([-d3.max(data.map(function (r) { return r.value.length; })), d3.max(data.map(function (r) { return r.value.length; }))]);
+        //Create bins             
+        var bin = d3.bin().domain([0, 100]).thresholds([0, tDistressed, tSoaring]);
+        //Select existing bin containers
+        var binContainer = chart.elements.contentContainer.selectAll("." + chart.id + "-violin-container")
+            .data(data);
+        //Remove old bin containers
+        binContainer.exit().remove();
+        //Append new bin containers
+        var binContainerEnter = binContainer.enter()
+            .append("g")
+            .attr("class", chart.id + "-violin-container")
+            .attr("transform", function (d) { return "translate(" + chart.x.scale(d.group) + ", 0)"; });
+        //Draw violins
+        binContainerEnter.append("path")
+            .attr("id", chart.id + "-violin")
+            .attr("class", "violin-path")
+            .datum(function (d) { return bin(d.value.map(function (d) { return d.point; })); })
+            .attr("d", d3.area()
+            .x0(function (d) { return bandwithScale(-d.length); })
+            .x1(function (d) { return bandwithScale(d.length); })
+            .y(function (d, i) { return chart.y.scale(i == 0 ? 0 : i == 1 ? 50 : 100); })
+            .curve(d3.curveCatmullRom));
+        //Transision bin containers
+        binContainer.transition()
+            .duration(750)
+            .attr("transform", function (d) { return "translate(" + chart.x.scale(d.group) + ", 0)"; });
+        //Merge existing with new bin containers
+        binContainer.merge(binContainerEnter);
+        //Transition violins
+        this.interactions.violin(chart, data, tDistressed, tSoaring);
+        //Append tooltip container
+        this.interactions.tooltip.appendTooltipContainer(chart);
+        return chart;
+    };
+    ;
+    AdminControlCharts.prototype.renderTimelineDensity = function (chart, data) {
+        //Remove scatter plot
+        chart.elements.contentContainer.selectAll("#" + chart.id + "-timeline-circles").remove();
+        chart.elements.svg.selectAll(".zoom-container").remove();
+        chart.elements.contentContainer.selectAll("#" + chart.id + "-timeline-circles-line").remove();
+        //Create density data
+        var densityData = createDensityData();
+        function createDensityData() {
+            return d3.contourDensity()
+                .x(function (d) { return chart.x.scale(d.timestamp); })
+                .y(function (d) { return chart.y.scale(d.point); })
+                .bandwidth(5)
+                .thresholds(20)
+                .size([chart.width - chart.padding.yAxis, chart.height - chart.padding.xAxis - chart.padding.top])(data);
+        }
+        //Draw contours
+        chart.elements.content = chart.elements.contentContainer.selectAll(chart.id + "-timeline-contours")
+            .data(densityData)
+            .enter()
+            .append("path")
+            .attr("id", chart.id + "-timeline-contours")
+            .attr("class", "contour")
+            .attr("d", d3.geoPath())
+            .attr("stroke", function (d) { return d3.interpolateBlues(d.value * 25); })
+            .attr("fill", function (d) { return d3.interpolateBlues(d.value * 20); });
+        //Enable zoom
+        this.interactions.zoom.enableZoom(chart, zoomed);
+        function zoomed(e) {
+            var newChartRange = [0, chart.width - chart.padding.yAxis].map(function (d) { return e.transform.applyX(d); });
+            chart.x.scale.rangeRound(newChartRange);
+            var newDensityData = createDensityData();
+            var zoomContours = chart.elements.contentContainer.selectAll("#" + chart.id + "-timeline-contours")
+                .data(newDensityData);
+            zoomContours.exit().remove();
+            var zoomContoursEnter = zoomContours.enter()
+                .append("path")
+                .attr("id", chart.id + "-timeline-contours")
+                .attr("class", "contour")
+                .attr("d", d3.geoPath())
+                .attr("stroke", function (d) { return d3.interpolateBlues(d.value * 25); })
+                .attr("fill", function (d) { return d3.interpolateBlues(d.value * 20); });
+            zoomContours.attr("d", d3.geoPath())
+                .attr("stroke", function (d) { return d3.interpolateBlues(d.value * 25); })
+                .attr("fill", function (d) { return d3.interpolateBlues(d.value * 20); });
+            zoomContours.merge(zoomContoursEnter);
+            chart.x.axis.ticks(newChartRange[1] / 75);
+            chart.elements.xAxis.call(chart.x.axis);
+        }
+    };
+    ;
+    AdminControlCharts.prototype.renderTimelineScatter = function (chart, zoomChart, data) {
+        //Remove density plot
+        chart.elements.contentContainer.selectAll("#" + chart.id + "-timeline-contours").remove();
+        //Draw circles
+        chart.elements.content = chart.elements.contentContainer.selectAll(chart.id + "-timeline-circles")
+            .data(data)
+            .enter()
+            .append("circle")
+            .classed("line-circle", true)
+            .attr("id", chart.id + "-timeline-circles")
+            .attr("r", 5)
+            .attr("cx", function (d) { return chart.x.scale(d.timestamp); })
+            .attr("cy", function (d) { return chart.y.scale(d.point); });
+        //Enable tooltip
+        var _this = this;
+        _this.interactions.tooltip.enableTooltip(chart, onMouseover, onMouseout);
+        function onMouseover(e, d) {
+            if (d3.select(this).attr("class").includes("clicked")) {
+                return;
+            }
+            var tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.timestamp.toDateString(), [{ label: "State", value: d.point }]);
+            _this.interactions.tooltip.positionTooltipContainer(chart, xTooltip(d.timestamp, tooltipBox), yTooltip(d.point, tooltipBox));
+            function xTooltip(x, tooltipBox) {
+                var xTooltip = chart.x.scale(x);
+                if (chart.width - chart.padding.yAxis < xTooltip + tooltipBox.node().getBBox().width) {
+                    return xTooltip - tooltipBox.node().getBBox().width;
+                }
+                return xTooltip;
+            }
+            ;
+            function yTooltip(y, tooltipBox) {
+                var yTooltip = chart.y.scale(y) - tooltipBox.node().getBBox().height - 10;
+                if (yTooltip < 0) {
+                    return yTooltip + tooltipBox.node().getBBox().height + 20;
+                }
+                return yTooltip;
+            }
+            ;
+            _this.interactions.tooltip.appendLine(chart, 0, chart.y.scale(d.point), chart.x.scale(d.timestamp), chart.y.scale(d.point));
+            _this.interactions.tooltip.appendLine(chart, chart.x.scale(d.timestamp), chart.y.scale(0), chart.x.scale(d.timestamp), chart.y.scale(d.point));
+        }
+        function onMouseout() {
+            chart.elements.svg.select(".tooltip-container").transition()
+                .style("opacity", 0);
+            _this.interactions.tooltip.removeTooltip(chart);
+        }
+        //Append zoom bar
+        chart.elements.zoomSVG = _this.interactions.zoom.appendZoomBar(chart);
+        chart.elements.zoomFocus = chart.elements.zoomSVG.append("g")
+            .attr("class", "zoom-focus");
+        //Draw in zoom bar
+        chart.elements.zoomSVG.selectAll(chart.id + "zoom-bar-content")
+            .data(data)
+            .enter()
+            .append("circle")
+            .classed("zoom-line-circle", true)
+            .attr("id", chart.id + "zoom-bar-content")
+            .attr("r", 2)
+            .attr("cx", function (d) { return zoomChart.x.scale(d.timestamp); })
+            .attr("cy", function (d) { return zoomChart.y.scale(d.point); });
+        //Draw hidden content that will handle the borders
+        chart.elements.zoomFocus.selectAll(chart.id + "zoom-content")
+            .data(data)
+            .enter()
+            .append("circle")
+            .classed("zoom-content", true)
+            .attr("id", chart.id + "zoom-bar-content")
+            .attr("r", 2)
+            .attr("cx", function (d) { return zoomChart.x.scale(d.timestamp); })
+            .attr("cy", function (d) { return zoomChart.y.scale(d.point); });
+        //Enable zoom
+        _this.interactions.zoom.enableZoom(chart, zoomed);
+        function zoomed(e) {
+            var newChartRange = [0, chart.width - chart.padding.yAxis].map(function (d) { return e.transform.applyX(d); });
+            chart.x.scale.rangeRound(newChartRange);
+            zoomChart.x.scale.rangeRound([0, chart.width - chart.padding.yAxis - 5].map(function (d) { return e.transform.invertX(d); }));
+            var newLine = d3.line()
+                .x(function (d) { return chart.x.scale(d.timestamp); })
+                .y(function (d) { return chart.y.scale(d.point); });
+            chart.elements.contentContainer.selectAll("#" + chart.id + "-timeline-circles")
+                .attr("cx", function (d) { return chart.x.scale(d.timestamp); });
+            chart.elements.contentContainer.selectAll("#" + chart.id + "-timeline-circles-line")
+                .attr("d", function (d) { return newLine(d); });
+            chart.elements.contentContainer.selectAll(".click-container")
+                .attr("transform", function (d) { return "translate(" + chart.x.scale(d.timestamp) + ", " + chart.y.scale(d.point) + ")"; });
+            chart.elements.zoomFocus.selectAll(".zoom-content")
+                .attr("cx", function (d) { return zoomChart.x.scale(d.timestamp); });
+            chart.x.axis.ticks(newChartRange[1] / 75);
+            chart.elements.xAxis.call(chart.x.axis);
+        }
     };
     return AdminControlCharts;
 }());
 var AdminControlTransitions = /** @class */ (function () {
     function AdminControlTransitions() {
     }
+    AdminControlTransitions.prototype.axis = function (chart, data) {
+        var xScale = chart.x.scale;
+        xScale.domain(data.map(function (d) { return d.group; }));
+        d3.select("#" + chart.id + " .x-axis").transition()
+            .duration(750)
+            .call(chart.x.axis);
+    };
+    ;
     AdminControlTransitions.prototype.bars = function (chart, data) {
         d3.selectAll("#" + chart.id + " .content-container #" + chart.id + "-data")
             .data(data)
@@ -563,27 +795,197 @@ var AdminControlTransitions = /** @class */ (function () {
             .attr("x2", function (d) { return chart.x.scale(d.group) + chart.x.scale.bandwidth(); })
             .attr("y2", function (d) { return chart.y.scale(d.median); });
     };
+    ;
+    AdminControlTransitions.prototype.violin = function (chart, data, tDistressed, tSoaring) {
+        //Create bandwidth scale
+        var bandwithScale = d3.scaleLinear()
+            .range([0, chart.x.scale.bandwidth()])
+            .domain([-d3.max(data.map(function (r) { return r.value.length; })), d3.max(data.map(function (r) { return r.value.length; }))]);
+        //Create bins             
+        var bin = d3.bin().domain([0, 100]).thresholds([0, tDistressed, tSoaring]);
+        //Draw violins
+        chart.elements.contentContainer.selectAll("." + chart.id + "-violin-container").select("path")
+            .datum(function (d) { return bin(d.value.map(function (d) { return d.point; })); })
+            .transition()
+            .duration(750)
+            .attr("d", d3.area()
+            .x0(function (d) { return bandwithScale(-d.length); })
+            .x1(function (d) { return bandwithScale(d.length); })
+            .y(function (d, i) { return chart.y.scale(i == 0 ? 0 : i == 1 ? 50 : 100); })
+            .curve(d3.curveCatmullRom));
+        //Draw threshold percentages
+        chart.elements.appendThresholdPercentages(chart, bin, bandwithScale, tDistressed, tSoaring);
+    };
     return AdminControlTransitions;
+}());
+var AdminControlInteractions = /** @class */ (function (_super) {
+    __extends(AdminControlInteractions, _super);
+    function AdminControlInteractions() {
+        var _this_1 = _super !== null && _super.apply(this, arguments) || this;
+        _this_1.tooltip = new Tooltip();
+        _this_1.zoom = new Zoom();
+        return _this_1;
+    }
+    return AdminControlInteractions;
+}(AdminControlTransitions));
+// Basic class for tooltip content
+var TooltipValues = /** @class */ (function () {
+    function TooltipValues(label, value) {
+        this.label = label == undefined ? "" : label;
+        this.value = value == undefined ? 0 : value;
+    }
+    return TooltipValues;
+}());
+var Tooltip = /** @class */ (function () {
+    function Tooltip() {
+    }
+    Tooltip.prototype.enableTooltip = function (chart, onMouseover, onMouseout) {
+        this.appendTooltipContainer(chart);
+        chart.elements.content.on("mouseover", onMouseover)
+            .on("mouseout", onMouseout);
+    };
+    ;
+    Tooltip.prototype.removeTooltip = function (chart) {
+        chart.elements.contentContainer.selectAll(".tooltip-box").remove();
+        chart.elements.contentContainer.selectAll(".tooltip-text").remove();
+        chart.elements.contentContainer.selectAll(".tooltip-line").remove();
+    };
+    ;
+    Tooltip.prototype.appendTooltipContainer = function (chart) {
+        chart.elements.contentContainer.selectAll(".tooltip-container").remove();
+        return chart.elements.contentContainer.append("g")
+            .attr("class", "tooltip-container");
+    };
+    ;
+    Tooltip.prototype.appendTooltipText = function (chart, title, values) {
+        if (values === void 0) { values = null; }
+        var result = chart.elements.contentContainer.select(".tooltip-container").append("rect")
+            .attr("class", "tooltip-box");
+        var text = chart.elements.contentContainer.select(".tooltip-container").append("text")
+            .attr("class", "tooltip-text title")
+            .attr("x", 10)
+            .text(title);
+        var textSize = text.node().getBBox().height;
+        text.attr("y", textSize);
+        if (values != null) {
+            values.forEach(function (c, i) {
+                text.append("tspan")
+                    .attr("class", "tooltip-text")
+                    .attr("y", textSize * (i + 2))
+                    .attr("x", 15)
+                    .text(c.label + ": " + c.value);
+            });
+        }
+        chart.elements.contentContainer.select(".tooltip-box").attr("width", text.node().getBBox().width + 20)
+            .attr("height", text.node().getBBox().height + 5);
+        return result;
+    };
+    ;
+    Tooltip.prototype.positionTooltipContainer = function (chart, x, y) {
+        chart.elements.contentContainer.select(".tooltip-container")
+            .attr("transform", "translate(" + x + ", " + y + ")")
+            .transition()
+            .style("opacity", 1);
+    };
+    ;
+    Tooltip.prototype.appendLine = function (chart, x1, y1, x2, y2) {
+        chart.elements.contentContainer.append("line")
+            .attr("class", "tooltip-line")
+            .attr("x1", x1)
+            .attr("y1", y1)
+            .attr("x2", x2)
+            .attr("y2", y2);
+    };
+    ;
+    return Tooltip;
+}());
+var Zoom = /** @class */ (function () {
+    function Zoom() {
+    }
+    Zoom.prototype.enableZoom = function (chart, zoomed) {
+        chart.elements.svg.selectAll(".zoom-rect")
+            .attr("class", "zoom-rect active");
+        var zoom = d3.zoom()
+            .scaleExtent([1, 5])
+            .extent([[0, 0], [chart.width - chart.padding.yAxis, chart.height]])
+            .translateExtent([[0, 0], [chart.width - chart.padding.yAxis, chart.height]])
+            .on("zoom", zoomed);
+        chart.elements.contentContainer.select(".zoom-rect").call(zoom);
+    };
+    ;
+    Zoom.prototype.appendZoomBar = function (chart) {
+        return chart.elements.svg.append("g")
+            .attr("class", "zoom-container")
+            .attr("height", 30)
+            .attr("width", chart.width - chart.padding.yAxis)
+            .attr("transform", "translate(" + chart.padding.yAxis + ", " + (chart.height - 30) + ")");
+    };
+    ;
+    return Zoom;
 }());
 function buildControlAdminAnalyticsCharts(entries) {
     //Handle sidebar button
     sidebarFunctions.sidebarBtn();
     drawCharts(entries);
     function drawCharts(allEntries) {
-        var htmlContainer = new HtmlContainers();
+        var htmlContainers = new HtmlContainers();
         var adminControlCharts = new AdminControlCharts();
-        //Append groups chart container
-        htmlContainer.groupsChart = htmlContainer.appendDiv("groups-chart", "col-md-9");
-        htmlContainer.appendCard(htmlContainer.groupsChart, "Reflections box plot by group");
         //Preloaded groups
         var entries = adminControlCharts.preloadGroups(allEntries);
         //Create data with current entries
         var data = entries.map(function (d) { return new AnalyticsChartsDataStats(d); });
+        //Append groups chart container
+        htmlContainers.groupsChart = htmlContainers.appendDiv("groups-chart", "col-md-9");
+        htmlContainers.appendCard(htmlContainers.groupsChart, "Reflections box plot by group");
         //Create group chart with current data
         var groupChart = new ChartSeries("groups-chart", data.map(function (d) { return d.group; }));
         groupChart.elements.preRender(groupChart);
         adminControlCharts.renderGroupChart(groupChart, data);
-        adminControlCharts.handleGroups(groupChart, allEntries);
+        //Append group general statistics
+        htmlContainers.groupStatistics = htmlContainers.appendDiv("groups-statistics", "col-md-3");
+        var groupsStatisticsCard = htmlContainers.appendCard(htmlContainers.groupStatistics, "Statitics");
+        adminControlCharts.renderGroupStats(groupsStatisticsCard, data[0]);
+        //Draw groups violin container  
+        htmlContainers.groupViolin = htmlContainers.appendDiv("group-violin-chart", "col-md-6 mt-3");
+        htmlContainers.appendCard(htmlContainers.groupViolin, "Reflections distribution");
+        var violinChart = new ViolinChartSeries("group-violin-chart", data.map(function (d) { return d.group; }));
+        violinChart.elements.preRender(violinChart);
+        violinChart.elements.renderViolinThresholds(violinChart, [30, 70]);
+        adminControlCharts.renderViolin(violinChart, data);
+        //Draw users violin container
+        htmlContainers.userViolin = htmlContainers.appendDiv("group-violin-users-chart", "col-md-6 mt-3");
+        htmlContainers.appendCard(htmlContainers.userViolin, "Users distribution");
+        var usersData = data.map(function (d) {
+            return d.getUsersData(d);
+        });
+        var violinUsersChart = new ViolinChartSeries("group-violin-users-chart", data.map(function (d) { return d.group; }));
+        violinUsersChart.elements.preRender(violinUsersChart);
+        violinUsersChart.elements.renderViolinThresholds(violinUsersChart, [30, 70]);
+        adminControlCharts.renderViolin(violinUsersChart, usersData);
+        //Draw selected group timeline 
+        htmlContainers.groupTimeline = htmlContainers.appendDiv("group-timeline", "col-md-12 mt-3");
+        var timelineCard = htmlContainers.appendCard(htmlContainers.groupTimeline, "Reflections vs Time");
+        timelineCard.select(".card-body")
+            .attr("class", "card-body")
+            .html("<div class=\"row\">\n                <div id=\"timeline-plot\" class=\"btn-group btn-group-toggle mr-auto ml-auto\" data-toggle=\"buttons\">\n                    <label class=\"btn btn-light active\">\n                        <input type=\"radio\" name=\"plot\" value=\"density\" checked>Density Plot<br>\n                    </label>\n                    <label class=\"btn btn-light\">\n                        <input type=\"radio\" name=\"plot\" value=\"scatter\">Scatter Plot<br>\n                    </label>\n                </div>\n            </div>")
+            .append("div")
+            .attr("class", "chart-container");
+        var timelineChart = new ChartTime("group-timeline", d3.extent(data[0].value.map(function (d) { return d.timestamp; })));
+        timelineChart.elements.preRender(timelineChart);
+        adminControlCharts.renderTimelineDensity(timelineChart, data[0].value);
+        var timelineZoomChart = new ChartTimeZoom(timelineChart, d3.extent(data[0].value.map(function (d) { return d.timestamp; })));
+        d3.select("#group-timeline #timeline-plot").on("click", function (e) {
+            var selectedOption = e.target.control.value;
+            if (selectedOption == "density") {
+                //Remove users html containers
+                adminControlCharts.renderTimelineDensity(timelineChart, data[0].value);
+            }
+            if (selectedOption == "scatter") {
+                adminControlCharts.renderTimelineScatter(timelineChart, timelineZoomChart, data[0].value);
+            }
+        });
+        //Update charts depending on group
+        adminControlCharts.handleGroups(groupChart, violinChart, violinUsersChart, allEntries.map(function (d) { return new AnalyticsChartsDataStats(d); }));
     }
 }
 //exports.buildControlAdminAnalyticsCharts = buildControlAdminAnalyticsCharts;
@@ -1469,7 +1871,7 @@ var chartFunctions = {
             return "translate(" + positionX + ", " + positionY + ")";
         },
         appendGroupsText: function (chart, data, clickData) {
-            var _this = this;
+            var _this_1 = this;
             //Set scale types
             var xScale = chart.x.scale;
             var yScale = chart.y.scale;
@@ -1484,17 +1886,17 @@ var chartFunctions = {
                 .attr("transform", function (c) { return "translate(" + (xScale(c.group) + xScale.bandwidth() / 2) + ", 0)"; });
             clickContainer.exit().remove();
             chart.elements.contentContainer.selectAll(".click-container").append("text")
-                .attr("class", function (c) { return _this.comparativeText(clickData.q3, c.q3, clickData.group, c.group)[0]; })
+                .attr("class", function (c) { return _this_1.comparativeText(clickData.q3, c.q3, clickData.group, c.group)[0]; })
                 .attr("y", function (c) { return yScale(c.q3) - 5; })
-                .text(function (c) { return "q3: " + _this.comparativeText(clickData.q3, c.q3, clickData.group, c.group)[1]; });
+                .text(function (c) { return "q3: " + _this_1.comparativeText(clickData.q3, c.q3, clickData.group, c.group)[1]; });
             chart.elements.contentContainer.selectAll(".click-container").append("text")
-                .attr("class", function (c) { return _this.comparativeText(clickData.median, c.median, clickData.group, c.group)[0]; })
+                .attr("class", function (c) { return _this_1.comparativeText(clickData.median, c.median, clickData.group, c.group)[0]; })
                 .attr("y", function (c) { return yScale(c.median) - 5; })
-                .text(function (c) { return "Median: " + _this.comparativeText(clickData.median, c.median, clickData.group, c.group)[1]; });
+                .text(function (c) { return "Median: " + _this_1.comparativeText(clickData.median, c.median, clickData.group, c.group)[1]; });
             chart.elements.contentContainer.selectAll(".click-container").append("text")
-                .attr("class", function (c) { return _this.comparativeText(clickData.q1, c.q1, clickData.group, c.group)[0]; })
+                .attr("class", function (c) { return _this_1.comparativeText(clickData.q1, c.q1, clickData.group, c.group)[0]; })
                 .attr("y", function (c) { return yScale(c.q1) - 5; })
-                .text(function (c) { return "q1: " + _this.comparativeText(clickData.q1, c.q1, clickData.group, c.group)[1]; });
+                .text(function (c) { return "q1: " + _this_1.comparativeText(clickData.q1, c.q1, clickData.group, c.group)[1]; });
         },
         comparativeText: function (clickValue, value, clickXValue, xValue) {
             var textClass = "click-text";
