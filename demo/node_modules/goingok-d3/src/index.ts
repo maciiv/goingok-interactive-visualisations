@@ -567,13 +567,129 @@ class HtmlContainers implements IHtmlContainers {
     };
 }
 
+// Basic interface for tooltip content
+interface ITooltipValues {
+    label: string;
+    value: number;
+}
+
+// Basic class for tooltip content
+class TooltipValues implements ITooltipValues {
+    label: string;
+    value: number;
+    constructor(label?: string, value?: number) {
+        this.label = label == undefined ? "" : label;
+        this.value = value == undefined ? 0 : value;
+    }
+}
+
+// Interface for tooltip
+interface ITooltip {
+    enableTooltip(chart: IChart, onMouseover: any, onMouseout: any): void;
+    removeTooltip(chart: IChart): void
+    appendTooltipContainer(chart: IChart): void;
+    appendTooltipText(chart: IChart, title: string, values: ITooltipValues[]): void;
+    positionTooltipContainer(chart: IChart, x: number, y: number): void;
+    appendLine(chart: IChart, x1: number, y1: number, x2: number, y2: number): void;
+}
+
+// Class for tooltip
+class Tooltip implements ITooltip {
+    enableTooltip(chart: IChart, onMouseover: any, onMouseout: any): void {
+        this.appendTooltipContainer(chart);
+        chart.elements.content.on("mouseover", onMouseover)
+            .on("mouseout", onMouseout);
+    };
+    removeTooltip(chart: IChart): void {
+        chart.elements.contentContainer.selectAll(".tooltip-box").remove();
+        chart.elements.contentContainer.selectAll(".tooltip-text").remove();
+        chart.elements.contentContainer.selectAll(".tooltip-line").remove();
+    };
+    appendTooltipContainer(chart: IChart): void {
+        chart.elements.contentContainer.selectAll(".tooltip-container").remove();
+        return chart.elements.contentContainer.append("g")
+            .attr("class", "tooltip-container");
+    };
+    appendTooltipText(chart: IChart, title: string, values: ITooltipValues[] = null): void {
+        let result = chart.elements.contentContainer.select(".tooltip-container").append("rect")
+            .attr("class", "tooltip-box");
+        let text = chart.elements.contentContainer.select(".tooltip-container").append("text")
+            .attr("class", "tooltip-text title")
+            .attr("x", 10)
+            .text(title);
+        let textSize = text.node().getBBox().height
+        text.attr("y", textSize);
+        if (values != null) {
+            values.forEach((c, i) => {
+                text.append("tspan")
+                    .attr("class", "tooltip-text")
+                    .attr("y", textSize * (i + 2))
+                    .attr("x", 15)
+                    .text(`${c.label}: ${c.value}`);
+            });
+        }
+        chart.elements.contentContainer.select(".tooltip-box").attr("width", text.node().getBBox().width + 20)
+            .attr("height", text.node().getBBox().height + 5);
+        return result;
+    };
+    positionTooltipContainer(chart: IChart, x: number, y: number): void {
+        chart.elements.contentContainer.select(".tooltip-container")
+            .attr("transform", `translate(${x}, ${y})`)
+            .transition()
+            .style("opacity", 1);
+    };
+    appendLine(chart: IChart, x1: number, y1: number, x2: number, y2: number): void {
+        chart.elements.contentContainer.append("line")
+            .attr("class", "tooltip-line")
+            .attr("x1", x1)
+            .attr("y1", y1)
+            .attr("x2", x2)
+            .attr("y2", y2);
+    };
+}
+
+// Interface for zoom
+interface IZoom {
+    enableZoom(chart: ChartTime, zoomed: any): void;
+    appendZoomBar(chart: ChartTime): any;
+}
+
+// Class for zoom
+class Zoom implements IZoom {
+    enableZoom(chart: ChartTime, zoomed: any): void {
+        chart.elements.svg.selectAll(".zoom-rect")
+            .attr("class", "zoom-rect active");
+
+        let zoom = d3.zoom()
+            .scaleExtent([1, 5])
+            .extent([[0, 0], [chart.width - chart.padding.yAxis, chart.height]])
+            .translateExtent([[0, 0], [chart.width - chart.padding.yAxis, chart.height]])
+            .on("zoom", zoomed);
+
+        chart.elements.contentContainer.select(".zoom-rect").call(zoom);
+    };
+    appendZoomBar(chart: ChartTime): any {
+        return chart.elements.svg.append("g")
+            .attr("class", "zoom-container")
+            .attr("height", 30)
+            .attr("width", chart.width - chart.padding.yAxis)
+            .attr("transform", `translate(${chart.padding.yAxis}, ${chart.height - 30})`);
+    };
+}
+
+/* ------------------------------------------------
+    Start of admin control interfaces and classess 
+-------------------------------------------------- */
 interface IAdminControlCharts {
     interactions: IAdminControlInteractions;
     preloadGroups(allEntries: IAnalyticsChartsData[]): IAnalyticsChartsData[];
-    handleGroups(boxPlot: ChartSeries, violin: ViolinChartSeries, usersViolin: ViolinChartSeries, allEntries: IAnalyticsChartsData[]): void
+    handleGroups(boxPlot: ChartSeries, violin: ViolinChartSeries, usersViolin: ViolinChartSeries, timeline: ChartTime, timelineZoom: ChartTimeZoom, allEntries: IAnalyticsChartsData[]): void;
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries;
     renderGroupStats(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsDataStats): d3.Selection<d3.BaseType, unknown, HTMLElement, any>;
     renderViolin(chart: ViolinChartSeries, data: IAnalyticsChartsData[]): ViolinChartSeries;
+    renderTimelineDensity(chart: ChartTime, data: IAnalyticsChartsData): ChartTime;
+    renderTimelineScatter(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData): ChartTime;
+    handleTimelineButtons(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData): void
 }
 
 class AdminControlCharts implements IAdminControlCharts {
@@ -584,7 +700,7 @@ class AdminControlCharts implements IAdminControlCharts {
         });
         return d3.filter(allEntries, d => d.selected == true);
     };
-    handleGroups(boxPlot: ChartSeries, violin: ViolinChartSeries, usersViolin: ViolinChartSeries, allEntries: IAnalyticsChartsData[]): void {
+    handleGroups(boxPlot: ChartSeries, violin: ViolinChartSeries, usersViolin: ViolinChartSeries, timeline: ChartTime, timelineZoom: ChartTimeZoom, allEntries: IAnalyticsChartsData[]): void {
         d3.selectAll("#groups input").on("change", (e: Event) => {
             let target = e.target as HTMLInputElement;
             allEntries.find(d => d.selected == true).selected = false;
@@ -603,6 +719,15 @@ class AdminControlCharts implements IAdminControlCharts {
                 return d.getUsersData(d)
             });
             this.renderViolin(usersViolin, usersData);
+            timeline.x = new ChartTimeAxis("Time", d3.extent(entries[0].value.map(d => d.timestamp)), [0, timeline.width - timeline.padding.yAxis]);
+            this.interactions.axisTime(timeline, entries[0]);
+            if (timeline.elements.contentContainer.selectAll(`#${timeline.id}-timeline-contours`).empty()){
+                this.renderTimelineScatter(timeline, timelineZoom, entries[0]);               
+            } else {
+                timeline.elements.contentContainer.selectAll(`#${timeline.id}-timeline-contours`).remove();
+                this.renderTimelineDensity(timeline, entries[0]);
+            }  
+            this.handleTimelineButtons(timeline, timelineZoom, entries[0]);       
         })
     };
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries {
@@ -802,10 +927,10 @@ class AdminControlCharts implements IAdminControlCharts {
         chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles`).remove();
         chart.elements.svg.selectAll(".zoom-container").remove();
         chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`).remove();
+        chart.elements.zoomSVG = undefined;
+        chart.elements.zoomFocus = undefined;
 
         //Create density data
-        let densityData = createDensityData();
-
         function createDensityData() {
             return d3.contourDensity<IReflectionAuthorEntry>()
                 .x(d => chart.x.scale(d.timestamp))
@@ -817,8 +942,8 @@ class AdminControlCharts implements IAdminControlCharts {
         }
 
         //Draw contours
-        chart.elements.content = chart.elements.contentContainer.selectAll(`${chart.id}-timeline-contours`)
-            .data(densityData)
+        chart.elements.content = chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-contours`)
+            .data(createDensityData())
             .enter()
             .append("path")
             .attr("id", `${chart.id}-timeline-contours`)
@@ -857,24 +982,38 @@ class AdminControlCharts implements IAdminControlCharts {
             chart.x.axis.ticks(newChartRange[1] / 75);
             chart.elements.xAxis.call(chart.x.axis);
         }
+        return chart;
     };
     renderTimelineScatter(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData) {
         //Remove density plot
         chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-contours`).remove();
 
-        //Draw circles
-        chart.elements.content = chart.elements.contentContainer.selectAll(`${chart.id}-timeline-circles`)
-            .data(data.value)
-            .enter()
+        //Select existing circles
+        let circles = chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles`)
+            .data(data.value);
+        
+        //Remove old circles
+        circles.exit().remove();
+
+        //Append new circles
+        let circlesEnter = circles.enter()
             .append("circle")
             .classed("line-circle", true)
             .attr("id", `${chart.id}-timeline-circles`)
             .attr("r", 5)
             .attr("cx", (d: IReflectionAuthorEntry) => chart.x.scale(d.timestamp))
             .attr("cy", (d: IReflectionAuthorEntry) => chart.y.scale(d.point));
+        
+        //Merge existing and new circles
+        circles.merge(circlesEnter);
 
-        //Enable tooltip
         let _this = this;
+        _this.interactions.circles(chart, data);
+
+        //Set render elements content to circles
+        chart.elements.content = chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles`);
+
+        //Enable tooltip       
         _this.interactions.tooltip.enableTooltip(chart, onMouseover, onMouseout);
         function onMouseover(e: Event, d: IReflectionAuthorEntry) {
             if (d3.select(this).attr("class").includes("clicked")) {
@@ -909,31 +1048,43 @@ class AdminControlCharts implements IAdminControlCharts {
         }
 
         //Append zoom bar
-        chart.elements.zoomSVG = _this.interactions.zoom.appendZoomBar(chart);
-        chart.elements.zoomFocus = chart.elements.zoomSVG.append("g")
+        if (chart.elements.zoomSVG == undefined){
+            chart.elements.zoomSVG = _this.interactions.zoom.appendZoomBar(chart);
+            chart.elements.zoomFocus = chart.elements.zoomSVG.append("g")
             .attr("class", "zoom-focus");
+        }
 
-        //Draw in zoom bar
-        chart.elements.zoomSVG.selectAll(chart.id + "zoom-bar-content")
-            .data(data.value)
-            .enter()
+        //Select existing zoom circles
+        let zoomCircle =  chart.elements.zoomSVG.selectAll(`#${chart.id}-zoom-bar-content`)
+            .data(data.value);
+
+        //Remove old zoom circles
+        zoomCircle.exit().remove();
+
+        //Append new zoom circles
+        let zoomCircleEnter = zoomCircle.enter()
             .append("circle")
-            .classed("zoom-line-circle", true)
-            .attr("id", chart.id + "zoom-bar-content")
+            .classed("zoom-circle", true)
+            .attr("id", `${chart.id}-zoom-bar-content`)
             .attr("r", 2)
             .attr("cx", (d: IReflectionAuthorEntry) => zoomChart.x.scale(d.timestamp))
             .attr("cy", (d: IReflectionAuthorEntry) => zoomChart.y.scale(d.point));
+        
+        //Merge existing and new zoom circles
+        zoomCircle.merge(zoomCircleEnter);
+        _this.interactions.circlesZoom(chart, zoomChart, data);
 
-        //Draw hidden content that will handle the borders
-        chart.elements.zoomFocus.selectAll(chart.id + "zoom-content")
-            .data(data.value)
-            .enter()
+        let zoomCircleContent = chart.elements.zoomFocus.selectAll(`#${chart.id}-zoom-content`)
+            .data(data.value);        
+        zoomCircleContent.exit().remove();
+        let zoomCircleContentEnter = zoomCircleContent.enter()
             .append("circle")
             .classed("zoom-content", true)
-            .attr("id", chart.id + "zoom-bar-content")
+            .attr("id", `${chart.id}-zoom-content`)
             .attr("r", 2)
             .attr("cx", (d: IReflectionAuthorEntry) => zoomChart.x.scale(d.timestamp))
             .attr("cy", (d: IReflectionAuthorEntry) => zoomChart.y.scale(d.point));
+        zoomCircleContent.merge(zoomCircleContentEnter);
 
         //Enable zoom
         _this.interactions.zoom.enableZoom(chart, zoomed);
@@ -960,18 +1111,42 @@ class AdminControlCharts implements IAdminControlCharts {
             chart.x.axis.ticks(newChartRange[1] / 75);
             chart.elements.xAxis.call(chart.x.axis);
         }
-    }
+        return chart;
+    };
+    handleTimelineButtons(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData): void {
+        let _this = this
+        d3.select("#group-timeline #timeline-plot").on("click", (e: any) => {
+            var selectedOption = e.target.control.value;
+            if (selectedOption == "density") {
+                //Remove users html containers
+                _this.renderTimelineDensity(chart, data);
+            }
+            if (selectedOption == "scatter") {
+                _this.renderTimelineScatter(chart, zoomChart, data);
+            }
+        });
+    };
 }
 
 interface IAdminControlTransitions {
     axisSeries(chart: ChartSeries, data: IAnalyticsChartsData[]): void;
+    axisTime(chart: ChartTime, data: IAnalyticsChartsData): void;
     bars(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): void;
+    circles(chart: ChartTime, data: IAnalyticsChartsData): void;
+    circlesZoom(chart: ChartTime, chartZoom: ChartTimeZoom, data: IAnalyticsChartsData): void;
     violin(chart: ViolinChartSeries, data: IAnalyticsChartsData[], tDistressed: number, tSoaring: number): void;
+    density(chart: ChartTime, data: d3.ContourMultiPolygon[]): void;
 }
 
 class AdminControlTransitions implements IAdminControlTransitions {
     axisSeries(chart: ChartSeries, data: IAnalyticsChartsData[]): void {
         chart.x.scale.domain(data.map(d => d.group));
+        d3.select(`#${chart.id} .x-axis`).transition()
+            .duration(750)
+            .call(chart.x.axis);
+    };
+    axisTime(chart: ChartTime, data: IAnalyticsChartsData): void {
+        chart.x.scale.domain(d3.extent(data.value.map(d => d.timestamp)));
         d3.select(`#${chart.id} .x-axis`).transition()
             .duration(750)
             .call(chart.x.axis);
@@ -1004,6 +1179,24 @@ class AdminControlTransitions implements IAdminControlTransitions {
             .attr("x2", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group) + chart.x.scale.bandwidth())
             .attr("y2", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.median));
     };
+    circles(chart: ChartTime, data: IAnalyticsChartsData): void {
+        chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles`)
+            .data(data.value)
+            .transition()
+            .duration(750)
+            .attr("r", 5)
+            .attr("cx", (d: IReflectionAuthorEntry) => chart.x.scale(d.timestamp))
+            .attr("cy", (d: IReflectionAuthorEntry) => chart.y.scale(d.point));
+    };
+    circlesZoom(chart: ChartTime, chartZoom: ChartTimeZoom, data: IAnalyticsChartsData): void {
+        chart.elements.zoomSVG.selectAll(`#${chart.id}-zoom-bar-content`)
+            .data(data.value)
+            .transition()
+            .duration(750)
+            .attr("r", 2)
+            .attr("cx", (d: IReflectionAuthorEntry) => chartZoom.x.scale(d.timestamp))
+            .attr("cy", (d: IReflectionAuthorEntry) => chartZoom.y.scale(d.point));
+    };
     violin(chart: ViolinChartSeries, data: IAnalyticsChartsData[], tDistressed: number, tSoaring: number): void {
         //Create bandwidth scale
         let bandwithScale = d3.scaleLinear()
@@ -1026,7 +1219,16 @@ class AdminControlTransitions implements IAdminControlTransitions {
 
         //Draw threshold percentages
         chart.elements.appendThresholdPercentages(chart, bin, bandwithScale, tDistressed, tSoaring);
-    }
+    };
+    density(chart: ChartTime, data: d3.ContourMultiPolygon[]): void {
+        chart.elements.contentContainer.selectAll(`${chart.id}-timeline-contours`)
+            .data(data)
+            .transition()
+            .duration(750)
+            .attr("d", d3.geoPath())
+            .attr("stroke", (d: d3.ContourMultiPolygon) => d3.interpolateBlues(d.value * 25))
+            .attr("fill", (d: d3.ContourMultiPolygon) => d3.interpolateBlues(d.value * 20));
+    };
 }
 
 interface IAdminControlInteractions extends IAdminControlTransitions {
@@ -1038,112 +1240,9 @@ class AdminControlInteractions extends AdminControlTransitions implements IAdmin
     tooltip = new Tooltip();
     zoom = new Zoom();
 }
-
-// Basic interface for tooltip content
-interface ITooltipValues {
-    label: string;
-    value: number;
-}
-
-// Basic class for tooltip content
-class TooltipValues implements ITooltipValues {
-    label: string;
-    value: number;
-    constructor(label?: string, value?: number) {
-        this.label = label == undefined ? "" : label;
-        this.value = value == undefined ? 0 : value;
-    }
-}
-
-interface ITooltip {
-    enableTooltip(chart: IChart, onMouseover: any, onMouseout: any): void;
-    removeTooltip(chart: IChart): void
-    appendTooltipContainer(chart: IChart): void;
-    appendTooltipText(chart: IChart, title: string, values: ITooltipValues[]): void;
-    positionTooltipContainer(chart: IChart, x: number, y: number): void;
-    appendLine(chart: IChart, x1: number, y1: number, x2: number, y2: number): void;
-}
-
-class Tooltip implements ITooltip {
-    enableTooltip(chart: IChart, onMouseover: any, onMouseout: any): void {
-        this.appendTooltipContainer(chart);
-        chart.elements.content.on("mouseover", onMouseover)
-            .on("mouseout", onMouseout);
-    };
-    removeTooltip(chart: IChart): void {
-        chart.elements.contentContainer.selectAll(".tooltip-box").remove();
-        chart.elements.contentContainer.selectAll(".tooltip-text").remove();
-        chart.elements.contentContainer.selectAll(".tooltip-line").remove();
-    };
-    appendTooltipContainer(chart: IChart): void {
-        chart.elements.contentContainer.selectAll(".tooltip-container").remove();
-        return chart.elements.contentContainer.append("g")
-            .attr("class", "tooltip-container");
-    };
-    appendTooltipText(chart: IChart, title: string, values: ITooltipValues[] = null): void {
-        let result = chart.elements.contentContainer.select(".tooltip-container").append("rect")
-            .attr("class", "tooltip-box");
-        let text = chart.elements.contentContainer.select(".tooltip-container").append("text")
-            .attr("class", "tooltip-text title")
-            .attr("x", 10)
-            .text(title);
-        let textSize = text.node().getBBox().height
-        text.attr("y", textSize);
-        if (values != null) {
-            values.forEach((c, i) => {
-                text.append("tspan")
-                    .attr("class", "tooltip-text")
-                    .attr("y", textSize * (i + 2))
-                    .attr("x", 15)
-                    .text(`${c.label}: ${c.value}`);
-            });
-        }
-        chart.elements.contentContainer.select(".tooltip-box").attr("width", text.node().getBBox().width + 20)
-            .attr("height", text.node().getBBox().height + 5);
-        return result;
-    };
-    positionTooltipContainer(chart: IChart, x: number, y: number): void {
-        chart.elements.contentContainer.select(".tooltip-container")
-            .attr("transform", `translate(${x}, ${y})`)
-            .transition()
-            .style("opacity", 1);
-    };
-    appendLine(chart: IChart, x1: number, y1: number, x2: number, y2: number): void {
-        chart.elements.contentContainer.append("line")
-            .attr("class", "tooltip-line")
-            .attr("x1", x1)
-            .attr("y1", y1)
-            .attr("x2", x2)
-            .attr("y2", y2);
-    };
-}
-
-interface IZoom {
-    enableZoom(chart: ChartTime, zoomed: any): void;
-    appendZoomBar(chart: ChartTime): any;
-}
-
-class Zoom implements IZoom {
-    enableZoom(chart: ChartTime, zoomed: any): void {
-        chart.elements.svg.selectAll(".zoom-rect")
-            .attr("class", "zoom-rect active");
-
-        let zoom = d3.zoom()
-            .scaleExtent([1, 5])
-            .extent([[0, 0], [chart.width - chart.padding.yAxis, chart.height]])
-            .translateExtent([[0, 0], [chart.width - chart.padding.yAxis, chart.height]])
-            .on("zoom", zoomed);
-
-        chart.elements.contentContainer.select(".zoom-rect").call(zoom);
-    };
-    appendZoomBar(chart: ChartTime): any {
-        return chart.elements.svg.append("g")
-            .attr("class", "zoom-container")
-            .attr("height", 30)
-            .attr("width", chart.width - chart.padding.yAxis)
-            .attr("transform", `translate(${chart.padding.yAxis}, ${chart.height - 30})`);
-    };
-}
+/* ------------------------------------------------
+    End of admin control interfaces and classess 
+-------------------------------------------------- */
 
 export function buildControlAdminAnalyticsCharts(entries: IAnalyticsChartsData[]) {
     //Handle sidebar button
@@ -1214,20 +1313,10 @@ export function buildControlAdminAnalyticsCharts(entries: IAnalyticsChartsData[]
         timelineChart.elements.preRender(timelineChart);
         adminControlCharts.renderTimelineDensity(timelineChart, data[0]);
         let timelineZoomChart = new ChartTimeZoom(timelineChart, d3.extent(data[0].value.map(d => d.timestamp)));
-
-        d3.select("#group-timeline #timeline-plot").on("click", (e: any) => {
-            var selectedOption = e.target.control.value;
-            if (selectedOption == "density") {
-                //Remove users html containers
-                adminControlCharts.renderTimelineDensity(timelineChart, data[0]);
-            }
-            if (selectedOption == "scatter") {
-                adminControlCharts.renderTimelineScatter(timelineChart, timelineZoomChart, data[0]);
-            }
-        });
+        adminControlCharts.handleTimelineButtons(timelineChart, timelineZoomChart, data[0]);
 
         //Update charts depending on group
-        adminControlCharts.handleGroups(groupChart, violinChart, violinUsersChart, allEntries.map(d => new AnalyticsChartsDataStats(d)));
+        adminControlCharts.handleGroups(groupChart, violinChart, violinUsersChart, timelineChart, timelineZoomChart, allEntries.map(d => new AnalyticsChartsDataStats(d)));
     }
 }
 

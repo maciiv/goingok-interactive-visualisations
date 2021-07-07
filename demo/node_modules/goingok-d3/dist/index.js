@@ -444,7 +444,7 @@ var AdminControlCharts = /** @class */ (function () {
         return d3.filter(allEntries, function (d) { return d.selected == true; });
     };
     ;
-    AdminControlCharts.prototype.handleGroups = function (boxPlot, violin, usersViolin, allEntries) {
+    AdminControlCharts.prototype.handleGroups = function (boxPlot, violin, usersViolin, timeline, timelineZoom, allEntries) {
         var _this_1 = this;
         d3.selectAll("#groups input").on("change", function (e) {
             var target = e.target;
@@ -452,18 +452,28 @@ var AdminControlCharts = /** @class */ (function () {
             allEntries.find(function (d) { return d.group == target.value; }).selected = true;
             var entries = d3.filter(allEntries, function (d) { return d.selected == true; });
             boxPlot.x = new ChartSeriesAxis("Group Code", entries.map(function (r) { return r.group; }), [0, boxPlot.width - boxPlot.padding.yAxis - boxPlot.padding.right]);
-            _this_1.interactions.axis(boxPlot, entries);
+            _this_1.interactions.axisSeries(boxPlot, entries);
             _this_1.renderGroupChart(boxPlot, entries.map(function (d) { return new AnalyticsChartsDataStats(d); }));
             _this_1.renderGroupStats(d3.select("#groups-statistics"), new AnalyticsChartsDataStats(entries[0]));
             violin.x = new ChartSeriesAxis("Group Code", entries.map(function (r) { return r.group; }), [0, violin.width - violin.padding.yAxis - violin.padding.right]);
-            _this_1.interactions.axis(violin, entries);
+            _this_1.interactions.axisSeries(violin, entries);
             _this_1.renderViolin(violin, entries);
             usersViolin.x = new ChartSeriesAxis("Group Code", entries.map(function (r) { return r.group; }), [0, usersViolin.width - usersViolin.padding.yAxis - usersViolin.padding.right]);
-            _this_1.interactions.axis(usersViolin, entries);
+            _this_1.interactions.axisSeries(usersViolin, entries);
             var usersData = entries.map(function (d) {
                 return d.getUsersData(d);
             });
             _this_1.renderViolin(usersViolin, usersData);
+            timeline.x = new ChartTimeAxis("Time", d3.extent(entries[0].value.map(function (d) { return d.timestamp; })), [0, timeline.width - timeline.padding.yAxis]);
+            _this_1.interactions.axisTime(timeline, entries[0]);
+            if (timeline.elements.contentContainer.selectAll("#" + timeline.id + "-timeline-contours").empty()) {
+                _this_1.renderTimelineScatter(timeline, timelineZoom, entries[0]);
+            }
+            else {
+                timeline.elements.contentContainer.selectAll("#" + timeline.id + "-timeline-contours").remove();
+                _this_1.renderTimelineDensity(timeline, entries[0]);
+            }
+            _this_1.handleTimelineButtons(timeline, timelineZoom, entries[0]);
         });
     };
     ;
@@ -620,19 +630,20 @@ var AdminControlCharts = /** @class */ (function () {
         chart.elements.contentContainer.selectAll("#" + chart.id + "-timeline-circles").remove();
         chart.elements.svg.selectAll(".zoom-container").remove();
         chart.elements.contentContainer.selectAll("#" + chart.id + "-timeline-circles-line").remove();
+        chart.elements.zoomSVG = undefined;
+        chart.elements.zoomFocus = undefined;
         //Create density data
-        var densityData = createDensityData();
         function createDensityData() {
             return d3.contourDensity()
                 .x(function (d) { return chart.x.scale(d.timestamp); })
                 .y(function (d) { return chart.y.scale(d.point); })
                 .bandwidth(5)
                 .thresholds(20)
-                .size([chart.width - chart.padding.yAxis, chart.height - chart.padding.xAxis - chart.padding.top])(data);
+                .size([chart.width - chart.padding.yAxis, chart.height - chart.padding.xAxis - chart.padding.top])(data.value);
         }
         //Draw contours
-        chart.elements.content = chart.elements.contentContainer.selectAll(chart.id + "-timeline-contours")
-            .data(densityData)
+        chart.elements.content = chart.elements.contentContainer.selectAll("#" + chart.id + "-timeline-contours")
+            .data(createDensityData())
             .enter()
             .append("path")
             .attr("id", chart.id + "-timeline-contours")
@@ -663,23 +674,32 @@ var AdminControlCharts = /** @class */ (function () {
             chart.x.axis.ticks(newChartRange[1] / 75);
             chart.elements.xAxis.call(chart.x.axis);
         }
+        return chart;
     };
     ;
     AdminControlCharts.prototype.renderTimelineScatter = function (chart, zoomChart, data) {
         //Remove density plot
         chart.elements.contentContainer.selectAll("#" + chart.id + "-timeline-contours").remove();
-        //Draw circles
-        chart.elements.content = chart.elements.contentContainer.selectAll(chart.id + "-timeline-circles")
-            .data(data)
-            .enter()
+        //Select existing circles
+        var circles = chart.elements.contentContainer.selectAll("#" + chart.id + "-timeline-circles")
+            .data(data.value);
+        //Remove old circles
+        circles.exit().remove();
+        //Append new circles
+        var circlesEnter = circles.enter()
             .append("circle")
             .classed("line-circle", true)
             .attr("id", chart.id + "-timeline-circles")
             .attr("r", 5)
             .attr("cx", function (d) { return chart.x.scale(d.timestamp); })
             .attr("cy", function (d) { return chart.y.scale(d.point); });
-        //Enable tooltip
+        //Merge existing and new circles
+        circles.merge(circlesEnter);
         var _this = this;
+        _this.interactions.circles(chart, data);
+        //Set render elements content to circles
+        chart.elements.content = chart.elements.contentContainer.selectAll("#" + chart.id + "-timeline-circles");
+        //Enable tooltip       
         _this.interactions.tooltip.enableTooltip(chart, onMouseover, onMouseout);
         function onMouseover(e, d) {
             if (d3.select(this).attr("class").includes("clicked")) {
@@ -712,29 +732,38 @@ var AdminControlCharts = /** @class */ (function () {
             _this.interactions.tooltip.removeTooltip(chart);
         }
         //Append zoom bar
-        chart.elements.zoomSVG = _this.interactions.zoom.appendZoomBar(chart);
-        chart.elements.zoomFocus = chart.elements.zoomSVG.append("g")
-            .attr("class", "zoom-focus");
-        //Draw in zoom bar
-        chart.elements.zoomSVG.selectAll(chart.id + "zoom-bar-content")
-            .data(data)
-            .enter()
+        if (chart.elements.zoomSVG == undefined) {
+            chart.elements.zoomSVG = _this.interactions.zoom.appendZoomBar(chart);
+            chart.elements.zoomFocus = chart.elements.zoomSVG.append("g")
+                .attr("class", "zoom-focus");
+        }
+        //Select existing zoom circles
+        var zoomCircle = chart.elements.zoomSVG.selectAll("#" + chart.id + "-zoom-bar-content")
+            .data(data.value);
+        //Remove old zoom circles
+        zoomCircle.exit().remove();
+        //Append new zoom circles
+        var zoomCircleEnter = zoomCircle.enter()
             .append("circle")
-            .classed("zoom-line-circle", true)
-            .attr("id", chart.id + "zoom-bar-content")
+            .classed("zoom-circle", true)
+            .attr("id", chart.id + "-zoom-bar-content")
             .attr("r", 2)
             .attr("cx", function (d) { return zoomChart.x.scale(d.timestamp); })
             .attr("cy", function (d) { return zoomChart.y.scale(d.point); });
-        //Draw hidden content that will handle the borders
-        chart.elements.zoomFocus.selectAll(chart.id + "zoom-content")
-            .data(data)
-            .enter()
+        //Merge existing and new zoom circles
+        zoomCircle.merge(zoomCircleEnter);
+        _this.interactions.circlesZoom(chart, zoomChart, data);
+        var zoomCircleContent = chart.elements.zoomFocus.selectAll("#" + chart.id + "-zoom-content")
+            .data(data.value);
+        zoomCircleContent.exit().remove();
+        var zoomCircleContentEnter = zoomCircleContent.enter()
             .append("circle")
             .classed("zoom-content", true)
-            .attr("id", chart.id + "zoom-bar-content")
+            .attr("id", chart.id + "-zoom-content")
             .attr("r", 2)
             .attr("cx", function (d) { return zoomChart.x.scale(d.timestamp); })
             .attr("cy", function (d) { return zoomChart.y.scale(d.point); });
+        zoomCircleContent.merge(zoomCircleContentEnter);
         //Enable zoom
         _this.interactions.zoom.enableZoom(chart, zoomed);
         function zoomed(e) {
@@ -755,15 +784,37 @@ var AdminControlCharts = /** @class */ (function () {
             chart.x.axis.ticks(newChartRange[1] / 75);
             chart.elements.xAxis.call(chart.x.axis);
         }
+        return chart;
     };
+    ;
+    AdminControlCharts.prototype.handleTimelineButtons = function (chart, zoomChart, data) {
+        var _this = this;
+        d3.select("#group-timeline #timeline-plot").on("click", function (e) {
+            var selectedOption = e.target.control.value;
+            if (selectedOption == "density") {
+                //Remove users html containers
+                _this.renderTimelineDensity(chart, data);
+            }
+            if (selectedOption == "scatter") {
+                _this.renderTimelineScatter(chart, zoomChart, data);
+            }
+        });
+    };
+    ;
     return AdminControlCharts;
 }());
 var AdminControlTransitions = /** @class */ (function () {
     function AdminControlTransitions() {
     }
-    AdminControlTransitions.prototype.axis = function (chart, data) {
-        var xScale = chart.x.scale;
-        xScale.domain(data.map(function (d) { return d.group; }));
+    AdminControlTransitions.prototype.axisSeries = function (chart, data) {
+        chart.x.scale.domain(data.map(function (d) { return d.group; }));
+        d3.select("#" + chart.id + " .x-axis").transition()
+            .duration(750)
+            .call(chart.x.axis);
+    };
+    ;
+    AdminControlTransitions.prototype.axisTime = function (chart, data) {
+        chart.x.scale.domain(d3.extent(data.value.map(function (d) { return d.timestamp; })));
         d3.select("#" + chart.id + " .x-axis").transition()
             .duration(750)
             .call(chart.x.axis);
@@ -796,6 +847,26 @@ var AdminControlTransitions = /** @class */ (function () {
             .attr("y2", function (d) { return chart.y.scale(d.median); });
     };
     ;
+    AdminControlTransitions.prototype.circles = function (chart, data) {
+        chart.elements.contentContainer.selectAll("#" + chart.id + "-timeline-circles")
+            .data(data.value)
+            .transition()
+            .duration(750)
+            .attr("r", 5)
+            .attr("cx", function (d) { return chart.x.scale(d.timestamp); })
+            .attr("cy", function (d) { return chart.y.scale(d.point); });
+    };
+    ;
+    AdminControlTransitions.prototype.circlesZoom = function (chart, chartZoom, data) {
+        chart.elements.zoomSVG.selectAll("#" + chart.id + "-zoom-bar-content")
+            .data(data.value)
+            .transition()
+            .duration(750)
+            .attr("r", 2)
+            .attr("cx", function (d) { return chartZoom.x.scale(d.timestamp); })
+            .attr("cy", function (d) { return chartZoom.y.scale(d.point); });
+    };
+    ;
     AdminControlTransitions.prototype.violin = function (chart, data, tDistressed, tSoaring) {
         //Create bandwidth scale
         var bandwithScale = d3.scaleLinear()
@@ -816,6 +887,17 @@ var AdminControlTransitions = /** @class */ (function () {
         //Draw threshold percentages
         chart.elements.appendThresholdPercentages(chart, bin, bandwithScale, tDistressed, tSoaring);
     };
+    ;
+    AdminControlTransitions.prototype.density = function (chart, data) {
+        chart.elements.contentContainer.selectAll(chart.id + "-timeline-contours")
+            .data(data)
+            .transition()
+            .duration(750)
+            .attr("d", d3.geoPath())
+            .attr("stroke", function (d) { return d3.interpolateBlues(d.value * 25); })
+            .attr("fill", function (d) { return d3.interpolateBlues(d.value * 20); });
+    };
+    ;
     return AdminControlTransitions;
 }());
 var AdminControlInteractions = /** @class */ (function (_super) {
@@ -972,20 +1054,11 @@ function buildControlAdminAnalyticsCharts(entries) {
             .attr("class", "chart-container");
         var timelineChart = new ChartTime("group-timeline", d3.extent(data[0].value.map(function (d) { return d.timestamp; })));
         timelineChart.elements.preRender(timelineChart);
-        adminControlCharts.renderTimelineDensity(timelineChart, data[0].value);
+        adminControlCharts.renderTimelineDensity(timelineChart, data[0]);
         var timelineZoomChart = new ChartTimeZoom(timelineChart, d3.extent(data[0].value.map(function (d) { return d.timestamp; })));
-        d3.select("#group-timeline #timeline-plot").on("click", function (e) {
-            var selectedOption = e.target.control.value;
-            if (selectedOption == "density") {
-                //Remove users html containers
-                adminControlCharts.renderTimelineDensity(timelineChart, data[0].value);
-            }
-            if (selectedOption == "scatter") {
-                adminControlCharts.renderTimelineScatter(timelineChart, timelineZoomChart, data[0].value);
-            }
-        });
+        adminControlCharts.handleTimelineButtons(timelineChart, timelineZoomChart, data[0]);
         //Update charts depending on group
-        adminControlCharts.handleGroups(groupChart, violinChart, violinUsersChart, allEntries.map(function (d) { return new AnalyticsChartsDataStats(d); }));
+        adminControlCharts.handleGroups(groupChart, violinChart, violinUsersChart, timelineChart, timelineZoomChart, allEntries.map(function (d) { return new AnalyticsChartsDataStats(d); }));
     }
 }
 //exports.buildControlAdminAnalyticsCharts = buildControlAdminAnalyticsCharts;
