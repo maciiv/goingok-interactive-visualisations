@@ -19,4 +19,5 @@ declare class AnalyticsChartsData implements IAnalyticsChartsData {
 }
 export declare function buildControlAdminAnalyticsCharts(entries: IAnalyticsChartsData[]): void;
 export declare function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsData[]): void;
+export declare function buildExperimentAdminAnalyticsCharts1(entries: IAnalyticsChartsData[]): void;
 export {};

@@ -90,6 +90,12 @@ class AnalyticsChartsDataStats extends AnalyticsChartsData implements IAnalytics
     }
 }
 
+interface IGroupCompareData extends IAnalyticsChartsData {
+}
+
+class GroupCompareData extends AnalyticsChartsData implements IGroupCompareData {
+}
+
 // Basic interface for chart scales
 interface IChartScales {
     x: ChartSeriesAxis | ChartTimeAxis;
@@ -567,13 +573,13 @@ class HtmlContainers implements IHtmlContainers {
     };
 }
 
-// Basic interface for tooltip content
+// Basic interface for tooltip content interaction
 interface ITooltipValues {
     label: string;
     value: number;
 }
 
-// Basic class for tooltip content
+// Basic class for tooltip content interaction
 class TooltipValues implements ITooltipValues {
     label: string;
     value: number;
@@ -583,7 +589,7 @@ class TooltipValues implements ITooltipValues {
     }
 }
 
-// Interface for tooltip
+// Interface for tooltip interaction
 interface ITooltip {
     enableTooltip(chart: IChart, onMouseover: any, onMouseout: any): void;
     removeTooltip(chart: IChart): void
@@ -593,7 +599,7 @@ interface ITooltip {
     appendLine(chart: IChart, x1: number, y1: number, x2: number, y2: number): void;
 }
 
-// Class for tooltip
+// Class for tooltip interaction
 class Tooltip implements ITooltip {
     enableTooltip(chart: IChart, onMouseover: any, onMouseout: any): void {
         this.appendTooltipContainer(chart);
@@ -648,13 +654,13 @@ class Tooltip implements ITooltip {
     };
 }
 
-// Interface for zoom
+// Interface for zoom interaction
 interface IZoom {
     enableZoom(chart: ChartTime, zoomed: any): void;
     appendZoomBar(chart: ChartTime): any;
 }
 
-// Class for zoom
+// Class for zoom interaction
 class Zoom implements IZoom {
     enableZoom(chart: ChartTime, zoomed: any): void {
         chart.elements.svg.selectAll(".zoom-rect")
@@ -677,13 +683,197 @@ class Zoom implements IZoom {
     };
 }
 
+// Interface for click interaction
+interface IClick {
+    enableClick(chart: IChart, onClick: any): void;
+    removeClick(chart: IChart): void;
+    removeClickClass(chart: IChart, css: string): void;
+    appendText(chart: IChart, d: IReflectionAuthorEntry, title: string, values: ITooltipValues[]): void;
+}
+
+// Class for click interaction
+class Click implements IClick {
+    enableClick(chart: IChart, onClick: any): void {
+        chart.elements.content.on("click", onClick)
+    };
+    removeClick(chart: IChart): void {
+        chart.click = false;
+        chart.elements.contentContainer.selectAll(".click-text").remove();
+        chart.elements.contentContainer.selectAll(".click-line").remove();
+        chart.elements.contentContainer.selectAll(".click-container").remove();
+    };
+    removeClickClass(chart: IChart, css: string): void {
+        d3.selectAll(`#${chart.id} .content-container .${css}`)
+            .attr("class", css)
+    };
+    appendText(chart: IChart, d: IReflectionAuthorEntry, title: string, values: ITooltipValues[] = null): void {
+        let container = chart.elements.contentContainer.append("g")
+            .datum(d)
+            .attr("class", "click-container");
+        let box = container.append("rect")
+            .attr("class", "click-box");
+        let text = container.append("text")
+            .attr("class", "click-text title")
+            .attr("x", 10)
+            .text(title);
+        let textSize = text.node().getBBox().height
+        text.attr("y", textSize);
+        if (values != null) {
+            values.forEach((c, i) => {
+                text.append("tspan")
+                    .attr("class", "click-text")
+                    .attr("y", textSize * (i + 2))
+                    .attr("x", 15)
+                    .text(`${c.label}: ${c.value}`);
+            });
+        }
+        box.attr("width", text.node().getBBox().width + 20)
+            .attr("height", text.node().getBBox().height + 5)
+            .attr("clip-path", `url(#clip-${chart.id})`);
+        container.attr("transform", this.positionClickContainer(chart, box, text, d));
+    };
+    positionClickContainer(chart: ChartTime, box: any, text: any, d: IReflectionAuthorEntry) {
+        let positionX = chart.x.scale(d.timestamp);
+        let positionY = chart.y.scale(d.point) - box.node().getBBox().height - 10;
+        if (chart.width - chart.padding.yAxis < chart.x.scale(d.timestamp) + text.node().getBBox().width) {
+            positionX = chart.x.scale(d.timestamp) - box.node().getBBox().width;
+        };
+        if (chart.y.scale(d.point) - box.node().getBBox().height - 10 < 0) {
+            positionY = positionY + box.node().getBBox().height + 20;
+        };
+        return `translate(${positionX}, ${positionY})`;
+    };
+    appendGroupsText(chart: IChart, data: IAnalyticsChartsDataStats[], clickData: IAnalyticsChartsDataStats) {
+        //Set scale types
+        let xScale = chart.x.scale as d3.ScaleBand<string>;
+        let yScale = chart.y.scale as d3.ScaleLinear<number, number, never>;
+
+        chart.elements.contentContainer.selectAll(".click-container text").remove();
+
+        chart.elements.content.attr("class", (d: IAnalyticsChartsDataStats) => d.group == clickData.group ? "bar clicked" : "bar");
+
+        let clickContainer = chart.elements.contentContainer.selectAll(".click-container")
+            .data(data);
+        clickContainer.enter()
+            .append("g")
+            .merge(clickContainer)
+            .attr("class", "click-container")
+            .attr("transform", (c: IAnalyticsChartsDataStats) => `translate(${xScale(c.group) + xScale.bandwidth() / 2}, 0)`);
+        clickContainer.exit().remove();
+
+        chart.elements.contentContainer.selectAll(".click-container").append("text")
+            .attr("class", (c: IAnalyticsChartsDataStats) => this.comparativeText(clickData.q3, c.q3, clickData.group, c.group)[0])
+            .attr("y", (c: IAnalyticsChartsDataStats) => yScale(c.q3) - 5)
+            .text((c: IAnalyticsChartsDataStats) => `q3: ${this.comparativeText(clickData.q3, c.q3, clickData.group, c.group)[1]}`);
+        chart.elements.contentContainer.selectAll(".click-container").append("text")
+            .attr("class", (c: IAnalyticsChartsDataStats) => this.comparativeText(clickData.median, c.median, clickData.group, c.group)[0])
+            .attr("y", (c: IAnalyticsChartsDataStats) => yScale(c.median) - 5)
+            .text((c: IAnalyticsChartsDataStats) => `Median: ${this.comparativeText(clickData.median, c.median, clickData.group, c.group)[1]}`);
+        chart.elements.contentContainer.selectAll(".click-container").append("text")
+            .attr("class", (c: IAnalyticsChartsDataStats) => this.comparativeText(clickData.q1, c.q1, clickData.group, c.group)[0])
+            .attr("y", (c: IAnalyticsChartsDataStats) => yScale(c.q1) - 5)
+            .text((c: IAnalyticsChartsDataStats) => `q1: ${this.comparativeText(clickData.q1, c.q1, clickData.group, c.group)[1]}`);
+    };
+    comparativeText(clickValue: number, value: number, clickXValue: string | Date, xValue: string | Date) {
+        let textClass = "click-text";
+        let textSymbol = "";
+        if (clickValue - value < 0) {
+            textClass = textClass + " positive";
+            textSymbol = "+";
+        }
+        else if (clickValue - value > 0) {
+            textClass = textClass + " negative";
+            textSymbol = "-";
+        }
+        else {
+            textClass = textClass + " black"
+        }
+        return [textClass, `${textSymbol}${clickXValue == xValue ? clickValue : (Math.abs(clickValue - value))}`];
+    }
+}
+
+// Interface for sort interaction
+interface ISort {
+    appendArrow(chart: IChart, x: boolean, y: boolean): d3.Selection<d3.BaseType, unknown, HTMLElement, any>;
+    arrowPoints(chart: IChart, x: boolean, y: boolean): string;
+    setSorted(chart: IChart, x: boolean, y: boolean): boolean;
+    arrowTransition(chart: IChart, x: boolean, y: boolean): void;
+    sortData(a: number, b: number, sorted: boolean): number;
+}
+
+// Class for sort interaction
+class Sort implements ISort {
+    appendArrow(chart: IChart, x: boolean = false, y: boolean = false): d3.Selection<d3.BaseType, unknown, HTMLElement, any> {
+        let selector = x == true ? ".x-label-container" : ".y-label-container";
+        let button = d3.select(selector).attr("class", "y-label-container sort");
+        button.append("polygon")
+            .attr("class", "sort-arrow")
+            .attr("points", this.arrowPoints(chart, x, y));
+        return button;
+    };
+    arrowPoints(chart: IChart, x: boolean, y: boolean): string {
+        let selector = x == true ? ".x-label-text" : ".y-label-text";
+        let height = chart.elements.svg.select(selector).node().getBBox().height;
+        let width = chart.elements.svg.select(selector).node().getBBox().width;
+        let point1 = [(width / 2) + 5, 0];
+        let point2 = [(width / 2) + 5, -height / 2];
+        let point3 = [(width / 2) + 15, -height / 4];
+
+        if ((x == true && chart.x.sorted == false) || (y == true && chart.y.sorted == false)) {
+            point1 = [-(width / 2) - 5, 0];
+            point2 = [-(width / 2) - 5, -height / 2];
+            point3 = [-(width / 2) - 15, -height / 4];
+        }
+
+        return point1 + ", " + point2 + ", " + point3;
+    };
+    setSorted(chart: IChart, x: boolean = false, y: boolean = false): boolean {
+        if (x == true && chart.x.sorted == true) {
+            return chart.x.sorted = false;
+        }
+        else if (x == true && chart.x.sorted == false) {
+            return chart.x.sorted = true;
+        }
+        else if (y == true && chart.y.sorted == true) {
+            chart.y.sorted = false;
+        }
+        else if (y == true && chart.y.sorted == false) {
+            chart.y.sorted = true;
+        }
+    };
+    arrowTransition(chart: IChart, x: boolean = false, y: boolean = false): void {
+        let selector = x == true ? ".x-label-container" : ".y-label-container";
+        chart.elements.svg.select(`${selector} .sort-arrow.active`)
+            .attr("class", "sort-arrow")
+            .transition()
+            .attr("points", this.arrowPoints(chart, x, y))
+            .attr("class", "sort-arrow active");
+    };
+    sortData(a: number, b: number, sorted: boolean): number {
+        if (a < b) {
+            if (sorted) {
+                return -1;
+            } else {
+                return 1;
+            }
+        } if (a > b) {
+            if (sorted) {
+                return 1;
+            } else {
+                return -1;
+            }
+        }
+        return 0;
+    };
+}
+
 /* ------------------------------------------------
     Start of admin control interfaces and classess 
 -------------------------------------------------- */
 interface IAdminControlCharts {
     interactions: IAdminControlInteractions;
     preloadGroups(allEntries: IAnalyticsChartsData[]): IAnalyticsChartsData[];
-    handleGroups(boxPlot: ChartSeries, violin: ViolinChartSeries, usersViolin: ViolinChartSeries, timeline: ChartTime, timelineZoom: ChartTimeZoom, allEntries: IAnalyticsChartsData[]): void;
+    handleGroups(boxPlot: ChartSeries, allEntries: IAnalyticsChartsData[], violin?: ViolinChartSeries, usersViolin?: ViolinChartSeries, timeline?: ChartTime, timelineZoom?: ChartTimeZoom, htmlContainers?: IHtmlContainers): void;
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries;
     renderGroupStats(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsDataStats): d3.Selection<d3.BaseType, unknown, HTMLElement, any>;
     renderViolin(chart: ViolinChartSeries, data: IAnalyticsChartsData[]): ViolinChartSeries;
@@ -700,7 +890,7 @@ class AdminControlCharts implements IAdminControlCharts {
         });
         return d3.filter(allEntries, d => d.selected == true);
     };
-    handleGroups(boxPlot: ChartSeries, violin: ViolinChartSeries, usersViolin: ViolinChartSeries, timeline: ChartTime, timelineZoom: ChartTimeZoom, allEntries: IAnalyticsChartsData[]): void {
+    handleGroups(boxPlot: ChartSeries, allEntries: IAnalyticsChartsData[], violin: ViolinChartSeries, usersViolin: ViolinChartSeries, timeline: ChartTime, timelineZoom: ChartTimeZoom): void {
         d3.selectAll("#groups input").on("change", (e: Event) => {
             let target = e.target as HTMLInputElement;
             allEntries.find(d => d.selected == true).selected = false;
@@ -1244,6 +1434,217 @@ class AdminControlInteractions extends AdminControlTransitions implements IAdmin
     End of admin control interfaces and classess 
 -------------------------------------------------- */
 
+/* ------------------------------------------------
+    End of admin experimental interfaces and classess 
+-------------------------------------------------- */
+interface IExperimentalCharts {
+    groupChart: ChartSeries;
+    violin:  ViolinChartSeries;
+    usersViolin: ViolinChartSeries;
+}
+
+interface IAdminExperimentalCharts extends IAdminControlCharts {
+    renderGroupExperimentalChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[], htmlContainers?: IHtmlContainers): IExperimentalCharts;
+    renderGroupCompare(data: IAnalyticsChartsData[], id: string): IAnalyticsChartsData[];
+    handleGroupCompare(data: IAnalyticsChartsData[], violin: ViolinChartSeries, usersViolin: ViolinChartSeries): void;
+}
+
+class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperimentalCharts {
+    interactions = new AdminExperimentalInteractions();
+    handleGroups(boxPlot: ChartSeries, allEntries: IAnalyticsChartsData[], violin: ViolinChartSeries, usersViolin: ViolinChartSeries, timeline?: ChartTime, timelineZoom?: ChartTimeZoom, htmlContainers?: IHtmlContainers): void {
+        let _this = this;
+        function updateData(chart: ChartSeries, allEntries: IAnalyticsChartsData[]): IAnalyticsChartsDataStats[] {
+            let entries = d3.filter(allEntries, d => d.selected);
+            let data = entries.map(d => new AnalyticsChartsDataStats(d));
+            chart.x = new ChartSeriesAxis("Group Code", data.map(r => r.group), [0, chart.width - chart.padding.yAxis - chart.padding.right]);          
+            return data;
+        };
+        function updateCharts(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): IExperimentalCharts {
+            _this.interactions.axisSeries(chart, data);
+            return _this.renderGroupExperimentalChart(chart, data, htmlContainers);
+        }
+        d3.selectAll("#groups input").on("change", (e: Event) => {
+            let target = e.target as HTMLInputElement;
+            if (target.checked) {
+                allEntries.find(d => d.group == target.value).selected = true;
+                let data = updateData(boxPlot, allEntries);
+                let experimentalCharts = updateCharts(boxPlot, data);
+                if (boxPlot.click) {
+                    _this.interactions.click.appendGroupsText(boxPlot, data, data[data.map(d => d.group).indexOf(d3.select("#groups-statistics .card").attr("id"))]);
+                    _this.renderGroupCompare(data, d3.select("#groups-statistics .card").attr("id"));
+                    _this.handleGroupCompare(data, experimentalCharts.violin, experimentalCharts.usersViolin);
+                }
+            } else {
+                allEntries.find(d => d.group == target.value).selected = false;
+                let data = updateData(boxPlot, allEntries);
+                let experimentalCharts = updateCharts(boxPlot, data);
+                boxPlot.elements.contentContainer.selectAll(`#${boxPlot.id} .content-container .click-container`)
+                    .data(data)
+                    .exit()
+                    .remove();
+                if (boxPlot.click) {
+                    if (target.value == d3.select("#groups-statistics .card").attr("id")) {
+                        _this.interactions.click.removeClick(boxPlot);
+                        _this.interactions.click.removeClickClass(boxPlot, "bar");
+                        htmlContainers.remove();
+                    } else {
+                        _this.interactions.click.appendGroupsText(boxPlot, data, data[data.map(d => d.group).indexOf(d3.select("#groups-statistics .card").attr("id"))]);
+                        let violinData = _this.renderGroupCompare(data, d3.select("#groups-statistics .card").attr("id"));
+                        experimentalCharts.violin.x = new ChartSeriesAxis("Group Code", violinData.map(r => r.group), [0, experimentalCharts.violin.width - experimentalCharts.violin.padding.yAxis - experimentalCharts.violin.padding.right]);
+                        experimentalCharts.usersViolin.x = new ChartSeriesAxis("Group Code", violinData.map(r => r.group), [0, experimentalCharts.usersViolin.width - experimentalCharts.usersViolin.padding.yAxis - experimentalCharts.usersViolin.padding.right]);
+                        _this.handleGroupCompare(violinData, violin, usersViolin);
+                        _this.renderViolin(experimentalCharts.violin, violinData);
+                        _this.renderViolin(experimentalCharts.usersViolin, violinData);
+                        _this.interactions.axisSeries(experimentalCharts.violin, violinData);
+                        _this.interactions.axisSeries(experimentalCharts.usersViolin, violinData);
+                    }
+                }
+            }
+        });
+    };
+    renderGroupExperimentalChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[], htmlContainers?: IHtmlContainers): IExperimentalCharts {
+        chart = super.renderGroupChart(chart, data);
+        let _this = this
+        let violinChart: ViolinChartSeries;
+        let usersViolinChart: ViolinChartSeries;
+        _this.interactions.click.enableClick(chart, onClick);
+        function onClick(e: Event, d: IAnalyticsChartsDataStats) {       
+            if (d3.select(this).attr("class") == "bar clicked") {
+                _this.interactions.click.removeClick(chart);
+                d3.select(this).attr("class", "bar");
+                htmlContainers.remove();
+                return;
+            }
+            _this.interactions.click.removeClick(chart);
+            _this.interactions.click.removeClickClass(chart, "bar");
+            htmlContainers.remove();
+            chart.click = true;
+            _this.interactions.click.appendGroupsText(chart, data, d);
+
+            //Draw group statistics
+            htmlContainers.groupStatistics = htmlContainers.appendDiv("groups-statistics", "col-md-3");
+            let groupsStatisticsCard = htmlContainers.appendCard(htmlContainers.groupStatistics, `Statitics (${d.group})`, d.group);
+            _this.renderGroupStats(groupsStatisticsCard, d)
+
+            //Draw compare
+            htmlContainers.compare = htmlContainers.appendDiv("group-compare", "col-md-2 mt-3");
+            let compareCard = htmlContainers.appendCard(htmlContainers.compare, `Compare ${d.group} with:`);
+            compareCard.select(".card-body").attr("class", "card-body");
+            let violinData = _this.renderGroupCompare(data, d.group);
+
+            //Draw groups violin container  
+            htmlContainers.groupViolin = htmlContainers.appendDiv("group-violin-chart", "col-md-5 mt-3");
+            htmlContainers.appendCard(htmlContainers.groupViolin, `Reflections distribution (${d.group})`);
+            violinChart = new ViolinChartSeries("group-violin-chart", violinData.map(d => d.group));
+            violinChart.elements.preRender(violinChart);
+            violinChart.elements.renderViolinThresholds(violinChart, [30, 70]);
+            _this.renderViolin(violinChart, violinData);
+
+            //Draw users violin container
+            htmlContainers.userViolin = htmlContainers.appendDiv("group-violin-users-chart", "col-md-5 mt-3");
+            htmlContainers.appendCard(htmlContainers.userViolin, `Users distribution (${d.group})`);
+            let usersData = violinData.map(d => {
+                return d.getUsersData(d)
+            });
+            usersViolinChart = new ViolinChartSeries("group-violin-users-chart", violinData.map(d => d.group));
+            usersViolinChart.elements.preRender(usersViolinChart);
+            usersViolinChart.elements.renderViolinThresholds(usersViolinChart, [30, 70]);
+            _this.renderViolin(usersViolinChart, usersData);
+            _this.handleGroupCompare(violinData, violinChart, usersViolinChart);
+
+            //Draw selected group timeline 
+            htmlContainers.groupTimeline = htmlContainers.appendDiv("group-timeline", "col-md-12 mt-3");
+            let timelineCard = htmlContainers.appendCard(htmlContainers.groupTimeline, `Reflections vs Time (${d.group})`);
+            timelineCard.select(".card-body")
+                .attr("class", "card-body")
+                .html(`<div class="row">
+                    <div id="timeline-plot" class="btn-group btn-group-toggle mr-auto ml-auto" data-toggle="buttons">
+                        <label class="btn btn-light active">
+                            <input type="radio" name="plot" value="density" checked>Density Plot<br>
+                        </label>
+                        <label class="btn btn-light">
+                            <input type="radio" name="plot" value="scatter">Scatter Plot<br>
+                        </label>
+                    </div>
+                </div>`)
+                .append("div")
+                .attr("class", "chart-container");
+            let timelineChart = new ChartTime("group-timeline", d3.extent(data[0].value.map(d => d.timestamp)));
+            timelineChart.elements.preRender(timelineChart);
+            _this.renderTimelineDensity(timelineChart, data[0]);
+            let timelineZoomChart = new ChartTimeZoom(timelineChart, d3.extent(data[0].value.map(d => d.timestamp)));
+            _this.handleTimelineButtons(timelineChart, timelineZoomChart, data[0]);
+
+            //Scroll
+            document.querySelector("#groups-statistics").scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        //Enable sort
+        let sortButton = _this.interactions.sort.appendArrow(chart, false, true);
+        sortButton.on("click", function () {
+            chart.y.sorted = chart.y.sorted == false ? true : false;
+            _this.interactions.sort.arrowTransition(chart, false, true);
+            data = data.sort(function (a, b) {
+                return chartFunctions.sort.sortData(a.mean, b.mean, chart.y.sorted);
+            });
+
+            _this.interactions.axisSeries(chart, data);
+            _this.interactions.bars(chart, data);
+            if (chart.click) {
+                _this.interactions.click.appendGroupsText(chart, data, data[data.map(d => d.group).indexOf(d3.select("#groups-statistics .card").attr("id"))])
+            }
+        });
+        return {groupChart: chart, violin: violinChart, usersViolin: usersViolinChart} as IExperimentalCharts;
+    };
+    renderGroupCompare(data: IAnalyticsChartsData[], id: string): IAnalyticsChartsData[] {
+        let compareData = data.filter(d => d.group != id);
+        let compare = d3.select("#group-compare .card-body").selectAll("div")
+            .data(compareData);
+        compare.exit().remove();
+        let compareEnter = compare.enter()
+            .append("div")
+            .attr("class", "form-check")
+            .html(d => `<input class="form-check-input" type="checkbox" value="${d.group}" id="compare-${d.group}" ${d.selected ? "checked" : ""} />
+            <label class="form-check-label" for="compare-${d.group}">${d.group}</label>`);
+        compare.merge(compareEnter);        
+        return data.filter(d => compareData.includes(d) || d.group == id);
+    };
+    handleGroupCompare(data: IAnalyticsChartsData[], violin: ViolinChartSeries, usersViolin: ViolinChartSeries): void{
+        let _this = this;
+        d3.selectAll("#group-compare input").on("change", (e: Event, d: IAnalyticsChartsData) => {
+            let target = e.target as HTMLInputElement;
+            if (target.checked) {
+                data.find(d => d.group == target.value).selected = true;
+            }
+            else {
+                data.find(d => d.group == target.value).selected = false;
+            }
+            let groupData = d3.filter(data, d => d.selected);
+            let usersData = groupData.map(d => d.getUsersData(d));
+
+            violin.x = new ChartSeriesAxis("Group Code", groupData.map(r => r.group), [0, violin.width - violin.padding.yAxis - violin.padding.right]);
+            usersViolin.x = new ChartSeriesAxis("Group Code", groupData.map(r => r.group), [0, usersViolin.width - usersViolin.padding.yAxis - usersViolin.padding.right]);
+            chartFunctions.transitions.axis(violin, groupData);
+            chartFunctions.transitions.axis(usersViolin, usersData);
+            _this.renderViolin(violin, groupData);
+            _this.renderViolin(usersViolin, usersData);
+        });
+    }
+}
+
+interface IAdminExperimentalInteractions extends IAdminControlInteractions {
+    click: IClick;
+    sort: ISort;
+}
+
+class AdminExperimentalInteractions extends AdminControlInteractions implements IAdminExperimentalInteractions {
+    click = new Click();
+    sort = new Sort();
+}
+/* ------------------------------------------------
+    End of admin experimental interfaces and classess 
+-------------------------------------------------- */
+
 export function buildControlAdminAnalyticsCharts(entries: IAnalyticsChartsData[]) {
     //Handle sidebar button
     sidebarFunctions.sidebarBtn();
@@ -1316,11 +1717,46 @@ export function buildControlAdminAnalyticsCharts(entries: IAnalyticsChartsData[]
         adminControlCharts.handleTimelineButtons(timelineChart, timelineZoomChart, data[0]);
 
         //Update charts depending on group
-        adminControlCharts.handleGroups(groupChart, violinChart, violinUsersChart, timelineChart, timelineZoomChart, allEntries.map(d => new AnalyticsChartsDataStats(d)));
+        adminControlCharts.handleGroups(groupChart, allEntries.map(d => new AnalyticsChartsDataStats(d)), violinChart, violinUsersChart, timelineChart, timelineZoomChart);
     }
 }
 
 export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsData[]) {
+    //Handle sidebar button
+    sidebarFunctions.sidebarBtn();
+    drawCharts(entries);
+
+    function drawCharts(allEntries: IAnalyticsChartsData[]) {
+        let htmlContainers = new HtmlContainers();
+        let adminExperimentalCharts = new AdminExperimentalCharts();
+
+        //Preloaded groups
+        let entries = adminExperimentalCharts.preloadGroups(allEntries);
+
+        //Create data with current entries
+        let data = entries.map(d => new AnalyticsChartsDataStats(d));
+
+        //Append groups chart container
+        htmlContainers.groupsChart = htmlContainers.appendDiv("groups-chart", "col-md-9");
+        htmlContainers.appendCard(htmlContainers.groupsChart, "Reflections box plot by group");
+
+        //Create group chart with current data
+        let groupChart = new ChartSeries("groups-chart", data.map(d => d.group));
+        groupChart.elements.preRender(groupChart);
+        let experimentalCharts = adminExperimentalCharts.renderGroupExperimentalChart(groupChart, data, htmlContainers);
+
+        //Update charts depending on group
+        adminExperimentalCharts.handleGroups(experimentalCharts.groupChart, 
+            allEntries.map(d => new AnalyticsChartsDataStats(d)), 
+            experimentalCharts.violin, 
+            experimentalCharts.usersViolin,
+            undefined,
+            undefined,
+            htmlContainers);
+    }
+}
+
+export function buildExperimentAdminAnalyticsCharts1(entries: IAnalyticsChartsData[]) {
     //Handle sidebar button
     sidebarFunctions.sidebarBtn();
 

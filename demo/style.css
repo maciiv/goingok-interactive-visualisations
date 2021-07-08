@@ -214,7 +214,7 @@
     font-size: 0.75rem;
 }
 
-.y-label-container.zoom:hover {
+.y-label-container.sort:hover {
     cursor: pointer;
     font-weight: bold;
 }
