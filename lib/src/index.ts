@@ -825,11 +825,18 @@ class Sort implements ISort {
     };
     arrowTransition(chart: IChart, x: boolean = false, y: boolean = false): void {
         let selector = x == true ? ".x-label-container" : ".y-label-container";
-        chart.elements.svg.select(`${selector} .sort-arrow.active`)
-            .attr("class", "sort-arrow")
-            .transition()
-            .attr("points", this.arrowPoints(chart, x, y))
-            .attr("class", "sort-arrow active");
+        if(chart.elements.svg.select(`${selector} .sort-arrow.active`).empty()) {
+            chart.elements.svg.select(`${selector} .sort-arrow`)
+                .transition()
+                .attr("points", this.arrowPoints(chart, x, y))
+                .attr("class", "sort-arrow active");
+        } else {
+            chart.elements.svg.select(`${selector} .sort-arrow.active`)
+                .attr("class", "sort-arrow")
+                .transition()
+                .attr("points", this.arrowPoints(chart, x, y))
+                .attr("class", "sort-arrow active");
+        }
     };
     sortData(a: number, b: number, sorted: boolean): number {
         if (a < b) {
@@ -856,8 +863,6 @@ interface IAdminControlCharts {
     htmlContainers: IHtmlContainers;
     interactions: IAdminControlInteractions;
     sidebarBtn(): void;
-    preloadGroups(allEntries: IAnalyticsChartsData[]): IAnalyticsChartsData[];
-    handleGroups(boxPlot: ChartSeries, allEntries: IAnalyticsChartsData[], violin?: ViolinChartSeries, usersViolin?: ViolinChartSeries, timeline?: ChartTime, timelineZoom?: ChartTimeZoom, htmlContainers?: IHtmlContainers): void;
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries;
     renderGroupStats(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsDataStats): any;
     renderViolin(chart: ViolinChartSeries, data: IAnalyticsChartsData[]): ViolinChartSeries;
@@ -883,42 +888,6 @@ class AdminControlCharts implements IAdminControlCharts {
             d3.select("#sidebar #groups")
                 .style("opacity", isActive ? "0" : "1")
         });
-    };
-    preloadGroups(allEntries: IAnalyticsChartsData[]): IAnalyticsChartsData[] {
-        d3.selectAll("#groups input").each(function () {
-            d3.select(this).attr("checked") == null ? "" : allEntries.find(d => d.group == d3.select(this).attr("value")).selected = true;
-        });
-        return d3.filter(allEntries, d => d.selected == true);
-    };
-    handleGroups(boxPlot: ChartSeries, allEntries: IAnalyticsChartsData[], violin: ViolinChartSeries, usersViolin: ViolinChartSeries, timeline: ChartTime, timelineZoom: ChartTimeZoom): void {
-        d3.selectAll("#groups input").on("change", (e: Event) => {
-            let target = e.target as HTMLInputElement;
-            allEntries.find(d => d.selected == true).selected = false;
-            allEntries.find(d => d.group == target.value).selected = true;
-            let entries = d3.filter(allEntries, d => d.selected == true);
-            boxPlot.x = new ChartSeriesAxis("Group Code", entries.map(r => r.group), [0, boxPlot.width - boxPlot.padding.yAxis - boxPlot.padding.right]);
-            this.interactions.axisSeries(boxPlot, entries);
-            this.renderGroupChart(boxPlot, entries.map(d => new AnalyticsChartsDataStats(d)));
-            this.renderGroupStats(d3.select("#groups-statistics"), new AnalyticsChartsDataStats(entries[0]));
-            violin.x = new ChartSeriesAxis("Group Code", entries.map(r => r.group), [0, violin.width - violin.padding.yAxis - violin.padding.right]);
-            this.interactions.axisSeries(violin, entries);
-            this.renderViolin(violin, entries);
-            usersViolin.x = new ChartSeriesAxis("Group Code", entries.map(r => r.group), [0, usersViolin.width - usersViolin.padding.yAxis - usersViolin.padding.right]);
-            this.interactions.axisSeries(usersViolin, entries);
-            let usersData = entries.map(d => {
-                return d.getUsersData(d)
-            });
-            this.renderViolin(usersViolin, usersData);
-            timeline.x = new ChartTimeAxis("Time", d3.extent(entries[0].value.map(d => d.timestamp)), [0, timeline.width - timeline.padding.yAxis]);
-            this.interactions.axisTime(timeline, entries[0]);
-            if (timeline.elements.contentContainer.selectAll(`#${timeline.id}-timeline-contours`).empty()) {
-                this.renderTimelineScatter(timeline, timelineZoom, entries[0]);
-            } else {
-                timeline.elements.contentContainer.selectAll(`#${timeline.id}-timeline-contours`).remove();
-                this.renderTimelineDensity(timeline, entries[0]);
-            }
-            this.handleTimelineButtons(timeline, timelineZoom, entries[0]);
-        })
     };
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries {
         //Select existing minMax lines
@@ -1452,6 +1421,8 @@ class AdminControlInteractions extends AdminControlTransitions implements IAdmin
 interface IAdminExperimentalCharts extends IAdminControlCharts {
     violin: IViolinChartSeries;
     usersViolin: IViolinChartSeries;
+    preloadGroups(allEntries: IAnalyticsChartsData[]): IAnalyticsChartsData[];
+    handleGroups(boxPlot: ChartSeries, allEntries: IAnalyticsChartsData[]): void;
     getGroupCompareData(data: IAnalyticsChartsData[], id: string): IAnalyticsChartsData[];
     renderGroupCompare(data: IAnalyticsChartsData[], id: string): any;
     handleGroupCompare(data: IAnalyticsChartsData[], compareData: IAnalyticsChartsData[]): void;
@@ -1461,6 +1432,12 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
     violin: ViolinChartSeries;
     usersViolin: ViolinChartSeries;
     interactions = new AdminExperimentalInteractions();
+    preloadGroups(allEntries: IAnalyticsChartsData[]): IAnalyticsChartsData[] {
+        d3.selectAll("#groups input").each(function () {
+            d3.select(this).attr("checked") == null ? "" : allEntries.find(d => d.group == d3.select(this).attr("value")).selected = true;
+        });
+        return d3.filter(allEntries, d => d.selected == true);
+    };
     handleGroups(boxPlot: ChartSeries, allEntries: IAnalyticsChartsData[]): void {
         let _this = this;
         function updateData(chart: ChartSeries, allEntries: IAnalyticsChartsData[]): IAnalyticsChartsDataStats[] {
@@ -1591,8 +1568,10 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         }
 
         //Enable sort
-        let sortButton = _this.interactions.sort.appendArrow(chart, false, true);
-        sortButton.on("click", function () {
+        if(d3.select(".y-label-container .sort-arrow").empty()) {
+            _this.interactions.sort.appendArrow(chart, false, true);
+        }
+        d3.select(".y-label-container").on("click", function () {
             chart.y.sorted = chart.y.sorted == false ? true : false;
             _this.interactions.sort.arrowTransition(chart, false, true);
             data = data.sort(function (a, b) {
@@ -1909,30 +1888,20 @@ export function buildControlAdminAnalyticsCharts(entries: IAnalyticsChartsData[]
         let timelineCard = adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.groupTimeline, `Reflections vs Time`);
         timelineCard.select(".card-body")
             .attr("class", "card-body")
-            .append("div")
-            .attr("class", "row")
-            .append("div")
-            .attr("class", "list-group")
-            .attr("role", "tablist")
-            .selectAll("a")
+            .append("ul")
+            .attr("class", "nav nav-tabs")
+            .selectAll("li")
             .data(data)
             .enter()
+            .append("li")
+            .attr("class", "nav-item")
             .append("a")
-            .attr("class", (d: IAnalyticsChartsDataStats, i: number) => `list-group-item list-group-item-action ${i == 0 ? "active" : ""}`)
-            .attr("data-toggle", "list")
+            .attr("class", (d: IAnalyticsChartsDataStats, i: number) => `nav-link ${i == 0 ? "active" : ""}`)
             .attr("href", (d: IAnalyticsChartsDataStats) => `#timeline-${d.group}`)
             .html((d: IAnalyticsChartsDataStats) => d.group);
         timelineCard.select(".card-body")
             .append("div")
-            .attr("class", "row")
-            .append("div")
-            .attr("class", "tab-content")
-            .selectAll("div")
-            .data(data)
-            .enter()
-            .append("div")
-            .attr("class", (d: IAnalyticsChartsDataStats, i: number) => `tab-pane fade ${i == 0 ? "show active" : ""}`)
-            .attr("id", (d: IAnalyticsChartsDataStats) => `timeline-${d.group}`)
+            .attr("class", "row mt-3")
             .html((d: IAnalyticsChartsDataStats) => `<div id="timeline-plot" class="btn-group btn-group-toggle mr-auto ml-auto" data-toggle="buttons">
                                                         <label class="btn btn-light active">
                                                             <input type="radio" name="plot" value="density" checked>Density Plot<br>
@@ -1941,16 +1910,38 @@ export function buildControlAdminAnalyticsCharts(entries: IAnalyticsChartsData[]
                                                             <input type="radio" name="plot" value="scatter">Scatter Plot<br>
                                                         </label>
                                                     </div>`)
-            .append("div")
+        timelineCard.append("div")
             .attr("class", "chart-container");
+
         let timelineChart = new ChartTime("group-timeline", d3.extent(data[0].value.map(d => d.timestamp)));
         timelineChart.elements.preRender(timelineChart);
         adminControlCharts.renderTimelineDensity(timelineChart, data[0]);
         let timelineZoomChart = new ChartTimeZoom(timelineChart, d3.extent(data[0].value.map(d => d.timestamp)));
         adminControlCharts.handleTimelineButtons(timelineChart, timelineZoomChart, data[0]);
 
-        //Update charts depending on group
-        adminControlCharts.handleGroups(groupChart, allEntries.map(d => new AnalyticsChartsDataStats(d)), violinChart, violinUsersChart, timelineChart, timelineZoomChart);
+        timelineCard.selectAll("a")
+            .on("click", (e: Event, d: IAnalyticsChartsDataStats) => {
+                timelineCard.selectAll("a")
+                    .each((x: IAnalyticsChartsDataStats, i: number, g: any) => {
+                        if(x == d) {
+                            d3.select(g[i])
+                                .attr("class", "nav-link active")
+                        } else {
+                            d3.select(g[i])
+                                .attr("class", "nav-link")
+                        }
+                    });
+                timelineChart.x = new ChartTimeAxis("Time", d3.extent(d.value.map(d => d.timestamp)), [0, timelineChart.width - timelineChart.padding.yAxis]);
+                timelineZoomChart.x = new ChartTimeAxis("Time", d3.extent(d.value.map(d => d.timestamp)), [0, timelineChart.width - timelineChart.padding.yAxis]);
+                adminControlCharts.interactions.axisTime(timelineChart, d);
+                if (timelineChart.elements.contentContainer.selectAll(`#${timelineChart.id}-timeline-contours`).empty()) {
+                    adminControlCharts.renderTimelineScatter(timelineChart, timelineZoomChart, d);
+                } else {
+                    timelineChart.elements.contentContainer.selectAll(`#${timelineChart.id}-timeline-contours`).remove();
+                    adminControlCharts.renderTimelineDensity(timelineChart, d);
+                }
+                adminControlCharts.handleTimelineButtons(timelineChart, timelineZoomChart, d);
+            })
     }
 }
 
