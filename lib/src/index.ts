@@ -859,7 +859,7 @@ interface IAdminControlCharts {
     preloadGroups(allEntries: IAnalyticsChartsData[]): IAnalyticsChartsData[];
     handleGroups(boxPlot: ChartSeries, allEntries: IAnalyticsChartsData[], violin?: ViolinChartSeries, usersViolin?: ViolinChartSeries, timeline?: ChartTime, timelineZoom?: ChartTimeZoom, htmlContainers?: IHtmlContainers): void;
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries;
-    renderGroupStats(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsDataStats): d3.Selection<d3.BaseType, unknown, HTMLElement, any>;
+    renderGroupStats(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsDataStats): any;
     renderViolin(chart: ViolinChartSeries, data: IAnalyticsChartsData[]): ViolinChartSeries;
     renderTimelineDensity(chart: ChartTime, data: IAnalyticsChartsData): ChartTime;
     renderTimelineScatter(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData): ChartTime;
@@ -911,13 +911,13 @@ class AdminControlCharts implements IAdminControlCharts {
             this.renderViolin(usersViolin, usersData);
             timeline.x = new ChartTimeAxis("Time", d3.extent(entries[0].value.map(d => d.timestamp)), [0, timeline.width - timeline.padding.yAxis]);
             this.interactions.axisTime(timeline, entries[0]);
-            if (timeline.elements.contentContainer.selectAll(`#${timeline.id}-timeline-contours`).empty()){
-                this.renderTimelineScatter(timeline, timelineZoom, entries[0]);               
+            if (timeline.elements.contentContainer.selectAll(`#${timeline.id}-timeline-contours`).empty()) {
+                this.renderTimelineScatter(timeline, timelineZoom, entries[0]);
             } else {
                 timeline.elements.contentContainer.selectAll(`#${timeline.id}-timeline-contours`).remove();
                 this.renderTimelineDensity(timeline, entries[0]);
-            }  
-            this.handleTimelineButtons(timeline, timelineZoom, entries[0]);       
+            }
+            this.handleTimelineButtons(timeline, timelineZoom, entries[0]);
         })
     };
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries {
@@ -1040,7 +1040,7 @@ class AdminControlCharts implements IAdminControlCharts {
 
         return chart;
     }
-    renderGroupStats(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsDataStats): d3.Selection<d3.BaseType, unknown, HTMLElement, any> {
+    renderGroupStats(div: any, data: IAnalyticsChartsDataStats): any {
         div.select(".card-body").html("");
         return div.select(".card-body")
             .attr("class", "card-body statistics-text")
@@ -1107,7 +1107,7 @@ class AdminControlCharts implements IAdminControlCharts {
 
         //Transition violins
         this.interactions.violin(chart, data, tDistressed, tSoaring);
-        
+
         //Append tooltip container
         this.interactions.tooltip.appendTooltipContainer(chart);
         chart.elements.contentContainer.selectAll(".violin-text")
@@ -1193,7 +1193,7 @@ class AdminControlCharts implements IAdminControlCharts {
         //Select existing circles
         let circles = chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles`)
             .data(data.value);
-        
+
         //Remove old circles
         circles.exit().remove();
 
@@ -1205,7 +1205,7 @@ class AdminControlCharts implements IAdminControlCharts {
             .attr("r", 5)
             .attr("cx", (d: IReflectionAuthorEntry) => chart.x.scale(d.timestamp))
             .attr("cy", (d: IReflectionAuthorEntry) => chart.y.scale(d.point));
-        
+
         //Merge existing and new circles
         circles.merge(circlesEnter);
 
@@ -1250,14 +1250,14 @@ class AdminControlCharts implements IAdminControlCharts {
         }
 
         //Append zoom bar
-        if (chart.elements.zoomSVG == undefined){
+        if (chart.elements.zoomSVG == undefined) {
             chart.elements.zoomSVG = _this.interactions.zoom.appendZoomBar(chart);
             chart.elements.zoomFocus = chart.elements.zoomSVG.append("g")
-            .attr("class", "zoom-focus");
+                .attr("class", "zoom-focus");
         }
 
         //Select existing zoom circles
-        let zoomCircle =  chart.elements.zoomSVG.selectAll(`#${chart.id}-zoom-bar-content`)
+        let zoomCircle = chart.elements.zoomSVG.selectAll(`#${chart.id}-zoom-bar-content`)
             .data(data.value);
 
         //Remove old zoom circles
@@ -1271,13 +1271,13 @@ class AdminControlCharts implements IAdminControlCharts {
             .attr("r", 2)
             .attr("cx", (d: IReflectionAuthorEntry) => zoomChart.x.scale(d.timestamp))
             .attr("cy", (d: IReflectionAuthorEntry) => zoomChart.y.scale(d.point));
-        
+
         //Merge existing and new zoom circles
         zoomCircle.merge(zoomCircleEnter);
         _this.interactions.circlesZoom(chart, zoomChart, data);
 
         let zoomCircleContent = chart.elements.zoomFocus.selectAll(`#${chart.id}-zoom-content`)
-            .data(data.value);        
+            .data(data.value);
         zoomCircleContent.exit().remove();
         let zoomCircleContentEnter = zoomCircleContent.enter()
             .append("circle")
@@ -1321,7 +1321,7 @@ class AdminControlCharts implements IAdminControlCharts {
             var selectedOption = e.target.control.value;
             if (selectedOption == "density") {
                 _this.htmlContainers.removeUsers();
-                _this.renderTimelineDensity(chart, data);                
+                _this.renderTimelineDensity(chart, data);
             }
             if (selectedOption == "scatter") {
                 _this.renderTimelineScatter(chart, zoomChart, data);
@@ -1466,7 +1466,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         function updateData(chart: ChartSeries, allEntries: IAnalyticsChartsData[]): IAnalyticsChartsDataStats[] {
             let entries = d3.filter(allEntries, d => d.selected);
             let data = entries.map(d => new AnalyticsChartsDataStats(d));
-            chart.x = new ChartSeriesAxis("Group Code", data.map(r => r.group), [0, chart.width - chart.padding.yAxis - chart.padding.right]);          
+            chart.x = new ChartSeriesAxis("Group Code", data.map(r => r.group), [0, chart.width - chart.padding.yAxis - chart.padding.right]);
             return data;
         };
         function updateGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]) {
@@ -1518,7 +1518,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         chart = super.renderGroupChart(chart, data);
         let _this = this
         _this.interactions.click.enableClick(chart, onClick);
-        function onClick(e: Event, d: IAnalyticsChartsDataStats) {       
+        function onClick(e: Event, d: IAnalyticsChartsDataStats) {
             if (d3.select(this).attr("class") == "bar clicked") {
                 _this.interactions.click.removeClick(chart);
                 d3.select(this).attr("class", "bar");
@@ -1607,7 +1607,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         });
         return chart;
     };
-    renderViolin(chart: ViolinChartSeries, data: IAnalyticsChartsData[]): ViolinChartSeries{
+    renderViolin(chart: ViolinChartSeries, data: IAnalyticsChartsData[]): ViolinChartSeries {
         let _this = this;
         chart = super.renderViolin(chart, data);
         let thresholds = chart.elements.getThresholdsValues(chart);
@@ -1777,7 +1777,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 .html(reflectionsCardText);
 
             //Scroll
-            document.querySelector("#group-timeline").scrollIntoView({ behavior: 'smooth', block: 'start' });           
+            document.querySelector("#group-timeline").scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
         return chart;
     };
@@ -1798,14 +1798,14 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         let selectedGroupCompare = this.getGroupCompareData(data, id);
         d3.select("#group-compare .card-body").selectAll("div").remove();
         return d3.select("#group-compare .card-body").selectAll("div")
-            .data(compareData)    
+            .data(compareData)
             .enter()
             .append("div")
             .attr("class", "form-check")
             .html(d => `<input class="form-check-input" type="checkbox" value="${d.group}" id="compare-${d.group}" ${selectedGroupCompare.includes(d) ? "checked" : ""} />
             <label class="form-check-label" for="compare-${d.group}">${d.group}</label>`);
     };
-    handleGroupCompare(data: IAnalyticsChartsData[], compareData: IAnalyticsChartsData[]): void{
+    handleGroupCompare(data: IAnalyticsChartsData[], compareData: IAnalyticsChartsData[]): void {
         let _this = this;
         d3.selectAll("#group-compare input").on("change", (e: Event, d: IAnalyticsChartsData) => {
             let target = e.target as HTMLInputElement;
@@ -1848,11 +1848,8 @@ export function buildControlAdminAnalyticsCharts(entries: IAnalyticsChartsData[]
         //Handle sidebar button
         adminControlCharts.sidebarBtn();
 
-        //Preloaded groups
-        let entries = adminControlCharts.preloadGroups(allEntries);
-
         //Create data with current entries
-        let data = entries.map(d => new AnalyticsChartsDataStats(d));
+        let data = allEntries.map(d => new AnalyticsChartsDataStats(d));
 
         //Append groups chart container
         adminControlCharts.htmlContainers.groupsChart = adminControlCharts.htmlContainers.appendDiv("groups-chart", "col-md-9");
@@ -1865,8 +1862,28 @@ export function buildControlAdminAnalyticsCharts(entries: IAnalyticsChartsData[]
 
         //Append group general statistics
         adminControlCharts.htmlContainers.groupStatistics = adminControlCharts.htmlContainers.appendDiv("groups-statistics", "col-md-3");
-        let groupsStatisticsCard = adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.groupStatistics, "Statitics");
-        adminControlCharts.renderGroupStats(groupsStatisticsCard, data[0]);
+        let cardGroupStats = adminControlCharts.htmlContainers.groupStatistics.selectAll("div")
+            .data(data)
+            .enter()
+            .append("div")
+            .attr("class", "card");
+        cardGroupStats.each((d: IAnalyticsChartsDataStats, i: number, g: any) => {
+            d3.select(g[i])
+                .append("div")
+                .attr("class", "card-header")
+                .append("button")
+                .attr("class", "btn btn-link")
+                .attr("data-target", `#stats-${d.group}`)
+                .attr("data-toggle", "collapse")
+                .html(d.group);
+            d3.select(g[i])
+                .append("div")
+                .attr("id", `stats-${d.group}`)
+                .attr("class", `collapse ${i == 0 ? "show" : ""}`)
+                .append("div")
+                .attr("class", "card-body");
+            adminControlCharts.renderGroupStats(d3.select(g[i]), d);
+        });
 
         //Draw groups violin container  
         adminControlCharts.htmlContainers.groupViolin = adminControlCharts.htmlContainers.appendDiv("group-violin-chart", "col-md-6 mt-3");
@@ -1892,16 +1909,38 @@ export function buildControlAdminAnalyticsCharts(entries: IAnalyticsChartsData[]
         let timelineCard = adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.groupTimeline, `Reflections vs Time`);
         timelineCard.select(".card-body")
             .attr("class", "card-body")
-            .html(`<div class="row">
-                <div id="timeline-plot" class="btn-group btn-group-toggle mr-auto ml-auto" data-toggle="buttons">
-                    <label class="btn btn-light active">
-                        <input type="radio" name="plot" value="density" checked>Density Plot<br>
-                    </label>
-                    <label class="btn btn-light">
-                        <input type="radio" name="plot" value="scatter">Scatter Plot<br>
-                    </label>
-                </div>
-            </div>`)
+            .append("div")
+            .attr("class", "row")
+            .append("div")
+            .attr("class", "list-group")
+            .attr("role", "tablist")
+            .selectAll("a")
+            .data(data)
+            .enter()
+            .append("a")
+            .attr("class", (d: IAnalyticsChartsDataStats, i: number) => `list-group-item list-group-item-action ${i == 0 ? "active" : ""}`)
+            .attr("data-toggle", "list")
+            .attr("href", (d: IAnalyticsChartsDataStats) => `#timeline-${d.group}`)
+            .html((d: IAnalyticsChartsDataStats) => d.group);
+        timelineCard.select(".card-body")
+            .append("div")
+            .attr("class", "row")
+            .append("div")
+            .attr("class", "tab-content")
+            .selectAll("div")
+            .data(data)
+            .enter()
+            .append("div")
+            .attr("class", (d: IAnalyticsChartsDataStats, i: number) => `tab-pane fade ${i == 0 ? "show active" : ""}`)
+            .attr("id", (d: IAnalyticsChartsDataStats) => `timeline-${d.group}`)
+            .html((d: IAnalyticsChartsDataStats) => `<div id="timeline-plot" class="btn-group btn-group-toggle mr-auto ml-auto" data-toggle="buttons">
+                                                        <label class="btn btn-light active">
+                                                            <input type="radio" name="plot" value="density" checked>Density Plot<br>
+                                                        </label>
+                                                        <label class="btn btn-light">
+                                                            <input type="radio" name="plot" value="scatter">Scatter Plot<br>
+                                                        </label>
+                                                    </div>`)
             .append("div")
             .attr("class", "chart-container");
         let timelineChart = new ChartTime("group-timeline", d3.extent(data[0].value.map(d => d.timestamp)));
