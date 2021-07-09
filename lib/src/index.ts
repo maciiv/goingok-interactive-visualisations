@@ -1115,7 +1115,7 @@ class AdminControlCharts implements IAdminControlCharts {
             .on("mouseout", onMouseout);
         function onMouseover(e: Event, d: IBinData) {
             _this.interactions.tooltip.appendTooltipText(chart, `Count: ${d.bin.length.toString()}`);
-            _this.interactions.tooltip.positionTooltipContainer(chart, bandwithScale(0) + (2 * d3.selectAll(".violin-text-box").node().getBBox().width), parseInt(d3.select(this).attr("y")) - d3.selectAll(".violin-text-box").node().getBBox().height);
+            _this.interactions.tooltip.positionTooltipContainer(chart, bandwithScale(0), parseInt(d3.select(this).attr("y")) - d3.selectAll(".violin-text-box").node().getBBox().height);
         }
         function onMouseout() {
             chart.elements.svg.select(".tooltip-container").transition()
