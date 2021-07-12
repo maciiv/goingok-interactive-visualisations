@@ -1,5 +1,34 @@
 import * as d3 from "d3";
 
+interface IReflectionAuthorEntryRaw {
+    timestamp: string;
+    pseudonym: string;
+    point: string;
+    text: string;
+}
+
+interface IAnalyticsChartsDataRaw {
+    group: string;
+    value: IReflectionAuthorEntryRaw[];
+    transformData(data: IAnalyticsChartsDataRaw): AnalyticsChartsData;
+}
+
+class AnalyticsChartsDataRaw implements IAnalyticsChartsDataRaw {
+    group: string;
+    value: IReflectionAuthorEntryRaw[];
+    constructor(group: string, value: IReflectionAuthorEntryRaw[]) {
+        this.group = group;
+        this.value = value;
+    }
+    transformData(data: IAnalyticsChartsDataRaw): AnalyticsChartsData {
+        return new AnalyticsChartsData(data.group, data.value.map(d => {
+            return {
+            timestamp: new Date(d.timestamp), pseudonym: d.pseudonym, point: parseInt(d.point), text: d.text
+            }
+        }) as IReflectionAuthorEntry[], undefined, false);
+    }
+}
+
 interface IReflectionAuthorEntry {
     timestamp: Date;
     pseudonym: string;
@@ -10,6 +39,7 @@ interface IReflectionAuthorEntry {
 interface IAnalyticsChartsData {
     group: string;
     value: IReflectionAuthorEntry[];
+    colour: string;
     selected: boolean;
     getUsersData(data: IAnalyticsChartsData): AnalyticsChartsData;
 }
@@ -17,15 +47,17 @@ interface IAnalyticsChartsData {
 class AnalyticsChartsData implements IAnalyticsChartsData {
     group: string;
     value: IReflectionAuthorEntry[];
+    colour: string;
     selected: boolean;
-    constructor(group: string, value: IReflectionAuthorEntry[], selected: boolean = false) {
+    constructor(group: string, value: IReflectionAuthorEntry[], colour: string = undefined, selected: boolean = false) {
         this.group = group;
         this.value = value;
+        this.colour = colour;
         this.selected = selected;
     }
     getUsersData(data: IAnalyticsChartsData): AnalyticsChartsData {
         let usersMean = Array.from(d3.rollup(data.value, d => Math.round(d3.mean(d.map(r => r.point))), d => d.pseudonym), ([pseudonym, point]) => ({ pseudonym, point }) as IReflectionAuthorEntry);
-        return new AnalyticsChartsData(data.group, usersMean);
+        return new AnalyticsChartsData(data.group, usersMean, data.colour);
     }
 }
 
@@ -66,7 +98,7 @@ class AnalyticsChartsDataStats extends AnalyticsChartsData implements IAnalytics
     userLessReflective: number;
     totalUsers: number;
     constructor(entries: IAnalyticsChartsData) {
-        super(entries.group, entries.value, entries.selected);
+        super(entries.group, entries.value, entries.colour, entries.selected);
         let uniqueUsers = Array.from(d3.rollup(entries.value, (d: IReflectionAuthorEntry[]) => d.length, (d: IReflectionAuthorEntry) => d.pseudonym), ([key, value]) => ({ key, value }));
         this.mean = Math.round(d3.mean(entries.value.map(r => r.point))),
             this.median = d3.median(entries.value.map(r => r.point)),
@@ -892,7 +924,8 @@ class AdminControlCharts implements IAdminControlCharts {
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries {
         //Select existing minMax lines
         let minMax = chart.elements.contentContainer.selectAll(`#${chart.id}-data-min-max`)
-            .data(data);
+            .data(data)
+            .style("stroke", (d: IAnalyticsChartsDataStats) => d.colour);
 
         //Remove old minMax lines
         minMax.exit().remove();
@@ -905,14 +938,16 @@ class AdminControlCharts implements IAdminControlCharts {
             .attr("x1", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
             .attr("x2", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
             .attr("y1", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.min))
-            .attr("y2", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.max));
+            .attr("y2", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.max))
+            .style("stroke", (d: IAnalyticsChartsDataStats) => d.colour);
 
         //Merge existing and new minMax lines
         minMax.merge(minMaxEnter);
 
         //Select existing median lines
         let median = chart.elements.contentContainer.selectAll(`#${chart.id}-data-median`)
-            .data(data);
+            .data(data)
+            .style("stroke", (d: IAnalyticsChartsDataStats) => d.colour);
 
         //Remove old median lines
         median.exit().remove();
@@ -925,14 +960,17 @@ class AdminControlCharts implements IAdminControlCharts {
             .attr("x1", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group))
             .attr("x2", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group) + chart.x.scale.bandwidth())
             .attr("y1", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.median))
-            .attr("y2", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.median));
+            .attr("y2", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.median))
+            .style("stroke", (d: IAnalyticsChartsDataStats) => d.colour);
 
         //Merge existing and new median lines
         median.merge(medianEnter);
 
         //Select existing boxes
         let boxes = chart.elements.contentContainer.selectAll(`#${chart.id}-data`)
-            .data(data);
+            .data(data)
+            .style("stroke", (d: IAnalyticsChartsDataStats) => d.colour)
+            .style("fill", (d: IAnalyticsChartsDataStats) => d.colour);
 
         //Remove old boxes
         boxes.exit().remove();
@@ -945,7 +983,9 @@ class AdminControlCharts implements IAdminControlCharts {
             .attr("y", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.q3))
             .attr("x", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group))
             .attr("width", (d: IAnalyticsChartsDataStats) => chart.x.scale.bandwidth())
-            .attr("height", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.q1) - chart.y.scale(d.q3));
+            .attr("height", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.q1) - chart.y.scale(d.q3))
+            .style("stroke", (d: IAnalyticsChartsDataStats) => d.colour)
+            .style("fill", (d: IAnalyticsChartsDataStats) => d.colour);
 
         //Merge existing and new boxes
         boxes.merge(boxesEnter);
@@ -1049,6 +1089,11 @@ class AdminControlCharts implements IAdminControlCharts {
         //Remove old bin containers
         binContainer.exit().remove();
 
+        //Update colours
+        binContainer.select("path")
+            .style("stroke", (d: IAnalyticsChartsDataStats) => d.colour)
+            .style("fill", (d: IAnalyticsChartsDataStats) => d.colour);
+
         //Append new bin containers
         let binContainerEnter = binContainer.enter()
             .append("g")
@@ -1057,8 +1102,10 @@ class AdminControlCharts implements IAdminControlCharts {
 
         //Draw violins
         binContainerEnter.append("path")
-            .attr("id", `${chart.id}-violin`)
+            .attr("id", `${chart.id}-violin`)            
             .attr("class", "violin-path")
+            .style("stroke", (d: IAnalyticsChartsDataStats) => d.colour)
+            .style("fill", (d: IAnalyticsChartsDataStats) => d.colour)
             .datum((d: IAnalyticsChartsData) => bin(d.value.map(d => d.point)))
             .attr("d", d3.area()
                 .x0((d: number[]) => bandwithScale(-d.length))
@@ -1120,8 +1167,8 @@ class AdminControlCharts implements IAdminControlCharts {
             .attr("id", `${chart.id}-timeline-contours`)
             .attr("class", "contour")
             .attr("d", d3.geoPath())
-            .attr("stroke", (d: d3.ContourMultiPolygon) => d3.interpolateBlues(d.value * 25))
-            .attr("fill", (d: d3.ContourMultiPolygon) => d3.interpolateBlues(d.value * 20));
+            .attr("stroke", (d: d3.ContourMultiPolygon) => d3.interpolateRgb("#ffffff", data.colour)(d.value * 25))
+            .attr("fill", (d: d3.ContourMultiPolygon) => d3.interpolateRgb("#ffffff", data.colour)(d.value * 20));
 
         //Enable zoom
         this.interactions.zoom.enableZoom(chart, zoomed);
@@ -1141,12 +1188,12 @@ class AdminControlCharts implements IAdminControlCharts {
                 .attr("id", `${chart.id}-timeline-contours`)
                 .attr("class", "contour")
                 .attr("d", d3.geoPath())
-                .attr("stroke", (d: d3.ContourMultiPolygon) => d3.interpolateBlues(d.value * 25))
-                .attr("fill", (d: d3.ContourMultiPolygon) => d3.interpolateBlues(d.value * 20));
+                .attr("stroke", (d: d3.ContourMultiPolygon) => d3.interpolateRgb("#ffffff", data.colour)(d.value * 25))
+                .attr("fill", (d: d3.ContourMultiPolygon) => d3.interpolateRgb("#ffffff", data.colour)(d.value * 20));
 
             zoomContours.attr("d", d3.geoPath())
-                .attr("stroke", (d: d3.ContourMultiPolygon) => d3.interpolateBlues(d.value * 25))
-                .attr("fill", (d: d3.ContourMultiPolygon) => d3.interpolateBlues(d.value * 20));
+                .attr("stroke", (d: d3.ContourMultiPolygon) => d3.interpolateRgb("#ffffff", data.colour)(d.value * 25))
+                .attr("fill", (d: d3.ContourMultiPolygon) => d3.interpolateRgb("#ffffff", data.colour)(d.value * 20));
 
             zoomContours.merge(zoomContoursEnter);
 
@@ -1161,7 +1208,9 @@ class AdminControlCharts implements IAdminControlCharts {
 
         //Select existing circles
         let circles = chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles`)
-            .data(data.value);
+            .data(data.value)
+            .style("stroke", data.colour)
+            .style("fill", data.colour);
 
         //Remove old circles
         circles.exit().remove();
@@ -1173,7 +1222,9 @@ class AdminControlCharts implements IAdminControlCharts {
             .attr("id", `${chart.id}-timeline-circles`)
             .attr("r", 5)
             .attr("cx", (d: IReflectionAuthorEntry) => chart.x.scale(d.timestamp))
-            .attr("cy", (d: IReflectionAuthorEntry) => chart.y.scale(d.point));
+            .attr("cy", (d: IReflectionAuthorEntry) => chart.y.scale(d.point))
+            .style("stroke", data.colour)
+            .style("fill", data.colour);
 
         //Merge existing and new circles
         circles.merge(circlesEnter);
@@ -1227,7 +1278,9 @@ class AdminControlCharts implements IAdminControlCharts {
 
         //Select existing zoom circles
         let zoomCircle = chart.elements.zoomSVG.selectAll(`#${chart.id}-zoom-bar-content`)
-            .data(data.value);
+            .data(data.value)
+            .style("stroke", data.colour)
+            .style("fill", data.colour);
 
         //Remove old zoom circles
         zoomCircle.exit().remove();
@@ -1239,7 +1292,9 @@ class AdminControlCharts implements IAdminControlCharts {
             .attr("id", `${chart.id}-zoom-bar-content`)
             .attr("r", 2)
             .attr("cx", (d: IReflectionAuthorEntry) => zoomChart.x.scale(d.timestamp))
-            .attr("cy", (d: IReflectionAuthorEntry) => zoomChart.y.scale(d.point));
+            .attr("cy", (d: IReflectionAuthorEntry) => zoomChart.y.scale(d.point))
+            .style("stroke", data.colour)
+            .style("fill", data.colour);
 
         //Merge existing and new zoom circles
         zoomCircle.merge(zoomCircleEnter);
@@ -1421,8 +1476,12 @@ class AdminControlInteractions extends AdminControlTransitions implements IAdmin
 interface IAdminExperimentalCharts extends IAdminControlCharts {
     violin: IViolinChartSeries;
     usersViolin: IViolinChartSeries;
+    timeline: ChartTime;
+    timelineZoom: ChartTimeZoom;
+    allEntries: IAnalyticsChartsData[];
     preloadGroups(allEntries: IAnalyticsChartsData[]): IAnalyticsChartsData[];
-    handleGroups(boxPlot: ChartSeries, allEntries: IAnalyticsChartsData[]): void;
+    handleGroups(boxPlot: ChartSeries): void;
+    handleGroupsColours(chart: ChartSeries): void;
     getGroupCompareData(data: IAnalyticsChartsData[], id: string): IAnalyticsChartsData[];
     renderGroupCompare(data: IAnalyticsChartsData[], id: string): any;
     handleGroupCompare(data: IAnalyticsChartsData[], compareData: IAnalyticsChartsData[]): void;
@@ -1431,17 +1490,36 @@ interface IAdminExperimentalCharts extends IAdminControlCharts {
 class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperimentalCharts {
     violin: ViolinChartSeries;
     usersViolin: ViolinChartSeries;
+    timeline: ChartTime;
+    timelineZoom: ChartTimeZoom;
+    allEntries: IAnalyticsChartsData[];
     interactions = new AdminExperimentalInteractions();
     preloadGroups(allEntries: IAnalyticsChartsData[]): IAnalyticsChartsData[] {
-        d3.selectAll("#groups input").each(function () {
-            d3.select(this).attr("checked") == null ? "" : allEntries.find(d => d.group == d3.select(this).attr("value")).selected = true;
-        });
+        d3.select("#groups")
+            .selectAll("li")
+            .data(allEntries)
+            .enter()
+            .append("li")
+            .html(d => `<div class="input-group mb-1">
+                                <div class="input-group-prepend">
+                                    <div class="input-group-text">
+                                        <input type="checkbox" value="${d.group}" ${d.selected ? "checked" : ""} />
+                                    </div>                               
+                                </div>
+                                <input type="text" value="${d.group}" class="form-control" disabled>
+                                <div class="input-group-append">
+                                    <div class="input-group-text">
+                                        <input type="color" value="${d.colour}" id="colour-${d.group}" />
+                                    </div>                                
+                                </div>
+                            </div>  `);
+        this.allEntries = allEntries;
         return d3.filter(allEntries, d => d.selected == true);
     };
-    handleGroups(boxPlot: ChartSeries, allEntries: IAnalyticsChartsData[]): void {
+    handleGroups(boxPlot: ChartSeries): void {
         let _this = this;
-        function updateData(chart: ChartSeries, allEntries: IAnalyticsChartsData[]): IAnalyticsChartsDataStats[] {
-            let entries = d3.filter(allEntries, d => d.selected);
+        function updateData(chart: ChartSeries): IAnalyticsChartsDataStats[] {
+            let entries = d3.filter(_this.allEntries, d => d.selected);
             let data = entries.map(d => new AnalyticsChartsDataStats(d));
             chart.x = new ChartSeriesAxis("Group Code", data.map(r => r.group), [0, chart.width - chart.padding.yAxis - chart.padding.right]);
             return data;
@@ -1450,11 +1528,11 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.interactions.axisSeries(chart, data);
             _this.renderGroupChart(chart, data);
         }
-        d3.selectAll("#groups input").on("change", (e: Event) => {
+        d3.selectAll("#groups input[type=checkbox]").on("change", (e: Event) => {
             let target = e.target as HTMLInputElement;
             if (target.checked) {
-                allEntries.find(d => d.group == target.value).selected = true;
-                let data = updateData(boxPlot, allEntries);
+                _this.allEntries.find(d => d.group == target.value).selected = true;
+                let data = updateData(boxPlot);
                 updateGroupChart(boxPlot, data);
                 if (boxPlot.click) {
                     _this.interactions.click.appendGroupsText(boxPlot, data, data[data.map(d => d.group).indexOf(d3.select("#groups-statistics .card").attr("id"))]);
@@ -1463,8 +1541,8 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                     _this.handleGroupCompare(data, violinData);
                 }
             } else {
-                allEntries.find(d => d.group == target.value).selected = false;
-                let data = updateData(boxPlot, allEntries);
+                _this.allEntries.find(d => d.group == target.value).selected = false;
+                let data = updateData(boxPlot);
                 updateGroupChart(boxPlot, data);
                 boxPlot.elements.contentContainer.selectAll(`#${boxPlot.id} .content-container .click-container`)
                     .data(data)
@@ -1488,6 +1566,35 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                         _this.interactions.axisSeries(_this.usersViolin, violinData);
                     }
                 }
+            }
+        });
+    };
+    handleGroupsColours(chart: ChartSeries): void {
+        let _this = this;
+        d3.selectAll("#groups input[type=color]").on("change", (e: Event) => {
+            let target = e.target as HTMLInputElement;
+            let group = target.id.replace("colour-","");
+            _this.allEntries.find(d => d.group == group).colour = target.value;
+            let entries = d3.filter(_this.allEntries, d => d.selected);
+            let data = entries.map(d => new AnalyticsChartsDataStats(d));
+            _this.renderGroupChart(chart, data);
+            if(chart.click) {
+                let currentClickGroup = d3.select("#groups-statistics .card").attr("id");
+                if(currentClickGroup == group) {
+                    let violinData = _this.getGroupCompareData(data, d3.select("#groups-statistics .card").attr("id"));
+                    _this.renderViolin(_this.violin, violinData);
+                    let usersData = violinData.map(d => {
+                        return d.getUsersData(d)
+                    });
+                    _this.renderViolin(_this.usersViolin, usersData);
+                    _this.handleGroupCompare(_this.allEntries, violinData);
+                    if (_this.timeline.elements.contentContainer.selectAll(`#${_this.timeline.id}-timeline-contours`).empty()) {
+                        _this.renderTimelineScatter(_this.timeline, _this.timelineZoom, _this.allEntries.find(d => d.group == group));
+                    } else {
+                        _this.timeline.elements.contentContainer.selectAll(`#${_this.timeline.id}-timeline-contours`).remove();
+                        _this.renderTimelineDensity(_this.timeline, _this.allEntries.find(d => d.group == group));
+                    }
+                }               
             }
         });
     };
@@ -1517,7 +1624,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.htmlContainers.compare = _this.htmlContainers.appendDiv("group-compare", "col-md-2 mt-3");
             let compareCard = _this.htmlContainers.appendCard(_this.htmlContainers.compare, `Compare ${d.group} with:`);
             compareCard.select(".card-body").attr("class", "card-body");
-            let violinData = _this.getGroupCompareData(data, d3.select("#groups-statistics .card").attr("id"))
+            let violinData = _this.getGroupCompareData(data, d3.select("#groups-statistics .card").attr("id"));
             _this.renderGroupCompare(data, d.group);
 
             //Draw groups violin container  
@@ -1557,11 +1664,11 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 </div>`)
                 .append("div")
                 .attr("class", "chart-container");
-            let timelineChart = new ChartTime("group-timeline", d3.extent(d.value.map(d => d.timestamp)));
-            timelineChart.elements.preRender(timelineChart);
-            _this.renderTimelineDensity(timelineChart, d);
-            let timelineZoomChart = new ChartTimeZoom(timelineChart, d3.extent(d.value.map(d => d.timestamp)));
-            _this.handleTimelineButtons(timelineChart, timelineZoomChart, d);
+            _this.timeline = new ChartTime("group-timeline", d3.extent(d.value.map(d => d.timestamp)));
+            _this.timeline.elements.preRender(_this.timeline);
+            _this.renderTimelineDensity(_this.timeline, d);
+            _this.timelineZoom = new ChartTimeZoom(_this.timeline, d3.extent(d.value.map(d => d.timestamp)));
+            _this.handleTimelineButtons(_this.timeline, _this.timelineZoom, d);
 
             //Scroll
             document.querySelector("#groups-statistics").scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1770,7 +1877,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         d3.select("#group-compare .card-body").selectAll("div").each((d: IAnalyticsChartsData, i, g) => {
             d3.select(g[i]).select("input").property("checked") == null ? "" : compareData.push(d);
         });
-        return data.filter(d => compareData.includes(d) || d.group == id);
+        return data.filter(d => compareData.map(x => x.group).includes(d.group) || d.group == id);
     }
     renderGroupCompare(data: IAnalyticsChartsData[], id: string): any {
         let compareData = data.filter(d => d.group != id);
@@ -1820,7 +1927,11 @@ class AdminExperimentalInteractions extends AdminControlInteractions implements 
     End of admin experimental interfaces and classes
 -------------------------------------------------- */
 
-export function buildControlAdminAnalyticsCharts(entries: IAnalyticsChartsData[]) {
+export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]) {
+    let rawData = entriesRaw.map(d => new AnalyticsChartsDataRaw(d.group, d.value));
+    let entries = rawData.map(d => d.transformData(d));
+    let colourScale = d3.scaleOrdinal(d3.schemeCategory10);
+    entries = entries.map(d => new AnalyticsChartsData(d.group, d.value, colourScale(d.group), d.selected));
     drawCharts(entries);
     function drawCharts(allEntries: IAnalyticsChartsData[]) {
         let adminControlCharts = new AdminControlCharts();
@@ -1945,7 +2056,11 @@ export function buildControlAdminAnalyticsCharts(entries: IAnalyticsChartsData[]
     }
 }
 
-export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsData[]) {
+export function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]) {
+    let rawData = entriesRaw.map(d => new AnalyticsChartsDataRaw(d.group, d.value));
+    let entries = rawData.map(d => d.transformData(d));
+    let colourScale = d3.scaleOrdinal(d3.schemeCategory10);
+    entries = entries.map((d, i) => new AnalyticsChartsData(d.group, d.value, colourScale(d.group), i == 0 ? true : false));
     drawCharts(entries);
     function drawCharts(allEntries: IAnalyticsChartsData[]) {
         let adminExperimentalCharts = new AdminExperimentalCharts();
@@ -1968,6 +2083,7 @@ export function buildExperimentAdminAnalyticsCharts(entries: IAnalyticsChartsDat
         groupChart = adminExperimentalCharts.renderGroupChart(groupChart, data);
 
         //Update charts depending on group
-        adminExperimentalCharts.handleGroups(groupChart, allEntries.map(d => new AnalyticsChartsDataStats(d)));
+        adminExperimentalCharts.handleGroups(groupChart);
+        adminExperimentalCharts.handleGroupsColours(groupChart);
     }
 }

@@ -17,17 +17,50 @@
                     <hr>
                 </div>
                 <ul id="groups" class="list-unstyled components">
-                    <li>
-                        <input type="radio" name="group" id="group 1" value="group 1" checked />
-                        <label for="group 1">Group 1</label>
+                    <li id="group 1">
+                        <div class="input-group mb-1">
+                            <div class="input-group-prepend">
+                                <div class="input-group-text">
+                                    <input type="checkbox" value="group 1" checked />
+                                </div>                               
+                            </div>
+                            <input type="text" value="Group 1" class="form-control" disabled>
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <input type="color" />
+                                </div>                                
+                            </div>
+                        </div>                       
                     </li>
-                    <li>
-                        <input type="radio" name="group" id="group 2" value="group 2" />
-                        <label for="group 2">Group 2</label>
+                    <li id="group 2">
+                        <div class="input-group mb-1">
+                            <div class="input-group-prepend">
+                                <div class="input-group-text">
+                                    <input type="checkbox" value="group 2" />
+                                </div>                               
+                            </div>
+                            <input type="text" value="Group 2" class="form-control" disabled>
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <input type="color" />
+                                </div>                                
+                            </div>
+                        </div>   
                     </li>
-                    <li>
-                        <input type="radio" name="group" id="group 3" value="group 3" />
-                        <label for="group 3">Group 3</label>
+                    <li id="group 3">
+                        <div class="input-group mb-1">
+                            <div class="input-group-prepend">
+                                <div class="input-group-text">
+                                    <input type="checkbox" value="group 3" />
+                                </div>                               
+                            </div>
+                            <input type="text" value="Group 3" class="form-control" disabled>
+                            <div class="input-group-append">
+                                <div class="input-group-text">
+                                    <input type="color" />
+                                </div>                                
+                            </div>
+                        </div>   
                     </li>
                 </ul>
                 <ul class="list-unstyled CTAs">
@@ -53,8 +86,8 @@
             d3.csv("test-data.csv").then(function (c) {
                     var data = c.map(function (r) {
                         return {
-                            timestamp: new Date(r.timestamp),
-                            point: parseInt(r.point),
+                            timestamp: r.timestamp,
+                            point: r.point,
                             pseudonym: r.pseudonym,
                             groupCode: r.group_code,
                             text: r.text
