@@ -611,7 +611,7 @@ interface ITooltip {
     appendTooltipContainer(chart: IChart): void;
     appendTooltipText(chart: IChart, title: string, values: ITooltipValues[]): void;
     positionTooltipContainer(chart: IChart, x: number, y: number): void;
-    appendLine(chart: IChart, x1: number, y1: number, x2: number, y2: number): void;
+    appendLine(chart: IChart, x1: number, y1: number, x2: number, y2: number, colour: string): void;
 }
 
 // Class for tooltip interaction
@@ -659,13 +659,14 @@ class Tooltip implements ITooltip {
             .transition()
             .style("opacity", 1);
     };
-    appendLine(chart: IChart, x1: number, y1: number, x2: number, y2: number): void {
+    appendLine(chart: IChart, x1: number, y1: number, x2: number, y2: number, colour: string): void {
         chart.elements.contentContainer.append("line")
             .attr("class", "tooltip-line")
             .attr("x1", x1)
             .attr("y1", y1)
             .attr("x2", x2)
-            .attr("y2", y2);
+            .attr("y2", y2)
+            .style("stroke", colour);
     };
 }
 
@@ -712,7 +713,7 @@ interface IClick {
 // Class for click interaction
 class Click implements IClick {
     enableClick(chart: IChart, onClick: any): void {
-        chart.elements.content.on("click", onClick)
+        chart.elements.content.on("click", onClick);
     };
     removeClick(chart: IChart): void {
         chart.click = false;
@@ -934,7 +935,7 @@ class AdminControlCharts implements IAdminControlCharts {
                                         <input type="checkbox" value="${d.group}" checked disabled />
                                     </div>                               
                                 </div>
-                                <input type="text" value="${d.group}" class="form-control" disabled>
+                                <input type="text" value="${d.group}" class="form-control" disabled />
                                 <div class="input-group-append">
                                     <div class="input-group-text">
                                         <input type="color" value="${d.colour}" id="colour-${d.group}" disabled />
@@ -1282,8 +1283,8 @@ class AdminControlCharts implements IAdminControlCharts {
                 return yTooltip;
             };
 
-            _this.interactions.tooltip.appendLine(chart, 0, chart.y.scale(d.point), chart.x.scale(d.timestamp), chart.y.scale(d.point));
-            _this.interactions.tooltip.appendLine(chart, chart.x.scale(d.timestamp), chart.y.scale(0), chart.x.scale(d.timestamp), chart.y.scale(d.point));
+            _this.interactions.tooltip.appendLine(chart, 0, chart.y.scale(d.point), chart.x.scale(d.timestamp), chart.y.scale(d.point), data.colour);
+            _this.interactions.tooltip.appendLine(chart, chart.x.scale(d.timestamp), chart.y.scale(0), chart.x.scale(d.timestamp), chart.y.scale(d.point), data.colour);
         }
         function onMouseout() {
             chart.elements.svg.select(".tooltip-container").transition()
@@ -1527,7 +1528,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                                         <input type="checkbox" value="${d.group}" ${d.selected ? "checked" : ""} />
                                     </div>                               
                                 </div>
-                                <input type="text" value="${d.group}" class="form-control" disabled>
+                                <input type="text" value="${d.group}" class="form-control" disabled />
                                 <div class="input-group-append">
                                     <div class="input-group-text">
                                         <input type="color" value="${d.colour}" id="colour-${d.group}" />
@@ -1557,7 +1558,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 updateGroupChart(boxPlot, data);
                 if (boxPlot.click) {
                     _this.interactions.click.appendGroupsText(boxPlot, data, data[data.map(d => d.group).indexOf(d3.select("#groups-statistics .card").attr("id"))]);
-                    let violinData = _this.getGroupCompareData();
+                    _this.getGroupCompareData();
                     _this.renderGroupCompare();
                     _this.handleGroupCompare();
                 }
@@ -1626,6 +1627,11 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         chart = super.renderGroupChart(chart, data);
         let _this = this
         _this.interactions.click.enableClick(chart, onClick);
+        chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
+            _this.interactions.click.removeClick(chart);
+            _this.interactions.click.removeClickClass(chart, "bar");
+            _this.htmlContainers.remove();
+        });
         function onClick(e: Event, d: IAnalyticsChartsDataStats) {
             if (d3.select(this).attr("class") == "bar clicked") {
                 _this.interactions.click.removeClick(chart);
@@ -1828,6 +1834,12 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         chart = super.renderTimelineScatter(chart, zoomChart, data);
         //Enable click
         _this.interactions.click.enableClick(chart, onClick);
+        chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
+            _this.interactions.click.removeClick(chart);
+            _this.interactions.click.removeClickClass(chart, "line-circle");
+            chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`).remove();
+            _this.htmlContainers.removeUsers();
+        });
         function onClick(e: Event, d: IReflectionAuthorEntry) {
             if (d3.select(this).attr("class") == "line-circle clicked") {
                 _this.interactions.click.removeClick(chart);
@@ -1957,6 +1969,7 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
         let adminControlCharts = new AdminControlCharts();
         //Handle sidebar button
         adminControlCharts.sidebarBtn();
+        adminControlCharts.preloadGroups(allEntries);
 
         //Create data with current entries
         let data = allEntries.map(d => new AnalyticsChartsDataStats(d));
@@ -1985,7 +1998,7 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
                 .attr("class", "btn btn-link")
                 .attr("data-target", `#stats-${d.group}`)
                 .attr("data-toggle", "collapse")
-                .html(d.group);
+                .html(`${d.group} statistics`);
             d3.select(g[i])
                 .append("div")
                 .attr("id", `stats-${d.group}`)
@@ -2072,7 +2085,44 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
                     adminControlCharts.renderTimelineDensity(timelineChart, d);
                 }
                 adminControlCharts.handleTimelineButtons(timelineChart, timelineZoomChart, d);
-            })
+            });
+        
+        adminControlCharts.htmlContainers.userStatistics = adminControlCharts.htmlContainers.appendDiv("user-statistics", "col-md-12 mt-3");
+        let usersCards = adminControlCharts.htmlContainers.userStatistics.selectAll("div")
+            .data(usersData)
+            .enter()
+            .append("div")
+            .attr("class", "card");
+        usersCards.each((d: IAnalyticsChartsData, i: number, g: any) => {
+            d3.select(g[i])
+                .append("div")
+                .attr("class", "card-header")
+                .append("button")
+                .attr("class", "btn btn-link")
+                .attr("data-target", `#users-${d.group}`)
+                .attr("data-toggle", "collapse")
+                .html(`Users in ${d.group}`);
+            d3.select(g[i])
+                .append("div")
+                .attr("id", `users-${d.group}`)
+                .attr("class", `collapse ${i == 0 ? "show" : ""}`)
+                .append("div")
+                .attr("class", "card-body")
+                .append("div")
+                .attr("class", "row")
+                .append("div")
+                .attr("class", "col-md-3")
+                .append("div")
+                .attr("class", "list-group")
+                .selectAll("a")
+                .data(d.value)
+                .enter()
+                .append("a")
+                .attr("class", (d, i) => `list-group-item list-group-item-action ${i == 0 ? "active" : ""}`)
+                .attr("data-toggle", "list")
+                .attr("href", d => `#${d.pseudonym}`)
+                .html(d => d.pseudonym);
+        });
     }
 }
 
