@@ -895,6 +895,7 @@ interface IAdminControlCharts {
     htmlContainers: IHtmlContainers;
     interactions: IAdminControlInteractions;
     sidebarBtn(): void;
+    preloadGroups(allEntries: IAnalyticsChartsData[]): IAnalyticsChartsData[];
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries;
     renderGroupStats(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsDataStats): any;
     renderViolin(chart: ViolinChartSeries, data: IAnalyticsChartsData[]): ViolinChartSeries;
@@ -920,6 +921,27 @@ class AdminControlCharts implements IAdminControlCharts {
             d3.select("#sidebar #groups")
                 .style("opacity", isActive ? "0" : "1")
         });
+    };
+    preloadGroups(allEntries: IAnalyticsChartsData[]): IAnalyticsChartsData[] {
+        d3.select("#groups")
+            .selectAll("li")
+            .data(allEntries)
+            .enter()
+            .append("li")
+            .html(d => `<div class="input-group mb-1">
+                                <div class="input-group-prepend">
+                                    <div class="input-group-text">
+                                        <input type="checkbox" value="${d.group}" checked disabled />
+                                    </div>                               
+                                </div>
+                                <input type="text" value="${d.group}" class="form-control" disabled>
+                                <div class="input-group-append">
+                                    <div class="input-group-text">
+                                        <input type="color" value="${d.colour}" id="colour-${d.group}" disabled />
+                                    </div>                                
+                                </div>
+                            </div>  `);
+        return allEntries;
     };
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries {
         //Select existing minMax lines
@@ -1479,7 +1501,6 @@ interface IAdminExperimentalCharts extends IAdminControlCharts {
     timeline: ChartTime;
     timelineZoom: ChartTimeZoom;
     allEntries: IAnalyticsChartsData[];
-    preloadGroups(allEntries: IAnalyticsChartsData[]): IAnalyticsChartsData[];
     handleGroups(boxPlot: ChartSeries): void;
     handleGroupsColours(chart: ChartSeries): void;
     getGroupCompareData(data: IAnalyticsChartsData[], id: string): IAnalyticsChartsData[];
@@ -1536,9 +1557,9 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 updateGroupChart(boxPlot, data);
                 if (boxPlot.click) {
                     _this.interactions.click.appendGroupsText(boxPlot, data, data[data.map(d => d.group).indexOf(d3.select("#groups-statistics .card").attr("id"))]);
-                    let violinData = _this.getGroupCompareData(data, d3.select("#groups-statistics .card").attr("id"));
-                    _this.renderGroupCompare(data, d3.select("#groups-statistics .card").attr("id"));
-                    _this.handleGroupCompare(data, violinData);
+                    let violinData = _this.getGroupCompareData();
+                    _this.renderGroupCompare();
+                    _this.handleGroupCompare();
                 }
             } else {
                 _this.allEntries.find(d => d.group == target.value).selected = false;
@@ -1555,11 +1576,11 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                         _this.htmlContainers.remove();
                     } else {
                         _this.interactions.click.appendGroupsText(boxPlot, data, data[data.map(d => d.group).indexOf(d3.select("#groups-statistics .card").attr("id"))]);
-                        let violinData = _this.getGroupCompareData(data, d3.select("#groups-statistics .card").attr("id"));
-                        _this.renderGroupCompare(data, d3.select("#groups-statistics .card").attr("id"));
+                        let violinData = _this.getGroupCompareData();
+                        _this.renderGroupCompare();
                         _this.violin.x = new ChartSeriesAxis("Group Code", violinData.map(r => r.group), [0, _this.violin.width - _this.violin.padding.yAxis - _this.violin.padding.right]);
                         _this.usersViolin.x = new ChartSeriesAxis("Group Code", violinData.map(r => r.group), [0, _this.usersViolin.width - _this.usersViolin.padding.yAxis - _this.usersViolin.padding.right]);
-                        _this.handleGroupCompare(data, violinData);
+                        _this.handleGroupCompare();
                         _this.renderViolin(_this.violin, violinData);
                         _this.renderViolin(_this.usersViolin, violinData);
                         _this.interactions.axisSeries(_this.violin, violinData);
@@ -1573,26 +1594,29 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         let _this = this;
         d3.selectAll("#groups input[type=color]").on("change", (e: Event) => {
             let target = e.target as HTMLInputElement;
-            let group = target.id.replace("colour-","");
-            _this.allEntries.find(d => d.group == group).colour = target.value;
+            let groupId = target.id.replace("colour-","");
+            _this.allEntries.find(d => d.group == groupId).colour = target.value;
             let entries = d3.filter(_this.allEntries, d => d.selected);
             let data = entries.map(d => new AnalyticsChartsDataStats(d));
             _this.renderGroupChart(chart, data);
             if(chart.click) {
                 let currentClickGroup = d3.select("#groups-statistics .card").attr("id");
-                if(currentClickGroup == group) {
-                    let violinData = _this.getGroupCompareData(data, d3.select("#groups-statistics .card").attr("id"));
+                let violinData = _this.getGroupCompareData();
+                if(violinData.map(d => d.group).includes(groupId)) {
+                    let violinData = _this.getGroupCompareData();
                     _this.renderViolin(_this.violin, violinData);
                     let usersData = violinData.map(d => {
                         return d.getUsersData(d)
                     });
                     _this.renderViolin(_this.usersViolin, usersData);
-                    _this.handleGroupCompare(_this.allEntries, violinData);
+                    _this.handleGroupCompare();
+                }
+                if(currentClickGroup == groupId) {
                     if (_this.timeline.elements.contentContainer.selectAll(`#${_this.timeline.id}-timeline-contours`).empty()) {
-                        _this.renderTimelineScatter(_this.timeline, _this.timelineZoom, _this.allEntries.find(d => d.group == group));
+                        _this.renderTimelineScatter(_this.timeline, _this.timelineZoom, _this.allEntries.find(d => d.group == groupId));
                     } else {
                         _this.timeline.elements.contentContainer.selectAll(`#${_this.timeline.id}-timeline-contours`).remove();
-                        _this.renderTimelineDensity(_this.timeline, _this.allEntries.find(d => d.group == group));
+                        _this.renderTimelineDensity(_this.timeline, _this.allEntries.find(d => d.group == groupId));
                     }
                 }               
             }
@@ -1624,8 +1648,8 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.htmlContainers.compare = _this.htmlContainers.appendDiv("group-compare", "col-md-2 mt-3");
             let compareCard = _this.htmlContainers.appendCard(_this.htmlContainers.compare, `Compare ${d.group} with:`);
             compareCard.select(".card-body").attr("class", "card-body");
-            let violinData = _this.getGroupCompareData(data, d3.select("#groups-statistics .card").attr("id"));
-            _this.renderGroupCompare(data, d.group);
+            let violinData = _this.getGroupCompareData();
+            _this.renderGroupCompare();
 
             //Draw groups violin container  
             _this.htmlContainers.groupViolin = _this.htmlContainers.appendDiv("group-violin-chart", "col-md-5 mt-3");
@@ -1645,7 +1669,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.usersViolin.elements.preRender(_this.usersViolin);
             _this.usersViolin.elements.renderViolinThresholds(_this.usersViolin, [30, 70]);
             _this.usersViolin = _this.renderViolin(_this.usersViolin, usersData);
-            _this.handleGroupCompare(data, violinData);
+            _this.handleGroupCompare();
 
             //Draw selected group timeline 
             _this.htmlContainers.groupTimeline = _this.htmlContainers.appendDiv("group-timeline", "col-md-12 mt-3");
@@ -1872,16 +1896,18 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         this.interactions.click.removeClick(chart);
         return chart;
     };
-    getGroupCompareData(data: IAnalyticsChartsData[], id: string): IAnalyticsChartsData[] {
+    getGroupCompareData(): IAnalyticsChartsData[] {
+        let currentGroupId = d3.select("#groups-statistics .card").attr("id");
         let compareData = [] as IAnalyticsChartsData[];
         d3.select("#group-compare .card-body").selectAll("div").each((d: IAnalyticsChartsData, i, g) => {
-            d3.select(g[i]).select("input").property("checked") == null ? "" : compareData.push(d);
+            d3.select(g[i]).select("input").property("checked") == false ? "" : compareData.push(d);
         });
-        return data.filter(d => compareData.map(x => x.group).includes(d.group) || d.group == id);
+        return this.allEntries.filter(d => compareData.map(x => x.group).includes(d.group) || d.group == currentGroupId);
     }
-    renderGroupCompare(data: IAnalyticsChartsData[], id: string): any {
-        let compareData = data.filter(d => d.group != id);
-        let selectedGroupCompare = this.getGroupCompareData(data, id);
+    renderGroupCompare(): any {
+        let currentGroupId = d3.select("#groups-statistics .card").attr("id");
+        let compareData = this.allEntries.filter(d => d.selected && d.group != currentGroupId);
+        let selectedGroupCompare = this.getGroupCompareData();
         d3.select("#group-compare .card-body").selectAll("div").remove();
         return d3.select("#group-compare .card-body").selectAll("div")
             .data(compareData)
@@ -1891,17 +1917,11 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             .html(d => `<input class="form-check-input" type="checkbox" value="${d.group}" id="compare-${d.group}" ${selectedGroupCompare.includes(d) ? "checked" : ""} />
             <label class="form-check-label" for="compare-${d.group}">${d.group}</label>`);
     };
-    handleGroupCompare(data: IAnalyticsChartsData[], compareData: IAnalyticsChartsData[]): void {
+    handleGroupCompare(): void {
         let _this = this;
         d3.selectAll("#group-compare input").on("change", (e: Event, d: IAnalyticsChartsData) => {
-            let target = e.target as HTMLInputElement;
-            if (target.checked) {
-                compareData.push(data.find(d => d.group == target.value));
-            }
-            else {
-                compareData.splice(compareData.indexOf(data.find(d => d.group == target.value)), 1);
-            }
-            let groupData = d3.filter(data, d => compareData.includes(d));
+            let selectedCompareData = _this.getGroupCompareData();
+            let groupData = d3.filter(_this.allEntries, d => selectedCompareData.includes(d));
             let usersData = groupData.map(d => d.getUsersData(d));
 
             _this.violin.x = new ChartSeriesAxis("Group Code", groupData.map(r => r.group), [0, _this.violin.width - _this.violin.padding.yAxis - _this.violin.padding.right]);
