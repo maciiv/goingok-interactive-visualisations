@@ -10,6 +10,15 @@
     color: #0f856b;
     transition: all 0.3s;
     border-top: 2px solid #fff;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 999;
+}
+
+#content {
+    margin-left: 250px;
 }
 
 #sidebar.active {
@@ -251,4 +260,9 @@
 .zoom-content {
     fill-opacity: 0;
     stroke-opacity: 0;
+}
+
+.scroll-list {
+    height: 40vh;
+    overflow: auto;
 }

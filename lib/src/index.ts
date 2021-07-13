@@ -902,7 +902,8 @@ interface IAdminControlCharts {
     renderViolin(chart: ViolinChartSeries, data: IAnalyticsChartsData[]): ViolinChartSeries;
     renderTimelineDensity(chart: ChartTime, data: IAnalyticsChartsData): ChartTime;
     renderTimelineScatter(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData): ChartTime;
-    handleTimelineButtons(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData): void
+    handleTimelineButtons(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData): void;
+    renderUserStatistics(card: any, data: IAnalyticsChartsData, pseudonym?: string): void;
 }
 
 class AdminControlCharts implements IAdminControlCharts {
@@ -912,6 +913,8 @@ class AdminControlCharts implements IAdminControlCharts {
         let sidebarWidth = d3.select("#sidebar").node().getBoundingClientRect().width;
         d3.select("#sidebar")
             .style("width", `${sidebarWidth}px`);
+        d3.select("#content")
+            .style("margin-left", `${sidebarWidth}px`);
 
         //Handle side bar btn click
         d3.select("#sidebar-btn").on("click", (e: any) => {
@@ -920,7 +923,9 @@ class AdminControlCharts implements IAdminControlCharts {
                 .attr("class", isActive ? "" : "active")
                 .style("margin-left", isActive ? `${66 - sidebarWidth}px` : "");
             d3.select("#sidebar #groups")
-                .style("opacity", isActive ? "0" : "1")
+                .style("opacity", isActive ? "0" : "1");
+            d3.select("#content")
+                .style("margin-left", isActive ? "66px" : `${sidebarWidth}px` );
         });
     };
     preloadGroups(allEntries: IAnalyticsChartsData[]): IAnalyticsChartsData[] {
@@ -1374,6 +1379,57 @@ class AdminControlCharts implements IAdminControlCharts {
                 _this.renderTimelineScatter(chart, zoomChart, data);
             }
         });
+    };
+    renderUserStatistics(card: any, data: IAnalyticsChartsData, pseudonym?: string): void {
+        let userData = data.getUsersData(data);
+        let groupMean = Math.round(d3.mean(data.value.map(d => d.point)));
+        let cardRow = card.select(".card-body")
+        .append("div")
+        .attr("class", "row");
+        cardRow.append("div")
+        .attr("class", "col-md-3")
+        .append("div")
+        .attr("class", "list-group scroll-list")
+        .selectAll("a")
+        .data(userData.value)
+        .enter()
+        .append("a")
+        .attr("class", (d: IReflectionAuthorEntry, i: number) => `list-group-item list-group-item-action ${pseudonym == undefined ? i == 0 ? "active" : "" : d.pseudonym == pseudonym ? "active" : ""}`)
+        .attr("data-toggle", "list")
+        .attr("href", (d: IReflectionAuthorEntry) => `#${d.pseudonym}`)
+        .html((d: IReflectionAuthorEntry) => d.pseudonym);
+        
+        let tabPane = cardRow.append("div")
+        .attr("class", "col-md-9")
+        .append("div")
+        .attr("class", "tab-content")
+        .selectAll("div")
+        .data(userData.value)
+        .enter()
+        .append("div")
+        .attr("class", (d: IReflectionAuthorEntry, i: number) => `tab-pane fade ${pseudonym == undefined ? i == 0 ? "show active" : "" : d.pseudonym == pseudonym ? "show active" : ""}`)
+        .attr("id", (d: IReflectionAuthorEntry) => d.pseudonym)
+        .html((d: IReflectionAuthorEntry) => `<div class="row">
+                                                <div class="col-md-4 statistics-text">
+                                                    <b>Mean: </b>${d.point} (<span class="${(d.point - groupMean) < 0 ? "negative" : "positive"}">${(d.point - groupMean) < 0 ? "" : "+"}${d.point - groupMean}</span> compared to the group mean)<br>
+                                                    <b>Min: </b>${d3.min(d3.filter(data.value, x => x.pseudonym == d.pseudonym).map(r => r.point))}<br>
+                                                    <b>Min date: </b>${((d3.sort(d3.filter(data.value, x => x.pseudonym == d.pseudonym), (r: IReflectionAuthorEntry) => r.point)[0]).timestamp).toDateString()}<br>
+                                                    <b>Max: </b>${d3.max(d3.filter(data.value, x => x.pseudonym == d.pseudonym).map(r => r.point))}<br>
+                                                    <b>Max date: </b>${((d3.sort(d3.filter(data.value, x => x.pseudonym == d.pseudonym), (r: IReflectionAuthorEntry) => r.point)[d3.filter(data.value, x => x.pseudonym == d.pseudonym).length - 1]).timestamp).toDateString()}<br>
+                                                    <b>Total: </b>${d3.filter(data.value, x => x.pseudonym == d.pseudonym).length}<br>
+                                                    <b>Std Deviation: </b>${new AnalyticsChartsDataStats(data).roundDecimal(d3.deviation(d3.filter(data.value, x => x.pseudonym == d.pseudonym).map(r => r.point)))}<br>
+                                                    <b>Variance: </b>${new AnalyticsChartsDataStats(data).roundDecimal(d3.variance(d3.filter(data.value, x => x.pseudonym == d.pseudonym).map(r => r.point)))}<br>
+                                                    <b>Oldest reflection: </b>${(d3.min(d3.filter(data.value, x => x.pseudonym == d.pseudonym).map(r => r.timestamp))).toDateString()}<br>
+                                                    <b>Newest reflection: </b>${(d3.max(d3.filter(data.value, x => x.pseudonym == d.pseudonym).map(r => r.timestamp))).toDateString()}<br>
+                                                </div>
+                                            </div>`);
+        tabPane.select(".row").append("div")
+            .attr("class", "col-md-8")
+            .selectAll("p")
+            .data((d: IReflectionAuthorEntry) => d3.sort(d3.filter(data.value, x => x.pseudonym == d.pseudonym), r => r.timestamp))
+            .enter()
+            .append("p")
+            .html((d: IReflectionAuthorEntry) => `<b>${d.timestamp.toDateString()} - State: ${d.point}</b><br>${d.text}`);
     };
 }
 
@@ -1864,40 +1920,17 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 .datum(d3.sort(userData, (d: IReflectionAuthorEntry) => d.timestamp))
                 .classed("line", true)
                 .attr("id", `${chart.id}-timeline-circles-line`)
-                .attr("d", (d: IReflectionAuthorEntry[]) => line(d));
+                .attr("d", (d: IReflectionAuthorEntry[]) => line(d))
+                .style("stroke", data.colour);
 
             //Draw click containers
             userData.forEach(c => _this.interactions.click.appendScatterText(chart, c, c.point.toString()));
 
             //Draw user statistics container
-            _this.htmlContainers.userStatistics = _this.htmlContainers.appendDiv("user-statistics", "col-md-3 mt-3");
+            _this.htmlContainers.userStatistics = _this.htmlContainers.appendDiv("user-statistics", "col-md-12 mt-3");
             let userStatisticsCard = _this.htmlContainers.appendCard(_this.htmlContainers.userStatistics, `${d.pseudonym}'s statistics`);
-            let userMean = Math.round(d3.mean(userData.map(r => r.point)));
-            let groupMean = Math.round(d3.mean(data.value.map(d => d.point)));
-            userStatisticsCard.select(".card-body")
-                .attr("class", "card-body statistics-text")
-                .html(`<b>Mean: </b>${userMean} (<span class="${(userMean - groupMean) < 0 ? "negative" : "positive"}">${(userMean - groupMean) < 0 ? "" : "+"}${userMean - groupMean}</span> compared to the group mean)<br>
-                    <b>Min: </b>${d3.min(userData.map(r => r.point))}<br>
-                    <b>Min date: </b>${((d3.sort(userData, (r: IReflectionAuthorEntry) => r.point)[0]).timestamp).toDateString()}<br>
-                    <b>Max: </b>${d3.max(userData.map(r => r.point))}<br>
-                    <b>Max date: </b>${((d3.sort(userData, (r: IReflectionAuthorEntry) => r.point)[userData.length - 1]).timestamp).toDateString()}<br>
-                    <b>Total: </b>${userData.length}<br>
-                    <b>Std Deviation: </b>${new AnalyticsChartsDataStats(data).roundDecimal(d3.deviation(userData.map(r => r.point)))}<br>
-                    <b>Variance: </b>${new AnalyticsChartsDataStats(data).roundDecimal(d3.variance(userData.map(r => r.point)))}<br>
-                    <b>Oldest reflection: </b>${(d3.min(userData.map(r => r.timestamp))).toDateString()}<br>
-                    <b>Newest reflection: </b>${(d3.max(userData.map(r => r.timestamp))).toDateString()}<br>`);
-
-            //Draw user reflections container
-            _this.htmlContainers.reflections = _this.htmlContainers.appendDiv("reflections-list", "col-md-9 mt-3");
-            let reflectionsCard = _this.htmlContainers.appendCard(_this.htmlContainers.reflections, `${d.pseudonym}'s reflections`);
-            let reflectionsCardText: string = "";
-            d3.sort(userData, r => r.timestamp).forEach(c => {
-                reflectionsCardText = reflectionsCardText + `<p><b>${c.timestamp.toDateString()} - State: ${c.point}</b><br>${c.text}</p>`
-            })
-            reflectionsCard.select(".card-body")
-                .attr("class", "card-body statistics-text")
-                .html(reflectionsCardText);
-
+            _this.renderUserStatistics(userStatisticsCard, data, d.pseudonym);
+           
             //Scroll
             document.querySelector("#group-timeline").scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
@@ -1943,7 +1976,32 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.renderViolin(_this.violin, groupData);
             _this.renderViolin(_this.usersViolin, usersData);
         });
-    };
+    };   
+    renderUserStatistics(card: any, data: IAnalyticsChartsData, pseudonym?: string): void {
+        super.renderUserStatistics(card, data, pseudonym);
+        let _this = this;
+        card.selectAll("a")
+            .on("click", (e: Event, d: IReflectionAuthorEntry) => {
+                _this.interactions.click.removeClick(_this.timeline);
+                _this.timeline.elements.content.attr("class", "line-circle");
+                _this.timeline.elements.contentContainer.selectAll(`#${_this.timeline.id}-timeline-circles-line`).remove();
+                _this.timeline.elements.content.attr("class", (data: IReflectionAuthorEntry) => `line-circle ${data.pseudonym == d.pseudonym ? "clicked" : ""}`);
+                let userData = data.value.filter(c => c.pseudonym == d.pseudonym);
+                let line = d3.line<IReflectionAuthorEntry>()
+                    .x(d =>  _this.timeline.x.scale(d.timestamp))
+                    .y(d =>  _this.timeline.y.scale(d.point));
+
+                _this.timeline.elements.contentContainer.append("path")
+                    .datum(d3.sort(userData, (d: IReflectionAuthorEntry) => d.timestamp))
+                    .classed("line", true)
+                    .attr("id", `${ _this.timeline.id}-timeline-circles-line`)
+                    .attr("d", (d: IReflectionAuthorEntry[]) => line(d))
+                    .style("stroke", data.colour);
+                userData.forEach(c => _this.interactions.click.appendScatterText(_this.timeline, c, c.point.toString()));
+                card.select(".card-header")
+                    .html(`${d.pseudonym} statistics`);
+            })
+    }
 }
 
 interface IAdminExperimentalInteractions extends IAdminControlInteractions {
@@ -2003,6 +2061,7 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
                 .append("div")
                 .attr("id", `stats-${d.group}`)
                 .attr("class", `collapse ${i == 0 ? "show" : ""}`)
+                .attr("data-parent", "#groups-statistics")
                 .append("div")
                 .attr("class", "card-body");
             adminControlCharts.renderGroupStats(d3.select(g[i]), d);
@@ -2089,7 +2148,7 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
         
         adminControlCharts.htmlContainers.userStatistics = adminControlCharts.htmlContainers.appendDiv("user-statistics", "col-md-12 mt-3");
         let usersCards = adminControlCharts.htmlContainers.userStatistics.selectAll("div")
-            .data(usersData)
+            .data(data)
             .enter()
             .append("div")
             .attr("class", "card");
@@ -2106,22 +2165,10 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
                 .append("div")
                 .attr("id", `users-${d.group}`)
                 .attr("class", `collapse ${i == 0 ? "show" : ""}`)
+                .attr("data-parent", "#user-statistics")
                 .append("div")
-                .attr("class", "card-body")
-                .append("div")
-                .attr("class", "row")
-                .append("div")
-                .attr("class", "col-md-3")
-                .append("div")
-                .attr("class", "list-group")
-                .selectAll("a")
-                .data(d.value)
-                .enter()
-                .append("a")
-                .attr("class", (d, i) => `list-group-item list-group-item-action ${i == 0 ? "active" : ""}`)
-                .attr("data-toggle", "list")
-                .attr("href", d => `#${d.pseudonym}`)
-                .html(d => d.pseudonym);
+                .attr("class", "card-body");
+            adminControlCharts.renderUserStatistics(d3.select(g[i]), d);
         });
     }
 }
