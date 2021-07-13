@@ -7,6 +7,7 @@ interface IReflectionAuthorEntryRaw {
 interface IAnalyticsChartsDataRaw {
     group: string;
     value: IReflectionAuthorEntryRaw[];
+    createDate: string;
     transformData(data: IAnalyticsChartsDataRaw): AnalyticsChartsData;
 }
 interface IReflectionAuthorEntry {
@@ -18,6 +19,7 @@ interface IReflectionAuthorEntry {
 interface IAnalyticsChartsData {
     group: string;
     value: IReflectionAuthorEntry[];
+    creteDate: Date;
     colour: string;
     selected: boolean;
     getUsersData(data: IAnalyticsChartsData): AnalyticsChartsData;
@@ -25,9 +27,10 @@ interface IAnalyticsChartsData {
 declare class AnalyticsChartsData implements IAnalyticsChartsData {
     group: string;
     value: IReflectionAuthorEntry[];
+    creteDate: Date;
     colour: string;
     selected: boolean;
-    constructor(group: string, value: IReflectionAuthorEntry[], colour?: string, selected?: boolean);
+    constructor(group: string, value: IReflectionAuthorEntry[], createDate: Date, colour?: string, selected?: boolean);
     getUsersData(data: IAnalyticsChartsData): AnalyticsChartsData;
 }
 export declare function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]): void;

@@ -18,25 +18,27 @@ var __extends = (this && this.__extends) || (function () {
 //exports.buildExperimentAdminAnalyticsCharts = exports.buildControlAdminAnalyticsCharts = void 0;
 //var d3 = require("d3");
 var AnalyticsChartsDataRaw = /** @class */ (function () {
-    function AnalyticsChartsDataRaw(group, value) {
+    function AnalyticsChartsDataRaw(group, value, createDate) {
         this.group = group;
         this.value = value;
+        this.createDate = createDate;
     }
     AnalyticsChartsDataRaw.prototype.transformData = function (data) {
         return new AnalyticsChartsData(data.group, data.value.map(function (d) {
             return {
                 timestamp: new Date(d.timestamp), pseudonym: d.pseudonym, point: parseInt(d.point), text: d.text
             };
-        }), undefined, false);
+        }), new Date(data.createDate), undefined, false);
     };
     return AnalyticsChartsDataRaw;
 }());
 var AnalyticsChartsData = /** @class */ (function () {
-    function AnalyticsChartsData(group, value, colour, selected) {
+    function AnalyticsChartsData(group, value, createDate, colour, selected) {
         if (colour === void 0) { colour = undefined; }
         if (selected === void 0) { selected = false; }
         this.group = group;
         this.value = value;
+        this.creteDate = createDate;
         this.colour = colour;
         this.selected = selected;
     }
@@ -45,14 +47,14 @@ var AnalyticsChartsData = /** @class */ (function () {
             var pseudonym = _a[0], point = _a[1];
             return ({ pseudonym: pseudonym, point: point });
         });
-        return new AnalyticsChartsData(data.group, usersMean, data.colour);
+        return new AnalyticsChartsData(data.group, usersMean, data.creteDate, data.colour);
     };
     return AnalyticsChartsData;
 }());
 var AnalyticsChartsDataStats = /** @class */ (function (_super) {
     __extends(AnalyticsChartsDataStats, _super);
     function AnalyticsChartsDataStats(entries) {
-        var _this_1 = _super.call(this, entries.group, entries.value, entries.colour, entries.selected) || this;
+        var _this_1 = _super.call(this, entries.group, entries.value, entries.creteDate, entries.colour, entries.selected) || this;
         var uniqueUsers = Array.from(d3.rollup(entries.value, function (d) { return d.length; }, function (d) { return d.pseudonym; }), function (_a) {
             var key = _a[0], value = _a[1];
             return ({ key: key, value: value });
@@ -759,7 +761,7 @@ var AdminControlCharts = /** @class */ (function () {
             .data(allEntries)
             .enter()
             .append("li")
-            .html(function (d) { return "<div class=\"input-group mb-1\">\n                                <div class=\"input-group-prepend\">\n                                    <div class=\"input-group-text\">\n                                        <input type=\"checkbox\" value=\"" + d.group + "\" checked disabled />\n                                    </div>                               \n                                </div>\n                                <input type=\"text\" value=\"" + d.group + "\" class=\"form-control\" disabled />\n                                <div class=\"input-group-append\">\n                                    <div class=\"input-group-text\">\n                                        <input type=\"color\" value=\"" + d.colour + "\" id=\"colour-" + d.group + "\" disabled />\n                                    </div>                                \n                                </div>\n                            </div>  "; });
+            .html(function (d) { return "<div class=\"input-group mb-1\">\n                                <div class=\"input-group-prepend\">\n                                    <div class=\"input-group-text group-row\">\n                                        <input type=\"checkbox\" value=\"" + d.group + "\" checked disabled />\n                                    </div>                               \n                                </div>\n                                <input type=\"text\" value=\"" + d.group + "\" class=\"form-control group-row\" disabled />\n                                <div class=\"input-group-append\">\n                                    <div class=\"input-group-text group-row\">\n                                        <input type=\"color\" value=\"" + d.colour + "\" id=\"colour-" + d.group + "\" disabled />\n                                    </div>                                \n                                </div>\n                            </div>  "; });
         return allEntries;
     };
     ;
@@ -1138,7 +1140,7 @@ var AdminControlCharts = /** @class */ (function () {
             .append("a")
             .attr("class", function (d, i) { return "list-group-item list-group-item-action " + (pseudonym == undefined ? i == 0 ? "active" : "" : d.pseudonym == pseudonym ? "active" : ""); })
             .attr("data-toggle", "list")
-            .attr("href", function (d) { return "#" + d.pseudonym; })
+            .attr("href", function (d) { return "#" + userData.group + "-" + d.pseudonym; })
             .html(function (d) { return d.pseudonym; });
         var tabPane = cardRow.append("div")
             .attr("class", "col-md-9")
@@ -1149,7 +1151,7 @@ var AdminControlCharts = /** @class */ (function () {
             .enter()
             .append("div")
             .attr("class", function (d, i) { return "tab-pane fade " + (pseudonym == undefined ? i == 0 ? "show active" : "" : d.pseudonym == pseudonym ? "show active" : ""); })
-            .attr("id", function (d) { return d.pseudonym; })
+            .attr("id", function (d) { return userData.group + "-" + d.pseudonym; })
             .html(function (d) { return "<div class=\"row\">\n                                                <div class=\"col-md-4 statistics-text\">\n                                                    <b>Mean: </b>" + d.point + " (<span class=\"" + ((d.point - groupMean) < 0 ? "negative" : "positive") + "\">" + ((d.point - groupMean) < 0 ? "" : "+") + (d.point - groupMean) + "</span> compared to the group mean)<br>\n                                                    <b>Min: </b>" + d3.min(d3.filter(data.value, function (x) { return x.pseudonym == d.pseudonym; }).map(function (r) { return r.point; })) + "<br>\n                                                    <b>Min date: </b>" + ((d3.sort(d3.filter(data.value, function (x) { return x.pseudonym == d.pseudonym; }), function (r) { return r.point; })[0]).timestamp).toDateString() + "<br>\n                                                    <b>Max: </b>" + d3.max(d3.filter(data.value, function (x) { return x.pseudonym == d.pseudonym; }).map(function (r) { return r.point; })) + "<br>\n                                                    <b>Max date: </b>" + ((d3.sort(d3.filter(data.value, function (x) { return x.pseudonym == d.pseudonym; }), function (r) { return r.point; })[d3.filter(data.value, function (x) { return x.pseudonym == d.pseudonym; }).length - 1]).timestamp).toDateString() + "<br>\n                                                    <b>Total: </b>" + d3.filter(data.value, function (x) { return x.pseudonym == d.pseudonym; }).length + "<br>\n                                                    <b>Std Deviation: </b>" + new AnalyticsChartsDataStats(data).roundDecimal(d3.deviation(d3.filter(data.value, function (x) { return x.pseudonym == d.pseudonym; }).map(function (r) { return r.point; }))) + "<br>\n                                                    <b>Variance: </b>" + new AnalyticsChartsDataStats(data).roundDecimal(d3.variance(d3.filter(data.value, function (x) { return x.pseudonym == d.pseudonym; }).map(function (r) { return r.point; }))) + "<br>\n                                                    <b>Oldest reflection: </b>" + (d3.min(d3.filter(data.value, function (x) { return x.pseudonym == d.pseudonym; }).map(function (r) { return r.timestamp; }))).toDateString() + "<br>\n                                                    <b>Newest reflection: </b>" + (d3.max(d3.filter(data.value, function (x) { return x.pseudonym == d.pseudonym; }).map(function (r) { return r.timestamp; }))).toDateString() + "<br>\n                                                </div>\n                                            </div>"; });
         tabPane.select(".row").append("div")
             .attr("class", "col-md-8")
@@ -1158,6 +1160,17 @@ var AdminControlCharts = /** @class */ (function () {
             .enter()
             .append("p")
             .html(function (d) { return "<b>" + d.timestamp.toDateString() + " - State: " + d.point + "</b><br>" + d.text; });
+        cardRow.select(".scroll-list")
+            .style("height", cardRow.select(".tab-pane.fade.show.active").node().getBoundingClientRect().height + "px");
+        cardRow.selectAll("a")
+            .on("click", function () {
+            setTimeout(function () {
+                cardRow.select(".scroll-list")
+                    .transition()
+                    .duration(750)
+                    .style("height", cardRow.select(".tab-pane.fade.show.active").node().getBoundingClientRect().height + "px");
+            }, 250);
+        });
     };
     ;
     return AdminControlCharts;
@@ -1273,6 +1286,7 @@ var AdminExperimentalCharts = /** @class */ (function (_super) {
     __extends(AdminExperimentalCharts, _super);
     function AdminExperimentalCharts() {
         var _this_1 = _super !== null && _super.apply(this, arguments) || this;
+        _this_1.sorted = "date";
         _this_1.interactions = new AdminExperimentalInteractions();
         return _this_1;
     }
@@ -1282,7 +1296,7 @@ var AdminExperimentalCharts = /** @class */ (function (_super) {
             .data(allEntries)
             .enter()
             .append("li")
-            .html(function (d) { return "<div class=\"input-group mb-1\">\n                                <div class=\"input-group-prepend\">\n                                    <div class=\"input-group-text\">\n                                        <input type=\"checkbox\" value=\"" + d.group + "\" " + (d.selected ? "checked" : "") + " />\n                                    </div>                               \n                                </div>\n                                <input type=\"text\" value=\"" + d.group + "\" class=\"form-control\" disabled />\n                                <div class=\"input-group-append\">\n                                    <div class=\"input-group-text\">\n                                        <input type=\"color\" value=\"" + d.colour + "\" id=\"colour-" + d.group + "\" />\n                                    </div>                                \n                                </div>\n                            </div>  "; });
+            .html(function (d) { return "<div class=\"input-group mb-1\">\n                                <div class=\"input-group-prepend\">\n                                    <div class=\"input-group-text group-row\">\n                                        <input type=\"checkbox\" value=\"" + d.group + "\" " + (d.selected ? "checked" : "") + " />\n                                    </div>                               \n                                </div>\n                                <input type=\"text\" value=\"" + d.group + "\" class=\"form-control group-row\" disabled />\n                                <div class=\"input-group-append\">\n                                    <div class=\"input-group-text group-row\">\n                                        <input type=\"color\" value=\"" + d.colour + "\" id=\"colour-" + d.group + "\" />\n                                    </div>                                \n                                </div>\n                            </div>  "; });
         this.allEntries = allEntries;
         return d3.filter(allEntries, function (d) { return d.selected == true; });
     };
@@ -1344,7 +1358,7 @@ var AdminExperimentalCharts = /** @class */ (function (_super) {
         });
     };
     ;
-    AdminExperimentalCharts.prototype.handleGroupsColours = function (chart) {
+    AdminExperimentalCharts.prototype.handleGroupsColours = function (boxPlot) {
         var _this = this;
         d3.selectAll("#groups input[type=color]").on("change", function (e) {
             var target = e.target;
@@ -1352,8 +1366,8 @@ var AdminExperimentalCharts = /** @class */ (function (_super) {
             _this.allEntries.find(function (d) { return d.group == groupId; }).colour = target.value;
             var entries = d3.filter(_this.allEntries, function (d) { return d.selected; });
             var data = entries.map(function (d) { return new AnalyticsChartsDataStats(d); });
-            _this.renderGroupChart(chart, data);
-            if (chart.click) {
+            _this.renderGroupChart(boxPlot, data);
+            if (boxPlot.click) {
                 var currentClickGroup = d3.select("#groups-statistics .card").attr("id");
                 var violinData = _this.getGroupCompareData();
                 if (violinData.map(function (d) { return d.group; }).includes(groupId)) {
@@ -1375,6 +1389,41 @@ var AdminExperimentalCharts = /** @class */ (function (_super) {
                     }
                 }
             }
+        });
+    };
+    ;
+    AdminExperimentalCharts.prototype.handleGroupsSort = function (boxPlot) {
+        var _this = this;
+        d3.select("#groups-chart #sort-by").on("click", function (e) {
+            var selectedOption = e.target.control.value;
+            _this.allEntries = _this.allEntries.sort(function (a, b) {
+                if (selectedOption == "date") {
+                    return _this.interactions.sort.sortData(a.creteDate, b.creteDate, _this.sorted == "date" ? true : false);
+                }
+                else if (selectedOption == "name") {
+                    return _this.interactions.sort.sortData(a.group, b.group, _this.sorted == "name" ? true : false);
+                }
+                else if (selectedOption == "mean") {
+                    return _this.interactions.sort.sortData(d3.mean(a.value.map(function (d) { return d.point; })), d3.mean(b.value.map(function (d) { return d.point; })), _this.sorted == "mean" ? true : false);
+                }
+            });
+            _this.sorted = SetSorted();
+            function SetSorted() {
+                if (selectedOption == "date") {
+                    return _this.sorted == "date" ? "" : "date";
+                }
+                else if (selectedOption == "name") {
+                    return _this.sorted == "name" ? "" : "name";
+                }
+                else if (selectedOption == "mean") {
+                    return _this.sorted == "mean" ? "" : "mean";
+                }
+            }
+            var entries = d3.filter(_this.allEntries, function (d) { return d.selected; });
+            var data = entries.map(function (d) { return new AnalyticsChartsDataStats(d); });
+            boxPlot.x = new ChartSeriesAxis("Group Code", data.map(function (r) { return r.group; }), [0, boxPlot.width - boxPlot.padding.yAxis - boxPlot.padding.right]);
+            _this.interactions.axisSeries(boxPlot, data);
+            _this.renderGroupChart(boxPlot, data);
         });
     };
     ;
@@ -1670,7 +1719,13 @@ var AdminExperimentalCharts = /** @class */ (function (_super) {
                 .style("stroke", data.colour);
             userData.forEach(function (c) { return _this.interactions.click.appendScatterText(_this.timeline, c, c.point.toString()); });
             card.select(".card-header")
-                    .html(`${d.pseudonym} statistics`);
+                .html(d.pseudonym + " statistics");
+            setTimeout(function () {
+                card.select(".scroll-list")
+                    .transition()
+                    .duration(750)
+                    .style("height", card.select(".tab-pane.fade.show.active").node().getBoundingClientRect().height + "px");
+            }, 250);
         });
     };
     return AdminExperimentalCharts;
@@ -1689,10 +1744,10 @@ var AdminExperimentalInteractions = /** @class */ (function (_super) {
     End of admin experimental interfaces and classes
 -------------------------------------------------- */
 function buildControlAdminAnalyticsCharts(entriesRaw) {
-    var rawData = entriesRaw.map(function (d) { return new AnalyticsChartsDataRaw(d.group, d.value); });
+    var rawData = entriesRaw.map(function (d) { return new AnalyticsChartsDataRaw(d.group, d.value, d.createDate); });
     var entries = rawData.map(function (d) { return d.transformData(d); });
     var colourScale = d3.scaleOrdinal(d3.schemeCategory10);
-    entries = entries.map(function (d) { return new AnalyticsChartsData(d.group, d.value, colourScale(d.group), d.selected); });
+    entries = entries.map(function (d) { return new AnalyticsChartsData(d.group, d.value, d.creteDate, colourScale(d.group), d.selected); });
     drawCharts(entries);
     function drawCharts(allEntries) {
         var adminControlCharts = new AdminControlCharts();
@@ -1826,14 +1881,24 @@ function buildControlAdminAnalyticsCharts(entriesRaw) {
                 .attr("class", "card-body");
             adminControlCharts.renderUserStatistics(d3.select(g[i]), d);
         });
+        usersCards.selectAll("button")
+            .on("click", function () {
+            var buttonId = d3.select(this).attr("data-target");
+            setTimeout(function () {
+                usersCards.select(buttonId + " .scroll-list")
+                    .transition()
+                    .duration(750)
+                    .style("height", usersCards.select(buttonId + " .tab-pane.fade.show.active").node().getBoundingClientRect().height + "px");
+            }, 250);
+        });
     }
 }
 //exports.buildControlAdminAnalyticsCharts = buildControlAdminAnalyticsCharts;
 function buildExperimentAdminAnalyticsCharts(entriesRaw) {
-    var rawData = entriesRaw.map(function (d) { return new AnalyticsChartsDataRaw(d.group, d.value); });
+    var rawData = entriesRaw.map(function (d) { return new AnalyticsChartsDataRaw(d.group, d.value, d.createDate); });
     var entries = rawData.map(function (d) { return d.transformData(d); });
     var colourScale = d3.scaleOrdinal(d3.schemeCategory10);
-    entries = entries.map(function (d, i) { return new AnalyticsChartsData(d.group, d.value, colourScale(d.group), i == 0 ? true : false); });
+    entries = entries.map(function (d, i) { return new AnalyticsChartsData(d.group, d.value, d.creteDate, colourScale(d.group), i == 0 ? true : false); });
     drawCharts(entries);
     function drawCharts(allEntries) {
         var adminExperimentalCharts = new AdminExperimentalCharts();
@@ -1845,7 +1910,10 @@ function buildExperimentAdminAnalyticsCharts(entriesRaw) {
         var data = entries.map(function (d) { return new AnalyticsChartsDataStats(d); });
         //Append groups chart container
         adminExperimentalCharts.htmlContainers.groupsChart = adminExperimentalCharts.htmlContainers.appendDiv("groups-chart", "col-md-9");
-        adminExperimentalCharts.htmlContainers.appendCard(adminExperimentalCharts.htmlContainers.groupsChart, "Reflections box plot by group");
+        var groupCard = adminExperimentalCharts.htmlContainers.appendCard(adminExperimentalCharts.htmlContainers.groupsChart, "Reflections box plot by group");
+        groupCard.select(".card-body")
+            .attr("class", "card-body")
+            .html("<div class=\"row\">\n                        <span class=\"mx-2\"><small>Sort by:</small></span>\n                        <div id=\"sort-by\" class=\"btn-group btn-group-sm btn-group-toggle\" data-toggle=\"buttons\">\n                            <label class=\"btn btn-light active\">\n                                <input type=\"radio\" name=\"sort\" value=\"date\" checked>Create date<br>\n                            </label>\n                            <label class=\"btn btn-light\">\n                                <input type=\"radio\" name=\"sort\" value=\"name\">Name<br>\n                            </label>\n                            <label class=\"btn btn-light\">\n                                <input type=\"radio\" name=\"sort\" value=\"mean\">Mean<br>\n                            </label>\n                        </div>\n                    </div>\n                    <div class=\"chart-container\"></div>");
         //Create group chart with current data
         var groupChart = new ChartSeries("groups-chart", data.map(function (d) { return d.group; }));
         groupChart.elements.preRender(groupChart);
@@ -1853,6 +1921,7 @@ function buildExperimentAdminAnalyticsCharts(entriesRaw) {
         //Update charts depending on group
         adminExperimentalCharts.handleGroups(groupChart);
         adminExperimentalCharts.handleGroupsColours(groupChart);
+        adminExperimentalCharts.handleGroupsSort(groupChart);
     }
 }
 //exports.buildExperimentAdminAnalyticsCharts = buildExperimentAdminAnalyticsCharts;

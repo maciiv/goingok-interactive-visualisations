@@ -10,22 +10,25 @@ interface IReflectionAuthorEntryRaw {
 interface IAnalyticsChartsDataRaw {
     group: string;
     value: IReflectionAuthorEntryRaw[];
+    createDate: string;
     transformData(data: IAnalyticsChartsDataRaw): AnalyticsChartsData;
 }
 
 class AnalyticsChartsDataRaw implements IAnalyticsChartsDataRaw {
     group: string;
     value: IReflectionAuthorEntryRaw[];
-    constructor(group: string, value: IReflectionAuthorEntryRaw[]) {
+    createDate: string;
+    constructor(group: string, value: IReflectionAuthorEntryRaw[], createDate: string) {
         this.group = group;
         this.value = value;
+        this.createDate = createDate;
     }
     transformData(data: IAnalyticsChartsDataRaw): AnalyticsChartsData {
         return new AnalyticsChartsData(data.group, data.value.map(d => {
             return {
             timestamp: new Date(d.timestamp), pseudonym: d.pseudonym, point: parseInt(d.point), text: d.text
             }
-        }) as IReflectionAuthorEntry[], undefined, false);
+        }) as IReflectionAuthorEntry[], new Date(data.createDate), undefined, false);
     }
 }
 
@@ -39,6 +42,7 @@ interface IReflectionAuthorEntry {
 interface IAnalyticsChartsData {
     group: string;
     value: IReflectionAuthorEntry[];
+    creteDate: Date;
     colour: string;
     selected: boolean;
     getUsersData(data: IAnalyticsChartsData): AnalyticsChartsData;
@@ -47,17 +51,19 @@ interface IAnalyticsChartsData {
 class AnalyticsChartsData implements IAnalyticsChartsData {
     group: string;
     value: IReflectionAuthorEntry[];
+    creteDate: Date;
     colour: string;
     selected: boolean;
-    constructor(group: string, value: IReflectionAuthorEntry[], colour: string = undefined, selected: boolean = false) {
+    constructor(group: string, value: IReflectionAuthorEntry[], createDate: Date, colour: string = undefined, selected: boolean = false) {
         this.group = group;
         this.value = value;
+        this.creteDate = createDate;
         this.colour = colour;
         this.selected = selected;
     }
     getUsersData(data: IAnalyticsChartsData): AnalyticsChartsData {
         let usersMean = Array.from(d3.rollup(data.value, d => Math.round(d3.mean(d.map(r => r.point))), d => d.pseudonym), ([pseudonym, point]) => ({ pseudonym, point }) as IReflectionAuthorEntry);
-        return new AnalyticsChartsData(data.group, usersMean, data.colour);
+        return new AnalyticsChartsData(data.group, usersMean, data.creteDate, data.colour);
     }
 }
 
@@ -98,7 +104,7 @@ class AnalyticsChartsDataStats extends AnalyticsChartsData implements IAnalytics
     userLessReflective: number;
     totalUsers: number;
     constructor(entries: IAnalyticsChartsData) {
-        super(entries.group, entries.value, entries.colour, entries.selected);
+        super(entries.group, entries.value, entries.creteDate, entries.colour, entries.selected);
         let uniqueUsers = Array.from(d3.rollup(entries.value, (d: IReflectionAuthorEntry[]) => d.length, (d: IReflectionAuthorEntry) => d.pseudonym), ([key, value]) => ({ key, value }));
         this.mean = Math.round(d3.mean(entries.value.map(r => r.point))),
             this.median = d3.median(entries.value.map(r => r.point)),
@@ -871,7 +877,7 @@ class Sort implements ISort {
                 .attr("class", "sort-arrow active");
         }
     };
-    sortData(a: number, b: number, sorted: boolean): number {
+    sortData(a: number | Date | string, b: number | Date | string, sorted: boolean): number {
         if (a < b) {
             if (sorted) {
                 return -1;
@@ -936,13 +942,13 @@ class AdminControlCharts implements IAdminControlCharts {
             .append("li")
             .html(d => `<div class="input-group mb-1">
                                 <div class="input-group-prepend">
-                                    <div class="input-group-text">
+                                    <div class="input-group-text group-row">
                                         <input type="checkbox" value="${d.group}" checked disabled />
                                     </div>                               
                                 </div>
-                                <input type="text" value="${d.group}" class="form-control" disabled />
+                                <input type="text" value="${d.group}" class="form-control group-row" disabled />
                                 <div class="input-group-append">
-                                    <div class="input-group-text">
+                                    <div class="input-group-text group-row">
                                         <input type="color" value="${d.colour}" id="colour-${d.group}" disabled />
                                     </div>                                
                                 </div>
@@ -1396,7 +1402,7 @@ class AdminControlCharts implements IAdminControlCharts {
         .append("a")
         .attr("class", (d: IReflectionAuthorEntry, i: number) => `list-group-item list-group-item-action ${pseudonym == undefined ? i == 0 ? "active" : "" : d.pseudonym == pseudonym ? "active" : ""}`)
         .attr("data-toggle", "list")
-        .attr("href", (d: IReflectionAuthorEntry) => `#${d.pseudonym}`)
+        .attr("href", (d: IReflectionAuthorEntry) => `#${userData.group}-${d.pseudonym}`)
         .html((d: IReflectionAuthorEntry) => d.pseudonym);
         
         let tabPane = cardRow.append("div")
@@ -1408,7 +1414,7 @@ class AdminControlCharts implements IAdminControlCharts {
         .enter()
         .append("div")
         .attr("class", (d: IReflectionAuthorEntry, i: number) => `tab-pane fade ${pseudonym == undefined ? i == 0 ? "show active" : "" : d.pseudonym == pseudonym ? "show active" : ""}`)
-        .attr("id", (d: IReflectionAuthorEntry) => d.pseudonym)
+        .attr("id", (d: IReflectionAuthorEntry) => `${userData.group}-${d.pseudonym}`)
         .html((d: IReflectionAuthorEntry) => `<div class="row">
                                                 <div class="col-md-4 statistics-text">
                                                     <b>Mean: </b>${d.point} (<span class="${(d.point - groupMean) < 0 ? "negative" : "positive"}">${(d.point - groupMean) < 0 ? "" : "+"}${d.point - groupMean}</span> compared to the group mean)<br>
@@ -1430,6 +1436,15 @@ class AdminControlCharts implements IAdminControlCharts {
             .enter()
             .append("p")
             .html((d: IReflectionAuthorEntry) => `<b>${d.timestamp.toDateString()} - State: ${d.point}</b><br>${d.text}`);
+        cardRow.select(".scroll-list")
+            .style("height", `${cardRow.select(".tab-pane.fade.show.active").node().getBoundingClientRect().height}px`);
+        cardRow.selectAll("a")
+            .on("click", function () {
+                setTimeout(() => {cardRow.select(".scroll-list")
+                    .transition()
+                    .duration(750)
+                    .style("height", `${cardRow.select(".tab-pane.fade.show.active").node().getBoundingClientRect().height}px`)}, 250);
+            });
     };
 }
 
@@ -1557,9 +1572,11 @@ interface IAdminExperimentalCharts extends IAdminControlCharts {
     usersViolin: IViolinChartSeries;
     timeline: ChartTime;
     timelineZoom: ChartTimeZoom;
+    sorted: string;
     allEntries: IAnalyticsChartsData[];
     handleGroups(boxPlot: ChartSeries): void;
     handleGroupsColours(chart: ChartSeries): void;
+    handleGroupsSort(boxPlot: ChartSeries): void;
     getGroupCompareData(data: IAnalyticsChartsData[], id: string): IAnalyticsChartsData[];
     renderGroupCompare(data: IAnalyticsChartsData[], id: string): any;
     handleGroupCompare(data: IAnalyticsChartsData[], compareData: IAnalyticsChartsData[]): void;
@@ -1570,6 +1587,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
     usersViolin: ViolinChartSeries;
     timeline: ChartTime;
     timelineZoom: ChartTimeZoom;
+    sorted = "date";
     allEntries: IAnalyticsChartsData[];
     interactions = new AdminExperimentalInteractions();
     preloadGroups(allEntries: IAnalyticsChartsData[]): IAnalyticsChartsData[] {
@@ -1580,13 +1598,13 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             .append("li")
             .html(d => `<div class="input-group mb-1">
                                 <div class="input-group-prepend">
-                                    <div class="input-group-text">
+                                    <div class="input-group-text group-row">
                                         <input type="checkbox" value="${d.group}" ${d.selected ? "checked" : ""} />
                                     </div>                               
                                 </div>
-                                <input type="text" value="${d.group}" class="form-control" disabled />
+                                <input type="text" value="${d.group}" class="form-control group-row" disabled />
                                 <div class="input-group-append">
-                                    <div class="input-group-text">
+                                    <div class="input-group-text group-row">
                                         <input type="color" value="${d.colour}" id="colour-${d.group}" />
                                     </div>                                
                                 </div>
@@ -1647,7 +1665,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             }
         });
     };
-    handleGroupsColours(chart: ChartSeries): void {
+    handleGroupsColours(boxPlot: ChartSeries): void {
         let _this = this;
         d3.selectAll("#groups input[type=color]").on("change", (e: Event) => {
             let target = e.target as HTMLInputElement;
@@ -1655,8 +1673,8 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.allEntries.find(d => d.group == groupId).colour = target.value;
             let entries = d3.filter(_this.allEntries, d => d.selected);
             let data = entries.map(d => new AnalyticsChartsDataStats(d));
-            _this.renderGroupChart(chart, data);
-            if(chart.click) {
+            _this.renderGroupChart(boxPlot, data);
+            if(boxPlot.click) {
                 let currentClickGroup = d3.select("#groups-statistics .card").attr("id");
                 let violinData = _this.getGroupCompareData();
                 if(violinData.map(d => d.group).includes(groupId)) {
@@ -1677,6 +1695,36 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                     }
                 }               
             }
+        });
+    };
+    handleGroupsSort(boxPlot: ChartSeries): void {
+        let _this = this;
+        d3.select("#groups-chart #sort-by").on("click", (e: any) => {
+            var selectedOption = e.target.control.value;
+            _this.allEntries = _this.allEntries.sort(function (a, b) {
+                if(selectedOption == "date") {
+                    return _this.interactions.sort.sortData(a.creteDate, b.creteDate, _this.sorted == "date" ? true : false);
+                } else if (selectedOption == "name") {
+                    return _this.interactions.sort.sortData(a.group, b.group, _this.sorted == "name" ? true : false);
+                } else if (selectedOption == "mean") {
+                    return _this.interactions.sort.sortData(d3.mean(a.value.map(d => d.point)), d3.mean(b.value.map(d => d.point)), _this.sorted == "mean" ? true : false);
+                }                   
+            });
+            _this.sorted = SetSorted();
+            function SetSorted() {
+                if(selectedOption == "date") {
+                    return _this.sorted == "date" ? "" : "date";
+                } else if (selectedOption == "name") {
+                    return _this.sorted == "name" ? "" : "name";
+                } else if (selectedOption == "mean") {
+                    return _this.sorted == "mean" ? "" : "mean";
+                }
+            }                
+            let entries = d3.filter(_this.allEntries, d => d.selected);
+            let data = entries.map(d => new AnalyticsChartsDataStats(d));
+            boxPlot.x = new ChartSeriesAxis("Group Code", data.map(r => r.group), [0, boxPlot.width - boxPlot.padding.yAxis - boxPlot.padding.right]);
+            _this.interactions.axisSeries(boxPlot, data);
+            _this.renderGroupChart(boxPlot, data);
         });
     };
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries {
@@ -1981,7 +2029,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         super.renderUserStatistics(card, data, pseudonym);
         let _this = this;
         card.selectAll("a")
-            .on("click", (e: Event, d: IReflectionAuthorEntry) => {
+            .on("click", (e: Event, d: IReflectionAuthorEntry) => {                
                 _this.interactions.click.removeClick(_this.timeline);
                 _this.timeline.elements.content.attr("class", "line-circle");
                 _this.timeline.elements.contentContainer.selectAll(`#${_this.timeline.id}-timeline-circles-line`).remove();
@@ -2000,6 +2048,10 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 userData.forEach(c => _this.interactions.click.appendScatterText(_this.timeline, c, c.point.toString()));
                 card.select(".card-header")
                     .html(`${d.pseudonym} statistics`);
+                    setTimeout(() => {card.select(".scroll-list")
+                    .transition()
+                    .duration(750)
+                    .style("height", `${card.select(".tab-pane.fade.show.active").node().getBoundingClientRect().height}px`)}, 250);
             })
     }
 }
@@ -2018,10 +2070,10 @@ class AdminExperimentalInteractions extends AdminControlInteractions implements 
 -------------------------------------------------- */
 
 export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]) {
-    let rawData = entriesRaw.map(d => new AnalyticsChartsDataRaw(d.group, d.value));
+    let rawData = entriesRaw.map(d => new AnalyticsChartsDataRaw(d.group, d.value, d.createDate));
     let entries = rawData.map(d => d.transformData(d));
     let colourScale = d3.scaleOrdinal(d3.schemeCategory10);
-    entries = entries.map(d => new AnalyticsChartsData(d.group, d.value, colourScale(d.group), d.selected));
+    entries = entries.map(d => new AnalyticsChartsData(d.group, d.value, d.creteDate, colourScale(d.group), d.selected));
     drawCharts(entries);
     function drawCharts(allEntries: IAnalyticsChartsData[]) {
         let adminControlCharts = new AdminControlCharts();
@@ -2170,14 +2222,22 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
                 .attr("class", "card-body");
             adminControlCharts.renderUserStatistics(d3.select(g[i]), d);
         });
+        usersCards.selectAll("button")
+            .on("click", function () {
+                let buttonId = d3.select(this).attr("data-target");
+                setTimeout(() => {usersCards.select(`${buttonId} .scroll-list`)
+                    .transition()
+                    .duration(750)
+                    .style("height", `${usersCards.select(`${buttonId} .tab-pane.fade.show.active`).node().getBoundingClientRect().height}px`)}, 250);
+            });
     }
 }
 
 export function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]) {
-    let rawData = entriesRaw.map(d => new AnalyticsChartsDataRaw(d.group, d.value));
+    let rawData = entriesRaw.map(d => new AnalyticsChartsDataRaw(d.group, d.value, d.createDate));
     let entries = rawData.map(d => d.transformData(d));
     let colourScale = d3.scaleOrdinal(d3.schemeCategory10);
-    entries = entries.map((d, i) => new AnalyticsChartsData(d.group, d.value, colourScale(d.group), i == 0 ? true : false));
+    entries = entries.map((d, i) => new AnalyticsChartsData(d.group, d.value, d.creteDate, colourScale(d.group), i == 0 ? true : false));
     drawCharts(entries);
     function drawCharts(allEntries: IAnalyticsChartsData[]) {
         let adminExperimentalCharts = new AdminExperimentalCharts();
@@ -2192,7 +2252,24 @@ export function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalyticsCharts
 
         //Append groups chart container
         adminExperimentalCharts.htmlContainers.groupsChart = adminExperimentalCharts.htmlContainers.appendDiv("groups-chart", "col-md-9");
-        adminExperimentalCharts.htmlContainers.appendCard(adminExperimentalCharts.htmlContainers.groupsChart, "Reflections box plot by group");
+        let groupCard = adminExperimentalCharts.htmlContainers.appendCard(adminExperimentalCharts.htmlContainers.groupsChart, "Reflections box plot by group");
+        groupCard.select(".card-body")
+            .attr("class", "card-body")
+            .html(`<div class="row">
+                        <span class="mx-2"><small>Sort by:</small></span>
+                        <div id="sort-by" class="btn-group btn-group-sm btn-group-toggle" data-toggle="buttons">
+                            <label class="btn btn-light active">
+                                <input type="radio" name="sort" value="date" checked>Create date<br>
+                            </label>
+                            <label class="btn btn-light">
+                                <input type="radio" name="sort" value="name">Name<br>
+                            </label>
+                            <label class="btn btn-light">
+                                <input type="radio" name="sort" value="mean">Mean<br>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="chart-container"></div>`);
 
         //Create group chart with current data
         let groupChart = new ChartSeries("groups-chart", data.map(d => d.group));
@@ -2202,5 +2279,6 @@ export function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalyticsCharts
         //Update charts depending on group
         adminExperimentalCharts.handleGroups(groupChart);
         adminExperimentalCharts.handleGroupsColours(groupChart);
+        adminExperimentalCharts.handleGroupsSort(groupChart);
     }
 }

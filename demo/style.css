@@ -40,6 +40,15 @@
     display: none;
 }
 
+.group-row {
+    background-color: #000000 !important;
+    color: #fff !important;
+    border-bottom: 1px solid #0f856b !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+}
+
 .content {
     width: 100%;
     padding: 20px;
