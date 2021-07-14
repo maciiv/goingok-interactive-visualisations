@@ -23,12 +23,12 @@ var AnalyticsChartsDataRaw = /** @class */ (function () {
         this.value = value;
         this.createDate = createDate;
     }
-    AnalyticsChartsDataRaw.prototype.transformData = function (data) {
-        return new AnalyticsChartsData(data.group, data.value.map(function (d) {
+    AnalyticsChartsDataRaw.prototype.transformData = function () {
+        return new AnalyticsChartsData(this.group, this.value.map(function (d) {
             return {
                 timestamp: new Date(d.timestamp), pseudonym: d.pseudonym, point: parseInt(d.point), text: d.text
             };
-        }), new Date(data.createDate), undefined, false);
+        }), new Date(this.createDate), undefined, false);
     };
     return AnalyticsChartsDataRaw;
 }());
@@ -133,6 +133,15 @@ var ViolinChartSeries = /** @class */ (function (_super) {
         _this_1.thresholdAxis = _this_1.y.setThresholdAxis(30, 70);
         return _this_1;
     }
+    ViolinChartSeries.prototype.setBandwidth = function (data) {
+        this.bandwidth = d3.scaleLinear()
+            .range([0, this.x.scale.bandwidth()])
+            .domain([-d3.max(data.map(function (r) { return r.value.length; })), d3.max(data.map(function (r) { return r.value.length; }))]);
+    };
+    ;
+    ViolinChartSeries.prototype.setBin = function () {
+        this.bin = d3.bin().domain([0, 100]).thresholds([0, this.elements.getThresholdsValues(this)[0], this.elements.getThresholdsValues(this)[1]]);
+    };
     return ViolinChartSeries;
 }(ChartSeries));
 // Basic class for series axis scale
@@ -322,26 +331,23 @@ var ViolinChartElements = /** @class */ (function (_super) {
         });
     };
     ;
-    ViolinChartElements.prototype.appendThresholdPercentages = function (chart, bin, bandwithScale, tDistressed, tSoaring) {
+    ViolinChartElements.prototype.appendThresholdPercentages = function (chart) {
+        var _this = this;
         var binData = function (data) {
-            var bins = bin(data.map(function (r) { return r.point; }));
-            var result = [];
-            bins.forEach(function (c) {
-                result.push({ bin: c, percentage: c.length / data.length * 100 });
-            });
-            return result;
+            var bins = chart.bin(data.value.map(function (r) { return r.point; }));
+            return bins.map(function (d) { return new BinHoverData(data.group, d, d.length / data.value.length * 100); });
         };
         var binContainer = chart.elements.contentContainer.selectAll("." + chart.id + "-violin-container");
         binContainer.selectAll("." + chart.id + "-violin-text-container").remove();
         var binTextContainer = binContainer.append("g")
             .attr("class", chart.id + "-violin-text-container");
         var binTextBox = binTextContainer.selectAll("rect")
-            .data(function (d) { return binData(d.value); })
+            .data(function (d) { return binData(d); })
             .enter()
             .append("rect")
             .attr("class", "violin-text-box");
         var binText = binTextContainer.selectAll("text")
-            .data(function (d) { return binData(d.value); })
+            .data(function (d) { return binData(d); })
             .enter()
             .append("text")
             .attr("class", "violin-text")
@@ -349,11 +355,11 @@ var ViolinChartElements = /** @class */ (function (_super) {
         binTextBox.attr("width", binText.node().getBBox().width + 10)
             .attr("height", binText.node().getBBox().height + 5);
         binTextBox.attr("y", function (d, i) { return positionY(i); })
-            .attr("x", bandwithScale(0) - binTextBox.node().getBBox().width / 2);
+            .attr("x", chart.bandwidth(0) - binTextBox.node().getBBox().width / 2);
         binText.attr("y", function (d, i) { return positionY(i) + binText.node().getBBox().height; })
-            .attr("x", bandwithScale(0) - binText.node().getBBox().width / 2);
+            .attr("x", chart.bandwidth(0) - binText.node().getBBox().width / 2);
         function positionY(i) {
-            return chart.y.scale(i == 0 ? tDistressed / 2 : i == 1 ? 50 : (100 - tSoaring) / 2 + tSoaring) - binTextBox.node().getBBox().height / 2;
+            return chart.y.scale(i == 0 ? _this.getThresholdsValues(chart)[0] / 2 : i == 1 ? 50 : (100 - _this.getThresholdsValues(chart)[1]) / 2 + _this.getThresholdsValues(chart)[1]) - binTextBox.node().getBBox().height / 2;
         }
     };
     ;
@@ -372,7 +378,7 @@ var ViolinChartElements = /** @class */ (function (_super) {
     ;
     return ViolinChartElements;
 }(ChartElements));
-// Basin class for chart paddinf
+// Basic class for chart paddinf
 var ChartPadding = /** @class */ (function () {
     function ChartPadding(xAxis, yAxis, top, right) {
         this.xAxis = xAxis == undefined ? 50 : xAxis;
@@ -381,6 +387,15 @@ var ChartPadding = /** @class */ (function () {
         this.right = right == undefined ? 0 : right;
     }
     return ChartPadding;
+}());
+// Class for bin hover data
+var BinHoverData = /** @class */ (function () {
+    function BinHoverData(group, bin, percentage) {
+        this.group = group;
+        this.bin = bin;
+        this.percentage = percentage;
+    }
+    return BinHoverData;
 }());
 // Basic class for Html containers
 var HtmlContainers = /** @class */ (function () {
@@ -432,240 +447,6 @@ var HtmlContainers = /** @class */ (function () {
     };
     ;
     return HtmlContainers;
-}());
-// Basic class for tooltip content interaction
-var TooltipValues = /** @class */ (function () {
-    function TooltipValues(label, value) {
-        this.label = label == undefined ? "" : label;
-        this.value = value == undefined ? 0 : value;
-    }
-    return TooltipValues;
-}());
-// Class for tooltip interaction
-var Tooltip = /** @class */ (function () {
-    function Tooltip() {
-    }
-    Tooltip.prototype.enableTooltip = function (chart, onMouseover, onMouseout) {
-        this.appendTooltipContainer(chart);
-        chart.elements.content.on("mouseover", onMouseover)
-            .on("mouseout", onMouseout);
-    };
-    ;
-    Tooltip.prototype.removeTooltip = function (chart) {
-        chart.elements.contentContainer.selectAll(".tooltip-box").remove();
-        chart.elements.contentContainer.selectAll(".tooltip-text").remove();
-        chart.elements.contentContainer.selectAll(".tooltip-line").remove();
-    };
-    ;
-    Tooltip.prototype.appendTooltipContainer = function (chart) {
-        chart.elements.contentContainer.selectAll(".tooltip-container").remove();
-        return chart.elements.contentContainer.append("g")
-            .attr("class", "tooltip-container");
-    };
-    ;
-    Tooltip.prototype.appendTooltipText = function (chart, title, values) {
-        if (values === void 0) { values = null; }
-        var result = chart.elements.contentContainer.select(".tooltip-container").append("rect")
-            .attr("class", "tooltip-box");
-        var text = chart.elements.contentContainer.select(".tooltip-container").append("text")
-            .attr("class", "tooltip-text title")
-            .attr("x", 10)
-            .text(title);
-        var textSize = text.node().getBBox().height;
-        text.attr("y", textSize);
-        if (values != null) {
-            values.forEach(function (c, i) {
-                text.append("tspan")
-                    .attr("class", "tooltip-text")
-                    .attr("y", textSize * (i + 2))
-                    .attr("x", 15)
-                    .text(c.label + ": " + c.value);
-            });
-        }
-        chart.elements.contentContainer.select(".tooltip-box").attr("width", text.node().getBBox().width + 20)
-            .attr("height", text.node().getBBox().height + 5);
-        return result;
-    };
-    ;
-    Tooltip.prototype.positionTooltipContainer = function (chart, x, y) {
-        chart.elements.contentContainer.select(".tooltip-container")
-            .attr("transform", "translate(" + x + ", " + y + ")")
-            .transition()
-            .style("opacity", 1);
-    };
-    ;
-    Tooltip.prototype.appendLine = function (chart, x1, y1, x2, y2, colour) {
-        chart.elements.contentContainer.append("line")
-            .attr("class", "tooltip-line")
-            .attr("x1", x1)
-            .attr("y1", y1)
-            .attr("x2", x2)
-            .attr("y2", y2)
-            .style("stroke", colour);
-    };
-    ;
-    return Tooltip;
-}());
-// Class for zoom interaction
-var Zoom = /** @class */ (function () {
-    function Zoom() {
-    }
-    Zoom.prototype.enableZoom = function (chart, zoomed) {
-        chart.elements.svg.selectAll(".zoom-rect")
-            .attr("class", "zoom-rect active");
-        var zoom = d3.zoom()
-            .scaleExtent([1, 5])
-            .extent([[0, 0], [chart.width - chart.padding.yAxis, chart.height]])
-            .translateExtent([[0, 0], [chart.width - chart.padding.yAxis, chart.height]])
-            .on("zoom", zoomed);
-        chart.elements.contentContainer.select(".zoom-rect").call(zoom);
-    };
-    ;
-    Zoom.prototype.appendZoomBar = function (chart) {
-        return chart.elements.svg.append("g")
-            .attr("class", "zoom-container")
-            .attr("height", 30)
-            .attr("width", chart.width - chart.padding.yAxis)
-            .attr("transform", "translate(" + chart.padding.yAxis + ", " + (chart.height - 30) + ")");
-    };
-    ;
-    return Zoom;
-}());
-// Class for click interaction
-var Click = /** @class */ (function () {
-    function Click() {
-    }
-    Click.prototype.enableClick = function (chart, onClick) {
-        chart.elements.content.on("click", onClick);
-    };
-    ;
-    Click.prototype.removeClick = function (chart) {
-        chart.click = false;
-        chart.elements.contentContainer.selectAll(".click-text").remove();
-        chart.elements.contentContainer.selectAll(".click-line").remove();
-        chart.elements.contentContainer.selectAll(".click-container").remove();
-    };
-    ;
-    Click.prototype.removeClickClass = function (chart, css) {
-        d3.selectAll("#" + chart.id + " .content-container ." + css)
-            .attr("class", css);
-    };
-    ;
-    Click.prototype.appendScatterText = function (chart, d, title, values) {
-        if (values === void 0) { values = null; }
-        var container = chart.elements.contentContainer.append("g")
-            .datum(d)
-            .attr("class", "click-container");
-        var box = container.append("rect")
-            .attr("class", "click-box");
-        var text = container.append("text")
-            .attr("class", "click-text title")
-            .attr("x", 10)
-            .text(title);
-        var textSize = text.node().getBBox().height;
-        text.attr("y", textSize);
-        if (values != null) {
-            values.forEach(function (c, i) {
-                text.append("tspan")
-                    .attr("class", "click-text")
-                    .attr("y", textSize * (i + 2))
-                    .attr("x", 15)
-                    .text(c.label + ": " + c.value);
-            });
-        }
-        box.attr("width", text.node().getBBox().width + 20)
-            .attr("height", text.node().getBBox().height + 5)
-            .attr("clip-path", "url(#clip-" + chart.id + ")");
-        container.attr("transform", this.positionClickContainer(chart, box, text, d));
-    };
-    ;
-    Click.prototype.positionClickContainer = function (chart, box, text, d) {
-        var positionX = chart.x.scale(d.timestamp);
-        var positionY = chart.y.scale(d.point) - box.node().getBBox().height - 10;
-        if (chart.width - chart.padding.yAxis < chart.x.scale(d.timestamp) + text.node().getBBox().width) {
-            positionX = chart.x.scale(d.timestamp) - box.node().getBBox().width;
-        }
-        ;
-        if (chart.y.scale(d.point) - box.node().getBBox().height - 10 < 0) {
-            positionY = positionY + box.node().getBBox().height + 20;
-        }
-        ;
-        return "translate(" + positionX + ", " + positionY + ")";
-    };
-    ;
-    Click.prototype.appendGroupsText = function (chart, data, clickData) {
-        var _this_1 = this;
-        chart.elements.contentContainer.selectAll(".click-container text").remove();
-        chart.elements.content.attr("class", function (d) { return d.group == clickData.group ? "bar clicked" : "bar"; });
-        var clickContainer = chart.elements.contentContainer.selectAll(".click-container")
-            .data(data);
-        clickContainer.exit().remove();
-        var clicontainerEnter = clickContainer.enter()
-            .append("g")
-            .merge(clickContainer)
-            .attr("class", "click-container")
-            .attr("transform", function (c) { return "translate(" + (chart.x.scale(c.group) + chart.x.scale.bandwidth() / 2) + ", 0)"; });
-        clickContainer.merge(clicontainerEnter);
-        chart.elements.contentContainer.selectAll(".click-container").append("text")
-            .attr("class", function (c) { return _this_1.comparativeText(clickData.q3, c.q3, clickData.group, c.group)[0]; })
-            .attr("y", function (c) { return chart.y.scale(c.q3) - 5; })
-            .text(function (c) { return "q3: " + _this_1.comparativeText(clickData.q3, c.q3, clickData.group, c.group)[1]; });
-        chart.elements.contentContainer.selectAll(".click-container").append("text")
-            .attr("class", function (c) { return _this_1.comparativeText(clickData.median, c.median, clickData.group, c.group)[0]; })
-            .attr("y", function (c) { return chart.y.scale(c.median) - 5; })
-            .text(function (c) { return "Median: " + _this_1.comparativeText(clickData.median, c.median, clickData.group, c.group)[1]; });
-        chart.elements.contentContainer.selectAll(".click-container").append("text")
-            .attr("class", function (c) { return _this_1.comparativeText(clickData.q1, c.q1, clickData.group, c.group)[0]; })
-            .attr("y", function (c) { return chart.y.scale(c.q1) - 5; })
-            .text(function (c) { return "q1: " + _this_1.comparativeText(clickData.q1, c.q1, clickData.group, c.group)[1]; });
-    };
-    ;
-    Click.prototype.comparativeText = function (clickValue, value, clickXValue, xValue) {
-        var textClass = "click-text";
-        var textSymbol = "";
-        if (clickValue - value < 0) {
-            textClass = textClass + " positive";
-            textSymbol = "+";
-        }
-        else if (clickValue - value > 0) {
-            textClass = textClass + " negative";
-            textSymbol = "-";
-        }
-        else {
-            textClass = textClass + " black";
-        }
-        return [textClass, "" + textSymbol + (clickXValue == xValue ? clickValue : (Math.abs(clickValue - value)))];
-    };
-    return Click;
-}());
-// Class for sort interaction
-var Sort = /** @class */ (function () {
-    function Sort() {
-    }
-    Sort.prototype.sortData = function (a, b, sorted) {
-        if (a < b) {
-            if (sorted) {
-                return -1;
-            }
-            else {
-                return 1;
-            }
-        }
-        if (a > b) {
-            if (sorted) {
-                return 1;
-            }
-            else {
-                return -1;
-            }
-        }
-        return 0;
-    };
-    ;
-    Sort.prototype.setSorted = function (sorted, option) {
-        return sorted == option ? "" : option;
-    };
-    return Sort;
 }());
 var AdminControlCharts = /** @class */ (function () {
     function AdminControlCharts() {
@@ -815,41 +596,41 @@ var AdminControlCharts = /** @class */ (function () {
     };
     ;
     AdminControlCharts.prototype.renderViolin = function (chart, data) {
-        var thresholds = chart.elements.getThresholdsValues(chart);
-        var tDistressed = thresholds[0];
-        var tSoaring = thresholds[1];
-        //Create bandwidth scale
-        var bandwithScale = d3.scaleLinear()
-            .range([0, chart.x.scale.bandwidth()])
-            .domain([-d3.max(data.map(function (r) { return r.value.length; })), d3.max(data.map(function (r) { return r.value.length; }))]);
-        //Create bins             
-        var bin = d3.bin().domain([0, 100]).thresholds([0, tDistressed, tSoaring]);
+        chart.setBandwidth(data);
+        chart.setBin();
         //Select existing bin containers
         var binContainer = chart.elements.contentContainer.selectAll("." + chart.id + "-violin-container")
             .data(data);
         //Remove old bin containers
         binContainer.exit().remove();
         //Update colours
-        binContainer.select("path")
-            .style("stroke", function (d) { return d.colour; })
-            .style("fill", function (d) { return d.colour; });
+        binContainer.each(function (d, i, g) {
+            d3.select(g[i])
+                .selectAll("rect")
+                .style("stroke", d.colour)
+                .style("fill", d.colour);
+        });
         //Append new bin containers
         var binContainerEnter = binContainer.enter()
             .append("g")
             .attr("class", chart.id + "-violin-container")
             .attr("transform", function (d) { return "translate(" + chart.x.scale(d.group) + ", 0)"; });
         //Draw violins
-        binContainerEnter.append("path")
-            .attr("id", chart.id + "-violin")
-            .attr("class", "violin-path")
-            .style("stroke", function (d) { return d.colour; })
-            .style("fill", function (d) { return d.colour; })
-            .datum(function (d) { return bin(d.value.map(function (d) { return d.point; })); })
-            .attr("d", d3.area()
-            .x0(function (d) { return bandwithScale(-d.length); })
-            .x1(function (d) { return bandwithScale(d.length); })
-            .y(function (d, i) { return chart.y.scale(i == 0 ? 0 : i == 1 ? 50 : 100); })
-            .curve(d3.curveCatmullRom));
+        binContainerEnter.each(function (d, i, g) {
+            d3.select(g[i])
+                .selectAll(".violin-rect")
+                .data(chart.bin(d.value.map(function (d) { return d.point; })))
+                .enter()
+                .append("rect")
+                .attr("id", chart.id + "-violin")
+                .attr("class", "violin-rect")
+                .attr("x", function (d) { return chart.bandwidth(-d.length); })
+                .attr("y", function (d) { return chart.y.scale(d.x1); })
+                .attr("height", function (d) { return chart.y.scale(d.x0) - chart.y.scale(d.x1); })
+                .attr("width", function (d) { return chart.bandwidth(d.length) - chart.bandwidth(-d.length); })
+                .style("stroke", d.colour)
+                .style("fill", d.colour);
+        });
         //Transision bin containers
         binContainer.transition()
             .duration(750)
@@ -857,7 +638,7 @@ var AdminControlCharts = /** @class */ (function () {
         //Merge existing with new bin containers
         binContainer.merge(binContainerEnter);
         //Transition violins
-        this.interactions.violin(chart, data, tDistressed, tSoaring);
+        this.interactions.violin(chart);
         //Append tooltip container
         this.interactions.tooltip.appendTooltipContainer(chart);
         this.handleViolinHover(chart);
@@ -871,8 +652,7 @@ var AdminControlCharts = /** @class */ (function () {
             .on("mouseout", onMouseout);
         function onMouseover(e, d) {
             _this.interactions.tooltip.appendTooltipText(chart, "Count: " + d.bin.length.toString());
-            console.log(this)
-            _this.interactions.tooltip.positionTooltipContainer(chart, chart.x.scale.bandwidth(), parseInt(d3.select(this).attr("y")));
+            _this.interactions.tooltip.positionTooltipContainer(chart, chart.x.scale(d.group) + parseInt(d3.select(this).attr("x")) + d3.select(".violin-text-box").node().getBBox().width, parseInt(d3.select(this).attr("y")) - d3.select(".violin-text-box").node().getBBox().height);
         }
         function onMouseout() {
             chart.elements.svg.select(".tooltip-container").transition()
@@ -1179,25 +959,18 @@ var AdminControlTransitions = /** @class */ (function () {
             .attr("cy", function (d) { return chartZoom.y.scale(d.point); });
     };
     ;
-    AdminControlTransitions.prototype.violin = function (chart, data, tDistressed, tSoaring) {
-        //Create bandwidth scale
-        var bandwithScale = d3.scaleLinear()
-            .range([0, chart.x.scale.bandwidth()])
-            .domain([-d3.max(data.map(function (r) { return r.value.length; })), d3.max(data.map(function (r) { return r.value.length; }))]);
-        //Create bins             
-        var bin = d3.bin().domain([0, 100]).thresholds([0, tDistressed, tSoaring]);
+    AdminControlTransitions.prototype.violin = function (chart) {
         //Draw violins
-        chart.elements.contentContainer.selectAll("." + chart.id + "-violin-container").select("path")
-            .datum(function (d) { return bin(d.value.map(function (d) { return d.point; })); })
+        chart.elements.contentContainer.selectAll("." + chart.id + "-violin-container").selectAll(".violin-rect")
+            .data(function (d) { return chart.bin(d.value.map(function (d) { return d.point; })); })
             .transition()
             .duration(750)
-            .attr("d", d3.area()
-            .x0(function (d) { return bandwithScale(-d.length); })
-            .x1(function (d) { return bandwithScale(d.length); })
-            .y(function (d, i) { return chart.y.scale(i == 0 ? 0 : i == 1 ? 50 : 100); })
-            .curve(d3.curveCatmullRom));
+            .attr("x", function (d) { return chart.bandwidth(-d.length); })
+            .attr("y", function (d) { return chart.y.scale(d.x1); })
+            .attr("height", function (d) { return chart.y.scale(d.x0) - chart.y.scale(d.x1); })
+            .attr("width", function (d) { return chart.bandwidth(d.length) - chart.bandwidth(-d.length); });
         //Draw threshold percentages
-        chart.elements.appendThresholdPercentages(chart, bin, bandwithScale, tDistressed, tSoaring);
+        chart.elements.appendThresholdPercentages(chart);
     };
     ;
     AdminControlTransitions.prototype.density = function (chart, data) {
@@ -1222,6 +995,104 @@ var AdminControlInteractions = /** @class */ (function (_super) {
     }
     return AdminControlInteractions;
 }(AdminControlTransitions));
+// Basic class for tooltip content interaction
+var TooltipValues = /** @class */ (function () {
+    function TooltipValues(label, value) {
+        this.label = label == undefined ? "" : label;
+        this.value = value == undefined ? 0 : value;
+    }
+    return TooltipValues;
+}());
+// Class for tooltip interaction
+var Tooltip = /** @class */ (function () {
+    function Tooltip() {
+    }
+    Tooltip.prototype.enableTooltip = function (chart, onMouseover, onMouseout) {
+        this.appendTooltipContainer(chart);
+        chart.elements.content.on("mouseover", onMouseover)
+            .on("mouseout", onMouseout);
+    };
+    ;
+    Tooltip.prototype.removeTooltip = function (chart) {
+        chart.elements.contentContainer.selectAll(".tooltip-box").remove();
+        chart.elements.contentContainer.selectAll(".tooltip-text").remove();
+        chart.elements.contentContainer.selectAll(".tooltip-line").remove();
+    };
+    ;
+    Tooltip.prototype.appendTooltipContainer = function (chart) {
+        chart.elements.contentContainer.selectAll(".tooltip-container").remove();
+        return chart.elements.contentContainer.append("g")
+            .attr("class", "tooltip-container");
+    };
+    ;
+    Tooltip.prototype.appendTooltipText = function (chart, title, values) {
+        if (values === void 0) { values = null; }
+        var result = chart.elements.contentContainer.select(".tooltip-container").append("rect")
+            .attr("class", "tooltip-box");
+        var text = chart.elements.contentContainer.select(".tooltip-container").append("text")
+            .attr("class", "tooltip-text title")
+            .attr("x", 10)
+            .text(title);
+        var textSize = text.node().getBBox().height;
+        text.attr("y", textSize);
+        if (values != null) {
+            values.forEach(function (c, i) {
+                text.append("tspan")
+                    .attr("class", "tooltip-text")
+                    .attr("y", textSize * (i + 2))
+                    .attr("x", 15)
+                    .text(c.label + ": " + c.value);
+            });
+        }
+        chart.elements.contentContainer.select(".tooltip-box").attr("width", text.node().getBBox().width + 20)
+            .attr("height", text.node().getBBox().height + 5);
+        return result;
+    };
+    ;
+    Tooltip.prototype.positionTooltipContainer = function (chart, x, y) {
+        chart.elements.contentContainer.select(".tooltip-container")
+            .attr("transform", "translate(" + x + ", " + y + ")")
+            .transition()
+            .style("opacity", 1);
+    };
+    ;
+    Tooltip.prototype.appendLine = function (chart, x1, y1, x2, y2, colour) {
+        chart.elements.contentContainer.append("line")
+            .attr("class", "tooltip-line")
+            .attr("x1", x1)
+            .attr("y1", y1)
+            .attr("x2", x2)
+            .attr("y2", y2)
+            .style("stroke", colour);
+    };
+    ;
+    return Tooltip;
+}());
+// Class for zoom interaction
+var Zoom = /** @class */ (function () {
+    function Zoom() {
+    }
+    Zoom.prototype.enableZoom = function (chart, zoomed) {
+        chart.elements.svg.selectAll(".zoom-rect")
+            .attr("class", "zoom-rect active");
+        var zoom = d3.zoom()
+            .scaleExtent([1, 5])
+            .extent([[0, 0], [chart.width - chart.padding.yAxis, chart.height]])
+            .translateExtent([[0, 0], [chart.width - chart.padding.yAxis, chart.height]])
+            .on("zoom", zoomed);
+        chart.elements.contentContainer.select(".zoom-rect").call(zoom);
+    };
+    ;
+    Zoom.prototype.appendZoomBar = function (chart) {
+        return chart.elements.svg.append("g")
+            .attr("class", "zoom-container")
+            .attr("height", 30)
+            .attr("width", chart.width - chart.padding.yAxis)
+            .attr("transform", "translate(" + chart.padding.yAxis + ", " + (chart.height - 30) + ")");
+    };
+    ;
+    return Zoom;
+}());
 var AdminExperimentalCharts = /** @class */ (function (_super) {
     __extends(AdminExperimentalCharts, _super);
     function AdminExperimentalCharts() {
@@ -1390,7 +1261,7 @@ var AdminExperimentalCharts = /** @class */ (function (_super) {
             _this.interactions.click.appendGroupsText(chart, data, d);
             //Draw group statistics
             _this.htmlContainers.groupStatistics = _this.htmlContainers.appendDiv("groups-statistics", "col-md-3");
-            var groupsStatisticsCard = _this.htmlContainers.appendCard(_this.htmlContainers.groupStatistics, "Statitics (" + d.group + ")", d.group);
+            var groupsStatisticsCard = _this.htmlContainers.appendCard(_this.htmlContainers.groupStatistics, "Statistics (" + d.group + ")", d.group);
             _this.renderGroupStats(groupsStatisticsCard, d);
             //Draw compare
             _this.htmlContainers.compare = _this.htmlContainers.appendDiv("group-compare", "col-md-2 mt-3");
@@ -1400,14 +1271,14 @@ var AdminExperimentalCharts = /** @class */ (function (_super) {
             _this.renderGroupCompare();
             //Draw groups violin container  
             _this.htmlContainers.groupViolin = _this.htmlContainers.appendDiv("group-violin-chart", "col-md-5 mt-3");
-            _this.htmlContainers.appendCard(_this.htmlContainers.groupViolin, "Reflections distribution (" + d.group + ")");
+            _this.htmlContainers.appendCard(_this.htmlContainers.groupViolin, "Reflections histogram (" + d.group + ")");
             _this.violin = new ViolinChartSeries("group-violin-chart", violinData.map(function (d) { return d.group; }));
             _this.violin.elements.preRender(_this.violin);
             _this.violin.elements.renderViolinThresholds(_this.violin, [30, 70]);
             _this.violin = _this.renderViolin(_this.violin, violinData);
             //Draw users violin container
             _this.htmlContainers.userViolin = _this.htmlContainers.appendDiv("group-violin-users-chart", "col-md-5 mt-3");
-            _this.htmlContainers.appendCard(_this.htmlContainers.userViolin, "Users distribution (" + d.group + ")");
+            _this.htmlContainers.appendCard(_this.htmlContainers.userViolin, "Users histogram (" + d.group + ")");
             var usersData = violinData.map(function (d) {
                 return d.getUsersData(d);
             });
@@ -1488,7 +1359,8 @@ var AdminExperimentalCharts = /** @class */ (function (_super) {
             if (newT > 99) {
                 newT = 99;
             }
-            _this.interactions.violin(chart, data, tDistressed, newT);
+            chart.setBin();
+            _this.interactions.violin(chart);
             d3.select(this).attr("class", d3.select(this).attr("class").replace(" grabbing", ""));
             _this.handleViolinHover(chart);
         }
@@ -1529,7 +1401,8 @@ var AdminExperimentalCharts = /** @class */ (function (_super) {
             if (newT > 49) {
                 newT = 49;
             }
-            _this.interactions.violin(chart, data, newT, tSoaring);
+            chart.setBin();
+            _this.interactions.violin(chart);
             d3.select(this).attr("class", d3.select(this).attr("class").replace(" grabbing", ""));
             _this.handleViolinHover(chart);
         }
@@ -1666,12 +1539,148 @@ var AdminExperimentalInteractions = /** @class */ (function (_super) {
     }
     return AdminExperimentalInteractions;
 }(AdminControlInteractions));
+// Class for click interaction
+var Click = /** @class */ (function () {
+    function Click() {
+    }
+    Click.prototype.enableClick = function (chart, onClick) {
+        chart.elements.content.on("click", onClick);
+    };
+    ;
+    Click.prototype.removeClick = function (chart) {
+        chart.click = false;
+        chart.elements.contentContainer.selectAll(".click-text").remove();
+        chart.elements.contentContainer.selectAll(".click-line").remove();
+        chart.elements.contentContainer.selectAll(".click-container").remove();
+    };
+    ;
+    Click.prototype.removeClickClass = function (chart, css) {
+        d3.selectAll("#" + chart.id + " .content-container ." + css)
+            .attr("class", css);
+    };
+    ;
+    Click.prototype.appendScatterText = function (chart, d, title, values) {
+        if (values === void 0) { values = null; }
+        var container = chart.elements.contentContainer.append("g")
+            .datum(d)
+            .attr("class", "click-container");
+        var box = container.append("rect")
+            .attr("class", "click-box");
+        var text = container.append("text")
+            .attr("class", "click-text title")
+            .attr("x", 10)
+            .text(title);
+        var textSize = text.node().getBBox().height;
+        text.attr("y", textSize);
+        if (values != null) {
+            values.forEach(function (c, i) {
+                text.append("tspan")
+                    .attr("class", "click-text")
+                    .attr("y", textSize * (i + 2))
+                    .attr("x", 15)
+                    .text(c.label + ": " + c.value);
+            });
+        }
+        box.attr("width", text.node().getBBox().width + 20)
+            .attr("height", text.node().getBBox().height + 5)
+            .attr("clip-path", "url(#clip-" + chart.id + ")");
+        container.attr("transform", this.positionClickContainer(chart, box, text, d));
+    };
+    ;
+    Click.prototype.positionClickContainer = function (chart, box, text, d) {
+        var positionX = chart.x.scale(d.timestamp);
+        var positionY = chart.y.scale(d.point) - box.node().getBBox().height - 10;
+        if (chart.width - chart.padding.yAxis < chart.x.scale(d.timestamp) + text.node().getBBox().width) {
+            positionX = chart.x.scale(d.timestamp) - box.node().getBBox().width;
+        }
+        ;
+        if (chart.y.scale(d.point) - box.node().getBBox().height - 10 < 0) {
+            positionY = positionY + box.node().getBBox().height + 20;
+        }
+        ;
+        return "translate(" + positionX + ", " + positionY + ")";
+    };
+    ;
+    Click.prototype.appendGroupsText = function (chart, data, clickData) {
+        var _this_1 = this;
+        chart.elements.contentContainer.selectAll(".click-container text").remove();
+        chart.elements.content.attr("class", function (d) { return d.group == clickData.group ? "bar clicked" : "bar"; });
+        var clickContainer = chart.elements.contentContainer.selectAll(".click-container")
+            .data(data);
+        clickContainer.exit().remove();
+        var clicontainerEnter = clickContainer.enter()
+            .append("g")
+            .merge(clickContainer)
+            .attr("class", "click-container")
+            .attr("transform", function (c) { return "translate(" + (chart.x.scale(c.group) + chart.x.scale.bandwidth() / 2) + ", 0)"; });
+        clickContainer.merge(clicontainerEnter);
+        chart.elements.contentContainer.selectAll(".click-container").append("text")
+            .attr("class", function (c) { return _this_1.comparativeText(clickData.q3, c.q3, clickData.group, c.group)[0]; })
+            .attr("y", function (c) { return chart.y.scale(c.q3) - 5; })
+            .text(function (c) { return "q3: " + _this_1.comparativeText(clickData.q3, c.q3, clickData.group, c.group)[1]; });
+        chart.elements.contentContainer.selectAll(".click-container").append("text")
+            .attr("class", function (c) { return _this_1.comparativeText(clickData.median, c.median, clickData.group, c.group)[0]; })
+            .attr("y", function (c) { return chart.y.scale(c.median) - 5; })
+            .text(function (c) { return "Median: " + _this_1.comparativeText(clickData.median, c.median, clickData.group, c.group)[1]; });
+        chart.elements.contentContainer.selectAll(".click-container").append("text")
+            .attr("class", function (c) { return _this_1.comparativeText(clickData.q1, c.q1, clickData.group, c.group)[0]; })
+            .attr("y", function (c) { return chart.y.scale(c.q1) - 5; })
+            .text(function (c) { return "q1: " + _this_1.comparativeText(clickData.q1, c.q1, clickData.group, c.group)[1]; });
+    };
+    ;
+    Click.prototype.comparativeText = function (clickValue, value, clickXValue, xValue) {
+        var textClass = "click-text";
+        var textSymbol = "";
+        if (clickValue - value < 0) {
+            textClass = textClass + " positive";
+            textSymbol = "+";
+        }
+        else if (clickValue - value > 0) {
+            textClass = textClass + " negative";
+            textSymbol = "-";
+        }
+        else {
+            textClass = textClass + " black";
+        }
+        return [textClass, "" + textSymbol + (clickXValue == xValue ? clickValue : (Math.abs(clickValue - value)))];
+    };
+    return Click;
+}());
+// Class for sort interaction
+var Sort = /** @class */ (function () {
+    function Sort() {
+    }
+    Sort.prototype.sortData = function (a, b, sorted) {
+        if (a < b) {
+            if (sorted) {
+                return -1;
+            }
+            else {
+                return 1;
+            }
+        }
+        if (a > b) {
+            if (sorted) {
+                return 1;
+            }
+            else {
+                return -1;
+            }
+        }
+        return 0;
+    };
+    ;
+    Sort.prototype.setSorted = function (sorted, option) {
+        return sorted == option ? "" : option;
+    };
+    return Sort;
+}());
 /* ------------------------------------------------
     End of admin experimental interfaces and classes
 -------------------------------------------------- */
 function buildControlAdminAnalyticsCharts(entriesRaw) {
     var rawData = entriesRaw.map(function (d) { return new AnalyticsChartsDataRaw(d.group, d.value, d.createDate); });
-    var entries = rawData.map(function (d) { return d.transformData(d); });
+    var entries = rawData.map(function (d) { return d.transformData(); });
     var colourScale = d3.scaleOrdinal(d3.schemeCategory10);
     entries = entries.map(function (d) { return new AnalyticsChartsData(d.group, d.value, d.creteDate, colourScale(d.group), d.selected); });
     drawCharts(entries);
@@ -1822,7 +1831,7 @@ function buildControlAdminAnalyticsCharts(entriesRaw) {
 //exports.buildControlAdminAnalyticsCharts = buildControlAdminAnalyticsCharts;
 function buildExperimentAdminAnalyticsCharts(entriesRaw) {
     var rawData = entriesRaw.map(function (d) { return new AnalyticsChartsDataRaw(d.group, d.value, d.createDate); });
-    var entries = rawData.map(function (d) { return d.transformData(d); });
+    var entries = rawData.map(function (d) { return d.transformData(); });
     var colourScale = d3.scaleOrdinal(d3.schemeCategory10);
     entries = entries.map(function (d, i) { return new AnalyticsChartsData(d.group, d.value, d.creteDate, colourScale(d.group), i == 0 ? true : false); });
     drawCharts(entries);

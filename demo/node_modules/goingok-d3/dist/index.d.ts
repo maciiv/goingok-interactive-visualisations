@@ -8,7 +8,7 @@ interface IAnalyticsChartsDataRaw {
     group: string;
     value: IReflectionAuthorEntryRaw[];
     createDate: string;
-    transformData(data: IAnalyticsChartsDataRaw): AnalyticsChartsData;
+    transformData(): AnalyticsChartsData;
 }
 interface IReflectionAuthorEntry {
     timestamp: Date;

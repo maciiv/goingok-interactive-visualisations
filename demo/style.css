@@ -90,7 +90,7 @@
     color: #ff3300;
 }
 
-.bar, .line-circle, .violin-path, .zoom-circle, .legend-color {
+.bar, .line-circle, .violin-rect, .zoom-circle, .legend-color {
     fill: #3399CC;
     fill-opacity: 0.2;
     stroke-width: 1;
