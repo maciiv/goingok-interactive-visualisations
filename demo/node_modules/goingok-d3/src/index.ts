@@ -226,7 +226,6 @@ interface IChartAxis {
     scale: d3.ScaleBand<string> | d3.ScaleLinear<number, number, never> | d3.ScaleTime<number, number, never>;
     axis: d3.Axis<d3.AxisDomain>;
     label: string;
-    sorted: boolean;
 }
 
 // Basic class for series axis scale
@@ -234,7 +233,6 @@ class ChartSeriesAxis implements IChartAxis {
     scale: d3.ScaleBand<string>;
     axis: d3.Axis<d3.AxisDomain>;
     label: string;
-    sorted: boolean;
     constructor(label: string, domain: string[], range: number[]) {
         this.label = label;
         this.scale = d3.scaleBand()
@@ -242,7 +240,6 @@ class ChartSeriesAxis implements IChartAxis {
             .rangeRound(range)
             .padding(0.25);
         this.axis = d3.axisBottom(this.scale);
-        this.sorted = false;
     };
 }
 
@@ -251,7 +248,6 @@ class ChartLinearAxis implements IChartAxis {
     scale: d3.ScaleLinear<number, number, never>;
     axis: d3.Axis<d3.AxisDomain>;
     label: string;
-    sorted: boolean;
     constructor(label: string, domain: number[], range: number[], position?: string) {
         this.label = label;
         this.scale = d3.scaleLinear()
@@ -268,7 +264,6 @@ class ChartLinearAxis implements IChartAxis {
         labels.set(100, "soaring");
         this.axis.tickValues([0, 25, 50, 75, 100])
             .tickFormat((d: d3.AxisDomain, i: number) => labels.get(d));
-        this.sorted = false;
     };
     setThresholdAxis(tDistressed: number, tSoaring: number) {
         return d3.axisRight(this.scale)
@@ -282,14 +277,12 @@ class ChartTimeAxis implements IChartAxis {
     scale: d3.ScaleTime<number, number, never>;
     axis: d3.Axis<d3.AxisDomain>;
     label: string;
-    sorted: boolean;
     constructor(label: string, domain: Date[], range: number[]) {
         this.label = label;
         this.scale = d3.scaleTime()
             .domain(domain)
             .range(range);
         this.axis = d3.axisBottom(this.scale)
-        this.sorted = false;
     };
 }
 
@@ -531,7 +524,6 @@ interface IHtmlContainers {
     userViolin: any,
     compare: any
     userStatistics: any;
-    reflections: any;
     remove(): void;
     removeUsers(): void;
     appendDiv(id: string, css: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
@@ -547,7 +539,6 @@ class HtmlContainers implements IHtmlContainers {
     userViolin: any;
     compare: any;
     userStatistics: any;
-    reflections: any;
     remove() {
         if (this.groupStatistics != undefined) {
             this.groupStatistics.remove();
@@ -569,9 +560,6 @@ class HtmlContainers implements IHtmlContainers {
     removeUsers() {
         if (this.userStatistics != undefined) {
             this.userStatistics.remove();
-        }
-        if (this.reflections != undefined) {
-            this.reflections.remove();
         }
     };
     appendDiv(id: string, css: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any> {
@@ -775,12 +763,13 @@ class Click implements IClick {
 
         let clickContainer = chart.elements.contentContainer.selectAll(".click-container")
             .data(data);
-        clickContainer.enter()
+        clickContainer.exit().remove();
+        let clicontainerEnter = clickContainer.enter()
             .append("g")
             .merge(clickContainer)
             .attr("class", "click-container")
             .attr("transform", (c: IAnalyticsChartsDataStats) => `translate(${chart.x.scale(c.group) + chart.x.scale.bandwidth() / 2}, 0)`);
-        clickContainer.exit().remove();
+        clickContainer.merge(clicontainerEnter);
 
         chart.elements.contentContainer.selectAll(".click-container").append("text")
             .attr("class", (c: IAnalyticsChartsDataStats) => this.comparativeText(clickData.q3, c.q3, clickData.group, c.group)[0])
@@ -815,68 +804,12 @@ class Click implements IClick {
 
 // Interface for sort interaction
 interface ISort {
-    appendArrow(chart: IChart, x: boolean, y: boolean): d3.Selection<d3.BaseType, unknown, HTMLElement, any>;
-    arrowPoints(chart: IChart, x: boolean, y: boolean): string;
-    setSorted(chart: IChart, x: boolean, y: boolean): boolean;
-    arrowTransition(chart: IChart, x: boolean, y: boolean): void;
     sortData(a: number, b: number, sorted: boolean): number;
+    setSorted(sorted: string, option: string): string;
 }
 
 // Class for sort interaction
 class Sort implements ISort {
-    appendArrow(chart: IChart, x: boolean = false, y: boolean = false): d3.Selection<d3.BaseType, unknown, HTMLElement, any> {
-        let selector = x == true ? ".x-label-container" : ".y-label-container";
-        let button = d3.select(selector).attr("class", "y-label-container sort");
-        button.append("polygon")
-            .attr("class", "sort-arrow")
-            .attr("points", this.arrowPoints(chart, x, y));
-        return button;
-    };
-    arrowPoints(chart: IChart, x: boolean, y: boolean): string {
-        let selector = x == true ? ".x-label-text" : ".y-label-text";
-        let height = chart.elements.svg.select(selector).node().getBBox().height;
-        let width = chart.elements.svg.select(selector).node().getBBox().width;
-        let point1 = [(width / 2) + 5, 0];
-        let point2 = [(width / 2) + 5, -height / 2];
-        let point3 = [(width / 2) + 15, -height / 4];
-
-        if ((x == true && chart.x.sorted == false) || (y == true && chart.y.sorted == false)) {
-            point1 = [-(width / 2) - 5, 0];
-            point2 = [-(width / 2) - 5, -height / 2];
-            point3 = [-(width / 2) - 15, -height / 4];
-        }
-
-        return point1 + ", " + point2 + ", " + point3;
-    };
-    setSorted(chart: IChart, x: boolean = false, y: boolean = false): boolean {
-        if (x == true && chart.x.sorted == true) {
-            return chart.x.sorted = false;
-        }
-        else if (x == true && chart.x.sorted == false) {
-            return chart.x.sorted = true;
-        }
-        else if (y == true && chart.y.sorted == true) {
-            chart.y.sorted = false;
-        }
-        else if (y == true && chart.y.sorted == false) {
-            chart.y.sorted = true;
-        }
-    };
-    arrowTransition(chart: IChart, x: boolean = false, y: boolean = false): void {
-        let selector = x == true ? ".x-label-container" : ".y-label-container";
-        if(chart.elements.svg.select(`${selector} .sort-arrow.active`).empty()) {
-            chart.elements.svg.select(`${selector} .sort-arrow`)
-                .transition()
-                .attr("points", this.arrowPoints(chart, x, y))
-                .attr("class", "sort-arrow active");
-        } else {
-            chart.elements.svg.select(`${selector} .sort-arrow.active`)
-                .attr("class", "sort-arrow")
-                .transition()
-                .attr("points", this.arrowPoints(chart, x, y))
-                .attr("class", "sort-arrow active");
-        }
-    };
     sortData(a: number | Date | string, b: number | Date | string, sorted: boolean): number {
         if (a < b) {
             if (sorted) {
@@ -893,6 +826,9 @@ class Sort implements ISort {
         }
         return 0;
     };
+    setSorted(sorted: string, option: string): string {
+        return sorted == option ? "" : option;
+    }
 }
 
 /* ------------------------------------------------
@@ -906,6 +842,7 @@ interface IAdminControlCharts {
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries;
     renderGroupStats(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsDataStats): any;
     renderViolin(chart: ViolinChartSeries, data: IAnalyticsChartsData[]): ViolinChartSeries;
+    handleViolinHover(chart: ViolinChartSeries, bandwidth: d3.ScaleLinear<number, number, never>): void;
     renderTimelineDensity(chart: ChartTime, data: IAnalyticsChartsData): ChartTime;
     renderTimelineScatter(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData): ChartTime;
     handleTimelineButtons(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData): void;
@@ -1104,7 +1041,6 @@ class AdminControlCharts implements IAdminControlCharts {
                         <b>Newest reflection</b><br>${data.newestReflection.toDateString()}<br>`);
     };
     renderViolin(chart: ViolinChartSeries, data: IAnalyticsChartsData[]): ViolinChartSeries {
-        let _this = this;
         let thresholds = chart.elements.getThresholdsValues(chart);
         let tDistressed = thresholds[0];
         let tSoaring = thresholds[1];
@@ -1160,20 +1096,24 @@ class AdminControlCharts implements IAdminControlCharts {
 
         //Append tooltip container
         this.interactions.tooltip.appendTooltipContainer(chart);
+        this.handleViolinHover(chart);       
+        return chart;
+    };
+    handleViolinHover(chart: ViolinChartSeries): void {
+        let _this = this;
         chart.elements.contentContainer.selectAll(".violin-text")
             .on("mouseover", onMouseover)
             .on("mouseout", onMouseout);
         function onMouseover(e: Event, d: IBinData) {
             _this.interactions.tooltip.appendTooltipText(chart, `Count: ${d.bin.length.toString()}`);
-            _this.interactions.tooltip.positionTooltipContainer(chart, bandwithScale(0), parseInt(d3.select(this).attr("y")) - d3.selectAll(".violin-text-box").node().getBBox().height);
+            _this.interactions.tooltip.positionTooltipContainer(chart, parseInt(d3.select(this).attr("x")) + d3.select(".violin-text-box").node().getBBox().width, parseInt(d3.select(this).attr("y")));
         }
         function onMouseout() {
             chart.elements.svg.select(".tooltip-container").transition()
                 .style("opacity", 0);
             _this.interactions.tooltip.removeTooltip(chart);
         }
-        return chart;
-    };
+    }
     renderTimelineDensity(chart: ChartTime, data: IAnalyticsChartsData): ChartTime {
         //Remove scatter plot
         chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles`).remove();
@@ -1678,7 +1618,6 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 let currentClickGroup = d3.select("#groups-statistics .card").attr("id");
                 let violinData = _this.getGroupCompareData();
                 if(violinData.map(d => d.group).includes(groupId)) {
-                    let violinData = _this.getGroupCompareData();
                     _this.renderViolin(_this.violin, violinData);
                     let usersData = violinData.map(d => {
                         return d.getUsersData(d)
@@ -1710,21 +1649,24 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                     return _this.interactions.sort.sortData(d3.mean(a.value.map(d => d.point)), d3.mean(b.value.map(d => d.point)), _this.sorted == "mean" ? true : false);
                 }                   
             });
-            _this.sorted = SetSorted();
-            function SetSorted() {
-                if(selectedOption == "date") {
-                    return _this.sorted == "date" ? "" : "date";
-                } else if (selectedOption == "name") {
-                    return _this.sorted == "name" ? "" : "name";
-                } else if (selectedOption == "mean") {
-                    return _this.sorted == "mean" ? "" : "mean";
-                }
-            }                
+            _this.sorted = _this.interactions.sort.setSorted(_this.sorted, selectedOption);               
             let entries = d3.filter(_this.allEntries, d => d.selected);
             let data = entries.map(d => new AnalyticsChartsDataStats(d));
             boxPlot.x = new ChartSeriesAxis("Group Code", data.map(r => r.group), [0, boxPlot.width - boxPlot.padding.yAxis - boxPlot.padding.right]);
             _this.interactions.axisSeries(boxPlot, data);
             _this.renderGroupChart(boxPlot, data);
+            if(boxPlot.click) {
+                _this.interactions.click.appendGroupsText(boxPlot, data, data.find(d => d.group == d3.select("#groups-statistics .card").attr("id")))
+                let violinData = _this.getGroupCompareData();
+                _this.interactions.axisSeries(_this.violin, violinData);
+                _this.renderViolin(_this.violin, violinData);
+                let usersData = violinData.map(d => {
+                    return d.getUsersData(d)
+                });
+                _this.interactions.axisSeries(_this.usersViolin, usersData);
+                _this.renderViolin(_this.usersViolin, usersData);
+                _this.handleGroupCompare();
+            }
         });
     };
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries {
@@ -1807,24 +1749,6 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             //Scroll
             document.querySelector("#groups-statistics").scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-
-        //Enable sort
-        if(d3.select(".y-label-container .sort-arrow").empty()) {
-            _this.interactions.sort.appendArrow(chart, false, true);
-        }
-        d3.select(".y-label-container").on("click", function () {
-            chart.y.sorted = chart.y.sorted == false ? true : false;
-            _this.interactions.sort.arrowTransition(chart, false, true);
-            data = data.sort(function (a, b) {
-                return _this.interactions.sort.sortData(a.mean, b.mean, chart.y.sorted);
-            });
-
-            _this.interactions.axisSeries(chart, data);
-            _this.interactions.bars(chart, data);
-            if (chart.click) {
-                _this.interactions.click.appendGroupsText(chart, data, data[data.map(d => d.group).indexOf(d3.select("#groups-statistics .card").attr("id"))])
-            }
-        });
         return chart;
     };
     renderViolin(chart: ViolinChartSeries, data: IAnalyticsChartsData[]): ViolinChartSeries {
@@ -1885,7 +1809,8 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 newT = 99;
             }
             _this.interactions.violin(chart, data, tDistressed, newT);
-            d3.select(this).attr("class", d3.select(this).attr("class").replace(" grabbing", ""));
+            d3.select(this).attr("class", d3.select(this).attr("class").replace(" grabbing", ""));  
+            _this.handleViolinHover(chart);         
         }
 
         //Start drag distressed functions
@@ -1930,6 +1855,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             }
             _this.interactions.violin(chart, data, newT, tSoaring);
             d3.select(this).attr("class", d3.select(this).attr("class").replace(" grabbing", ""));
+            _this.handleViolinHover(chart);
         }
         return chart;
     };
@@ -2256,7 +2182,7 @@ export function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalyticsCharts
         groupCard.select(".card-body")
             .attr("class", "card-body")
             .html(`<div class="row">
-                        <span class="mx-2"><small>Sort by:</small></span>
+                        <span class="mx-2"><small>Sort groups by:</small></span>
                         <div id="sort-by" class="btn-group btn-group-sm btn-group-toggle" data-toggle="buttons">
                             <label class="btn btn-light active">
                                 <input type="radio" name="sort" value="date" checked>Create date<br>
