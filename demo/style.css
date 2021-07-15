@@ -111,7 +111,7 @@
     stroke-width: 1;
 }
 
-.bar:hover, .arc:hover, .line-circle:hover {
+.bar:hover, .arc:hover, .violin-rect:hover, .line-circle:hover {
     fill-opacity: 0.4;
     r: 10;
 }

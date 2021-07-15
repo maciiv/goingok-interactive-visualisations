@@ -168,14 +168,14 @@ class ChartSeries implements IChart {
     click: boolean;
     constructor(id: string, domain: string[]) {
         this.id = id;
-        let containerDimensions = d3.select(`#${id} .chart-container`).node().getBoundingClientRect();
+        let containerDimensions = d3.select<HTMLDivElement, unknown>(`#${id} .chart-container`).node().getBoundingClientRect();
         this.width = containerDimensions.width;
         this.height = containerDimensions.height;
         this.padding = new ChartPadding();
         this.y = new ChartLinearAxis("State", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left");
         this.x = new ChartSeriesAxis("Group Code", domain, [0, this.width - this.padding.yAxis - this.padding.right]);
-        this.elements = new ChartElements();
         this.click = false;
+        this.elements = new ChartElements(this);
     }
 }
 
@@ -192,15 +192,15 @@ class ChartTime implements IChart {
     click: boolean;
     constructor(id: string, domain: Date[]) {
         this.id = id;
-        let containerDimensions = d3.select(`#${id} .chart-container`).node().getBoundingClientRect();
+        let containerDimensions = d3.select<HTMLDivElement, unknown>(`#${id} .chart-container`).node().getBoundingClientRect();
         this.width = containerDimensions.width;
         this.height = containerDimensions.height;
         this.padding = new ChartPadding(75, 75, 5);
         this.htmlContainers = new HtmlContainers();
         this.y = new ChartLinearAxis("State", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left");
-        this.x = new ChartTimeAxis("Time", domain, [0, this.width - this.padding.yAxis]);
-        this.elements = new ChartElements();
+        this.x = new ChartTimeAxis("Time", domain, [0, this.width - this.padding.yAxis]);        
         this.click = false;
+        this.elements = new ChartElements(this);
     }
 }
 
@@ -231,11 +231,12 @@ class ViolinChartSeries extends ChartSeries implements IViolinChartSeries {
     bandwidth: d3.ScaleLinear<number, number, never>;
     bin: d3.HistogramGeneratorNumber<number, number>;
     constructor(id: string, domain: string[]) {
-        super(id, domain);
-        this.elements = new ViolinChartElements();
+        super(id, domain);        
         this.padding = new ChartPadding(50, 75, 25, 85);
         this.x = new ChartSeriesAxis("Group Code", domain, [0, this.width - this.padding.yAxis - this.padding.right]);
+        d3.select(`#${this.id} svg`).remove();
         this.thresholdAxis = this.y.setThresholdAxis(30, 70);
+        this.elements = new ViolinChartElements(this);
     }
     setBandwidth(data: IAnalyticsChartsData[]): void {
         this.bandwidth = d3.scaleLinear()
@@ -321,13 +322,6 @@ interface IChartElements {
     yAxis: any;
     zoomSVG: any;
     zoomFocus: any;
-    preRender(chart: IChart): void;
-    appendSVG(chart: IChart): any;
-    appendContentContainer(chart: IChart): any;
-    appendXAxis(chart: IChart): any;
-    appendXAxisLabel(chart: IChart): any;
-    appendYAxis(chart: IChart): any;
-    appendYAxisLabel(chart: IChart): any;
 }
 
 // Basic class for chart elements (includes zoom)
@@ -339,7 +333,7 @@ class ChartElements implements IChartElements {
     yAxis: any;
     zoomSVG: any;
     zoomFocus: any;
-    preRender(chart: IChart): void {
+    constructor(chart: IChart) {
         this.svg = this.appendSVG(chart);
         this.contentContainer = this.appendContentContainer(chart);
         this.xAxis = this.appendXAxis(chart);
@@ -347,7 +341,7 @@ class ChartElements implements IChartElements {
         this.yAxis = this.appendYAxis(chart);
         this.appendYAxisLabel(chart);
     }
-    appendSVG(chart: IChart) {
+    private appendSVG(chart: IChart) {
         return d3.select(`#${chart.id}`)
             .select(".chart-container")
             .append("svg")
@@ -355,8 +349,8 @@ class ChartElements implements IChartElements {
             .attr("preserveAspectRatio", "xMinYMin meet")
             .attr("viewBox", `0 0 ${chart.width} ${chart.height}`);
     };
-    appendContentContainer(chart: IChart) {
-        let result = chart.elements.svg.append("g")
+    private appendContentContainer(chart: IChart) {
+        let result = this.svg.append("g")
             .attr("class", "content-container")
             .attr("transform", `translate(${chart.padding.yAxis}, ${chart.padding.top})`)
             .attr("clip-path", `url(#clip-${chart.id})`);
@@ -372,32 +366,32 @@ class ChartElements implements IChartElements {
             .attr("height", chart.height - chart.padding.xAxis - chart.padding.top);
         return result;
     };
-    appendXAxis(chart: IChart) {
-        return chart.elements.svg.append("g")
+    private appendXAxis(chart: IChart) {
+        return this.svg.append("g")
             .attr("transform", `translate(${chart.padding.yAxis}, ${chart.height - chart.padding.xAxis})`)
             .attr("class", "x-axis")
             .attr("clip-path", `url(#clip-${chart.id})`)
             .call(chart.x.axis);
     };
-    appendXAxisLabel(chart: IChart) {
-        return chart.elements.svg.append("g")
+    private appendXAxisLabel(chart: IChart) {
+        return this.svg.append("g")
             .attr("class", "x-label-container")
-            .attr("transform", "translate(" + (chart.elements.svg.select(".x-axis").node().getBBox().width / 2 + chart.padding.yAxis) + ", " + (chart.height - chart.padding.xAxis + chart.elements.svg.select(".x-axis").node().getBBox().height * 2) + ")")
+            .attr("transform", "translate(" + (this.svg.select(".x-axis").node().getBBox().width / 2 + chart.padding.yAxis) + ", " + (chart.height - chart.padding.xAxis + this.svg.select(".x-axis").node().getBBox().height * 2) + ")")
             .append("text")
             .attr("class", "x-label-text")
             .attr("text-anchor", "middle")
             .text(chart.x.label);
     };
-    appendYAxis(chart: IChart) {
-        return chart.elements.svg.append("g")
+    private appendYAxis(chart: IChart) {
+        return this.svg.append("g")
             .attr("transform", `translate(${chart.padding.yAxis}, ${chart.padding.top})`)
             .attr("class", "y-axis")
             .call(chart.y.axis);
     };
-    appendYAxisLabel(chart: IChart) {
-        return chart.elements.svg.append("g")
+    private appendYAxisLabel(chart: IChart) {
+        return this.svg.append("g")
             .attr("class", "y-label-container")
-            .attr("transform", "translate(" + (chart.padding.yAxis - chart.elements.svg.select(".y-axis").node().getBBox().width) + ", " + (chart.padding.top + chart.elements.svg.select(".y-axis").node().getBBox().height / 2) + ") rotate(-90)")
+            .attr("transform", "translate(" + (chart.padding.yAxis - this.svg.select(".y-axis").node().getBBox().width) + ", " + (chart.padding.top + this.svg.select(".y-axis").node().getBBox().height / 2) + ") rotate(-90)")
             .append("text")
             .attr("class", "y-label-text")
             .attr("text-anchor", "middle")
@@ -407,42 +401,39 @@ class ChartElements implements IChartElements {
 
 // Interface for violin charts
 interface IViolinChartElements extends IChartElements {
-    renderViolinThresholds(chart: ViolinChartSeries, threshold: number[]): void
-    appendThresholdAxis(chart: ViolinChartSeries): any;
-    appendThresholdLabel(chart: ViolinChartSeries): any;
-    appendThresholdIndicators(chart: ViolinChartSeries, thresholds: number[]): void;
-    appendThresholdLine(chart: ViolinChartSeries, thresholds: number[]): void;
-    appendThresholdPercentages(chart: ViolinChartSeries): void;
+    appendThresholdPercentages(chart: IViolinChartSeries): void;
     getThresholdsValues(chart: ViolinChartSeries): number[];
 }
 
 // Class for violin charts
 class ViolinChartElements extends ChartElements implements IViolinChartElements {
-    renderViolinThresholds(chart: ViolinChartSeries, threshold: number[]): void {
+    constructor(chart: IViolinChartSeries) {
+        super(chart);
+        let thresholds = this.getThresholdsValues(chart);
         this.appendThresholdAxis(chart);
-        this.appendThresholdIndicators(chart, threshold);
+        this.appendThresholdIndicators(chart, thresholds);
         this.appendThresholdLabel(chart);
-        this.appendThresholdLine(chart, threshold);
-    };
-    appendThresholdAxis(chart: ViolinChartSeries) {
-        return chart.elements.contentContainer.append("g")
+        this.appendThresholdLine(chart, thresholds);
+    }
+    private appendThresholdAxis(chart: IViolinChartSeries) {
+        return this.contentContainer.append("g")
             .attr("transform", `translate(${chart.width - chart.padding.yAxis - chart.padding.right}, 0)`)
             .attr("class", "threshold-axis")
             .call(chart.thresholdAxis);
     };
-    appendThresholdLabel(chart: ViolinChartSeries) {
-        let label = chart.elements.svg.append("g")
+    private appendThresholdLabel(chart: IViolinChartSeries) {
+        let label = this.svg.append("g")
             .attr("class", "threshold-label-container")
         label.append("text")
             .attr("class", "y-label-text")
             .attr("text-anchor", "middle")
             .text("Thresholds");
-        label.attr("transform", `translate(${chart.width - chart.padding.right + chart.elements.contentContainer.select(".threshold-axis").node().getBBox().width + label.node().getBBox().height}, ${chart.padding.top + chart.elements.svg.select(".y-axis").node().getBBox().height / 2}) rotate(-90)`);
+        label.attr("transform", `translate(${chart.width - chart.padding.right + this.contentContainer.select(".threshold-axis").node().getBBox().width + label.node().getBBox().height}, ${chart.padding.top + this.svg.select(".y-axis").node().getBBox().height / 2}) rotate(-90)`);
         return label;
     };
-    appendThresholdIndicators(chart: ViolinChartSeries, thresholds: number[]): void {
+    private appendThresholdIndicators(chart: IViolinChartSeries, thresholds: number[]): void {
         thresholds.forEach((c, i) => {
-            let indicator = chart.elements.contentContainer.append("g")
+            let indicator = this.contentContainer.append("g")
                 .attr("class", `threshold-indicator-container ${i == 0 ? "distressed" : "soaring"}`)
                 .attr("transform", `translate(${chart.width - chart.padding.yAxis - chart.padding.right + 5}, ${chart.y.scale(c) + 25})`);
             let box = indicator.append("rect")
@@ -456,9 +447,9 @@ class ViolinChartElements extends ChartElements implements IViolinChartElements 
                 .attr("y", -text.node().getBBox().height);
         });
     };
-    appendThresholdLine(chart: ViolinChartSeries, thresholds: number[]): void {
+    private appendThresholdLine(chart: IViolinChartSeries, thresholds: number[]): void {
         thresholds.forEach((c, i) => {
-            chart.elements.contentContainer.append("line")
+            this.contentContainer.append("line")
                 .attr("class", `threshold-line ${i == 0 ? "distressed" : "soaring"}`)
                 .attr("x1", 0)
                 .attr("x2", chart.width - chart.padding.yAxis - chart.padding.right)
@@ -466,13 +457,13 @@ class ViolinChartElements extends ChartElements implements IViolinChartElements 
                 .attr("y2", chart.y.scale(c));
         });
     };
-    appendThresholdPercentages(chart: ViolinChartSeries): void {
+    appendThresholdPercentages(chart: IViolinChartSeries): void {
         let _this = this;
         let binData = function (data: IAnalyticsChartsData) {
             let bins = chart.bin(data.value.map(r => r.point));
             return bins.map(d => new BinHoverData(data.group, d, d.length / data.value.length * 100));
         };
-        let binContainer = chart.elements.contentContainer.selectAll(`.${chart.id}-violin-container`);
+        let binContainer = this.contentContainer.selectAll(`.${chart.id}-violin-container`);
         binContainer.selectAll(`.${chart.id}-violin-text-container`).remove();
         let binTextContainer = binContainer.append("g")
             .attr("class", `${chart.id}-violin-text-container`);
@@ -497,14 +488,14 @@ class ViolinChartElements extends ChartElements implements IViolinChartElements 
             return chart.y.scale(i == 0 ? _this.getThresholdsValues(chart)[0] / 2 : i == 1 ? 50 : (100 - _this.getThresholdsValues(chart)[1]) / 2 + _this.getThresholdsValues(chart)[1]) - binTextBox.node().getBBox().height / 2;
         }
     };
-    getThresholdsValues(chart: ViolinChartSeries): number[] {
+    getThresholdsValues(chart: IViolinChartSeries): number[] {
         let result: number[] = [30, 70];
-        let dThreshold = chart.elements.contentContainer.select(".threshold-line.distressed");
-        if (dThreshold != undefined) {
+        let dThreshold = this.contentContainer.select(".threshold-line.distressed");
+        if (!dThreshold.empty()) {
             result[0] = chart.y.scale.invert(dThreshold.attr("y1"));
         }
-        let sThreshold = chart.elements.contentContainer.select(".threshold-line.soaring");
-        if (sThreshold != undefined) {
+        let sThreshold = this.contentContainer.select(".threshold-line.soaring");
+        if (!sThreshold.empty()) {
             result[1] = chart.y.scale.invert(sThreshold.attr("y1"));
         }
         return result;
@@ -646,7 +637,7 @@ class AdminControlCharts implements IAdminControlCharts {
     htmlContainers = new HtmlContainers();
     interactions = new AdminControlInteractions();
     sidebarBtn(): void {
-        let sidebarWidth = d3.select("#sidebar").node().getBoundingClientRect().width;
+        let sidebarWidth = d3.select<HTMLDivElement, unknown>("#sidebar").node().getBoundingClientRect().width;
         d3.select("#sidebar")
             .style("width", `${sidebarWidth}px`);
         d3.select("#content")
@@ -768,6 +759,7 @@ class AdminControlCharts implements IAdminControlCharts {
             if (d3.select(this).attr("class").includes("clicked")) {
                 return;
             }
+            _this.interactions.tooltip.appendTooltipContainer(chart);
 
             //Append tooltip box with text
             let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.group,
@@ -898,7 +890,7 @@ class AdminControlCharts implements IAdminControlCharts {
             .on("mouseout", onMouseout);
         function onMouseover(e: Event, d: IBinHoverData) {
             _this.interactions.tooltip.appendTooltipText(chart, `Count: ${d.bin.length.toString()}`);
-            _this.interactions.tooltip.positionTooltipContainer(chart, chart.x.scale(d.group) + parseInt(d3.select(this).attr("x")) + d3.select(".violin-text-box").node().getBBox().width, parseInt(d3.select(this).attr("y")) - d3.select(".violin-text-box").node().getBBox().height);
+            _this.interactions.tooltip.positionTooltipContainer(chart, chart.x.scale(d.group) + parseInt(d3.select(this).attr("x")) + d3.select<SVGAElement, unknown>(".violin-text-box").node().getBBox().width, parseInt(d3.select(this).attr("y")) - d3.select<SVGAElement, unknown>(".violin-text-box").node().getBBox().height);
         }
         function onMouseout() {
             chart.elements.svg.select(".tooltip-container").transition()
@@ -1007,7 +999,8 @@ class AdminControlCharts implements IAdminControlCharts {
             if (d3.select(this).attr("class").includes("clicked")) {
                 return;
             }
-            let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.timestamp.toDateString(), [{ label: "State", value: d.point }]);
+            _this.interactions.tooltip.appendTooltipContainer(chart);
+            let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.timestamp.toDateString(), [ new TooltipValues("User", d.pseudonym), new TooltipValues("State", d.point)]);
             _this.interactions.tooltip.positionTooltipContainer(chart, xTooltip(d.timestamp, tooltipBox), yTooltip(d.point, tooltipBox));
 
             function xTooltip(x: Date, tooltipBox: any) {
@@ -1193,13 +1186,13 @@ interface IAdminControlTransitions {
 class AdminControlTransitions implements IAdminControlTransitions {
     axisSeries(chart: ChartSeries, data: IAnalyticsChartsData[]): void {
         chart.x.scale.domain(data.map(d => d.group));
-        d3.select(`#${chart.id} .x-axis`).transition()
+        d3.select<SVGAElement, unknown>(`#${chart.id} .x-axis`).transition()
             .duration(750)
             .call(chart.x.axis);
     };
     axisTime(chart: ChartTime, data: IAnalyticsChartsData): void {
         chart.x.scale.domain(d3.extent(data.value.map(d => d.timestamp)));
-        d3.select(`#${chart.id} .x-axis`).transition()
+        d3.select<SVGAElement, unknown>(`#${chart.id} .x-axis`).transition()
             .duration(750)
             .call(chart.x.axis);
     };
@@ -1287,14 +1280,14 @@ class AdminControlInteractions extends AdminControlTransitions implements IAdmin
 // Basic interface for tooltip content interaction
 interface ITooltipValues {
     label: string;
-    value: number;
+    value: number | string;
 }
 
 // Basic class for tooltip content interaction
 class TooltipValues implements ITooltipValues {
     label: string;
-    value: number;
-    constructor(label?: string, value?: number) {
+    value: number | string;
+    constructor(label?: string, value?: number | string) {
         this.label = label == undefined ? "" : label;
         this.value = value == undefined ? 0 : value;
     }
@@ -1313,18 +1306,15 @@ interface ITooltip {
 // Class for tooltip interaction
 class Tooltip implements ITooltip {
     enableTooltip(chart: IChart, onMouseover: any, onMouseout: any): void {
-        this.appendTooltipContainer(chart);
         chart.elements.content.on("mouseover", onMouseover)
             .on("mouseout", onMouseout);
     };
     removeTooltip(chart: IChart): void {
-        chart.elements.contentContainer.selectAll(".tooltip-box").remove();
-        chart.elements.contentContainer.selectAll(".tooltip-text").remove();
+        chart.elements.contentContainer.selectAll(".tooltip-container").remove();
         chart.elements.contentContainer.selectAll(".tooltip-line").remove();
     };
-    appendTooltipContainer(chart: IChart): void {
-        chart.elements.contentContainer.selectAll(".tooltip-container").remove();
-        return chart.elements.contentContainer.append("g")
+    appendTooltipContainer(chart: IChart): void {       
+        chart.elements.contentContainer.append("g")
             .attr("class", "tooltip-container");
     };
     appendTooltipText(chart: IChart, title: string, values: ITooltipValues[] = null): void {
@@ -1453,7 +1443,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         function updateData(chart: ChartSeries): IAnalyticsChartsDataStats[] {
             let entries = d3.filter(_this.allEntries, d => d.selected);
             let data = entries.map(d => new AnalyticsChartsDataStats(d));
-            chart.x = new ChartSeriesAxis("Group Code", data.map(r => r.group), [0, chart.width - chart.padding.yAxis - chart.padding.right]);
+            chart.x.scale.domain(data.map(d => d.group));
             return data;
         };
         function updateGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]) {
@@ -1489,8 +1479,8 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                         _this.interactions.click.appendGroupsText(boxPlot, data, data[data.map(d => d.group).indexOf(d3.select("#groups-statistics .card").attr("id"))]);
                         let violinData = _this.getGroupCompareData();
                         _this.renderGroupCompare();
-                        _this.violin.x = new ChartSeriesAxis("Group Code", violinData.map(r => r.group), [0, _this.violin.width - _this.violin.padding.yAxis - _this.violin.padding.right]);
-                        _this.usersViolin.x = new ChartSeriesAxis("Group Code", violinData.map(r => r.group), [0, _this.usersViolin.width - _this.usersViolin.padding.yAxis - _this.usersViolin.padding.right]);
+                        _this.violin.x.scale.domain(violinData.map(r => r.group));
+                        _this.usersViolin.x.scale.domain(violinData.map(r => r.group));
                         _this.handleGroupCompare();
                         _this.renderViolin(_this.violin, violinData);
                         _this.renderViolin(_this.usersViolin, violinData);
@@ -1526,6 +1516,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                         _this.timeline.elements.contentContainer.selectAll(`#${_this.timeline.id}-timeline-contours`).remove();
                         _this.renderTimelineDensity(_this.timeline, _this.allEntries.find(d => d.group == groupId));
                     }
+                    _this.handleTimelineButtons(_this.timeline, _this.timelineZoom, _this.allEntries.find(d => d.group == groupId));
                 }               
             }
         });
@@ -1546,7 +1537,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.sorted = _this.interactions.sort.setSorted(_this.sorted, selectedOption);               
             let entries = d3.filter(_this.allEntries, d => d.selected);
             let data = entries.map(d => new AnalyticsChartsDataStats(d));
-            boxPlot.x = new ChartSeriesAxis("Group Code", data.map(r => r.group), [0, boxPlot.width - boxPlot.padding.yAxis - boxPlot.padding.right]);
+            boxPlot.x.scale.domain(data.map(r => r.group));
             _this.interactions.axisSeries(boxPlot, data);
             _this.renderGroupChart(boxPlot, data);
             if(boxPlot.click) {
@@ -1599,8 +1590,6 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.htmlContainers.groupViolin = _this.htmlContainers.appendDiv("group-violin-chart", "col-md-5 mt-3");
             _this.htmlContainers.appendCard(_this.htmlContainers.groupViolin, `Reflections histogram (${d.group})`);
             _this.violin = new ViolinChartSeries("group-violin-chart", violinData.map(d => d.group));
-            _this.violin.elements.preRender(_this.violin);
-            _this.violin.elements.renderViolinThresholds(_this.violin, [30, 70]);
             _this.violin = _this.renderViolin(_this.violin, violinData);
 
             //Draw users violin container
@@ -1608,8 +1597,6 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.htmlContainers.appendCard(_this.htmlContainers.userViolin, `Users histogram (${d.group})`);
             let usersData = violinData.map(d => d.getUsersData());
             _this.usersViolin = new ViolinChartSeries("group-violin-users-chart", violinData.map(d => d.group));
-            _this.usersViolin.elements.preRender(_this.usersViolin);
-            _this.usersViolin.elements.renderViolinThresholds(_this.usersViolin, [30, 70]);
             _this.usersViolin = _this.renderViolin(_this.usersViolin, usersData);
             _this.handleGroupCompare();
 
@@ -1631,7 +1618,6 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 .append("div")
                 .attr("class", "chart-container");
             _this.timeline = new ChartTime("group-timeline", d3.extent(d.value.map(d => d.timestamp)));
-            _this.timeline.elements.preRender(_this.timeline);
             _this.renderTimelineDensity(_this.timeline, d);
             _this.timelineZoom = new ChartTimeZoom(_this.timeline, d3.extent(d.value.map(d => d.timestamp)));
             _this.handleTimelineButtons(_this.timeline, _this.timelineZoom, d);
@@ -1762,6 +1748,8 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`).remove();
             _this.htmlContainers.removeUsers();
         });
+        chart.elements.contentContainer.select(`#${chart.id}-timeline-circles-line`)
+            .style("stroke", data.colour);
         function onClick(e: Event, d: IReflectionAuthorEntry) {
             if (d3.select(this).attr("class") == "line-circle clicked") {
                 _this.interactions.click.removeClick(chart);
@@ -1834,8 +1822,8 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             let selectedCompareData = _this.getGroupCompareData();
             let groupData = d3.filter(_this.allEntries, d => selectedCompareData.includes(d));
             let usersData = groupData.map(d => d.getUsersData());
-            _this.violin.x = new ChartSeriesAxis("Group Code", groupData.map(r => r.group), [0, _this.violin.width - _this.violin.padding.yAxis - _this.violin.padding.right]);
-            _this.usersViolin.x = new ChartSeriesAxis("Group Code", groupData.map(r => r.group), [0, _this.usersViolin.width - _this.usersViolin.padding.yAxis - _this.usersViolin.padding.right]);
+            _this.violin.x.scale.domain(groupData.map(r => r.group));
+            _this.usersViolin.x.scale.domain(groupData.map(r => r.group));
             _this.interactions.axisSeries(_this.violin, groupData);
             _this.interactions.axisSeries(_this.usersViolin, usersData);
             _this.renderViolin(_this.violin, groupData);
@@ -2046,7 +2034,6 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
 
         //Create group chart with current data
         let groupChart = new ChartSeries("groups-chart", data.map(d => d.group));
-        groupChart.elements.preRender(groupChart);
         adminControlCharts.renderGroupChart(groupChart, data);
 
         //Append group general statistics
@@ -2079,8 +2066,6 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
         adminControlCharts.htmlContainers.groupViolin = adminControlCharts.htmlContainers.appendDiv("group-violin-chart", "col-md-6 mt-3");
         adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.groupViolin, `Reflections distribution`);
         let violinChart = new ViolinChartSeries("group-violin-chart", data.map(d => d.group));
-        violinChart.elements.preRender(violinChart);
-        violinChart.elements.renderViolinThresholds(violinChart, [30, 70]);
         adminControlCharts.renderViolin(violinChart, data);
 
         //Draw users violin container
@@ -2088,8 +2073,6 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
         adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.userViolin, `Users distribution`);
         let usersData = data.map(d => d.getUsersData());
         let violinUsersChart = new ViolinChartSeries("group-violin-users-chart", data.map(d => d.group));
-        violinUsersChart.elements.preRender(violinUsersChart);
-        violinUsersChart.elements.renderViolinThresholds(violinUsersChart, [30, 70]);
         adminControlCharts.renderViolin(violinUsersChart, usersData);
 
         //Draw selected group timeline 
@@ -2123,7 +2106,6 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
             .attr("class", "chart-container");
 
         let timelineChart = new ChartTime("group-timeline", d3.extent(data[0].value.map(d => d.timestamp)));
-        timelineChart.elements.preRender(timelineChart);
         adminControlCharts.renderTimelineDensity(timelineChart, data[0]);
         let timelineZoomChart = new ChartTimeZoom(timelineChart, d3.extent(data[0].value.map(d => d.timestamp)));
         adminControlCharts.handleTimelineButtons(timelineChart, timelineZoomChart, data[0]);
@@ -2227,7 +2209,6 @@ export function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalyticsCharts
 
         //Create group chart with current data
         let groupChart = new ChartSeries("groups-chart", data.map(d => d.group));
-        groupChart.elements.preRender(groupChart);
         groupChart = adminExperimentalCharts.renderGroupChart(groupChart, data);
 
         //Update charts depending on group

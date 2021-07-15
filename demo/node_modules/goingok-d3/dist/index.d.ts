@@ -22,7 +22,7 @@ interface IAnalyticsChartsData {
     creteDate: Date;
     colour: string;
     selected: boolean;
-    getUsersData(data: IAnalyticsChartsData): AnalyticsChartsData;
+    getUsersData(): AnalyticsChartsData;
 }
 declare class AnalyticsChartsData implements IAnalyticsChartsData {
     group: string;
@@ -31,7 +31,7 @@ declare class AnalyticsChartsData implements IAnalyticsChartsData {
     colour: string;
     selected: boolean;
     constructor(group: string, value: IReflectionAuthorEntry[], createDate: Date, colour?: string, selected?: boolean);
-    getUsersData(data: IAnalyticsChartsData): AnalyticsChartsData;
+    getUsersData(): AnalyticsChartsData;
 }
 export declare function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]): void;
 export declare function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]): void;
