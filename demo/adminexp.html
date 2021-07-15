@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" type="text/css" href="style.css" />
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" />
+        <title>Group Admin Experimental</title>
+        <script src="https://d3js.org/d3.v6.min.js"></script>        
+    </head>
+    <body>            
+        <div class="wrapper">
+            <nav id="sidebar" class="active">
+                <div class="sidebar-header">
+                    <h3>GoingOK</h3>
+                    <hr>
+                </div>
+                <ul id="groups" class="list-unstyled components"></ul>
+            </nav>
+            <div id="content" class="content">
+                <nav class="navbar navbar-expand-lg navbar-light bg-light">
+                    <div class="container-fluid">
+                        <button type="button" id="sidebar-btn" class="btn btn-info"> <i class="fa fa-align-justify mr-2"></i>Toggle Groups Bar</button>
+                    </div>
+                </nav>
+                <div class="content-wrapper">
+                    <div class="container-fluid">            
+                        <div class="row" id="analytics-charts"></div>
+                    </div>
+                </div>
+            </div>
+        </div>       
+        
+        <!--Bootstrap-->
+        <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+        <script src="../lib/dist/index.js"></script>
+        <script>
+            d3.csv("test-data.csv").then(function (c) {
+                    var data = c.map(function (r) {
+                        return {
+                            timestamp: r.timestamp,
+                            point: r.point,
+                            pseudonym: r.pseudonym,
+                            groupCode: r.group_code,
+                            text: r.text
+                        };
+                    });
+                    var groupData = Array.from(d3.group(data, function (d) { return d.groupCode; }), function (_a) {
+                        var group = _a[0], value = _a[1];
+                        return ({ group: group, value: value, createDate: "2021-02-01" });
+                    });
+                    groupData[1].createDate = "2021-01-01";
+                    groupData[2].createDate = "2021-03-01";
+                    console.log(groupData)
+                buildExperimentAdminAnalyticsCharts(groupData);
+            });
+        </script>
+    </body>
+</html>
