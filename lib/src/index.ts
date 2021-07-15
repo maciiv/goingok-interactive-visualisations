@@ -642,17 +642,20 @@ class AdminControlCharts implements IAdminControlCharts {
             .style("width", `${sidebarWidth}px`);
         d3.select("#content")
             .style("margin-left", `${sidebarWidth}px`);
+        window.addEventListener("scroll", function () {
+            var top = d3.select<HTMLDivElement, unknown>("#main-nav-bar").node().getBoundingClientRect().top;
+            d3.select("#sidebar")
+                .style("top", top < 0 ? "0px" : "60px");
+        });
 
         //Handle side bar btn click
         d3.select("#sidebar-btn").on("click", (e: any) => {
             let isActive = d3.select("#sidebar").attr("class") == "active";
             d3.select("#sidebar")
                 .attr("class", isActive ? "" : "active")
-                .style("margin-left", isActive ? `${66 - sidebarWidth}px` : "");
-            d3.select("#sidebar #groups")
-                .style("opacity", isActive ? "0" : "1");
+                .style("margin-left", isActive ? `${-sidebarWidth}px` : "");
             d3.select("#content")
-                .style("margin-left", isActive ? "66px" : `${sidebarWidth}px` );
+                .style("margin-left", isActive ? "0px" : `${sidebarWidth}px` );
         });
     };
     preloadGroups(allEntries: IAnalyticsChartsData[]): IAnalyticsChartsData[] {
