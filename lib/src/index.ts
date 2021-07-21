@@ -232,7 +232,7 @@ class ViolinChartSeries extends ChartSeries implements IViolinChartSeries {
     bin: d3.HistogramGeneratorNumber<number, number>;
     constructor(id: string, domain: string[]) {
         super(id, domain);        
-        this.padding = new ChartPadding(50, 75, 25, 85);
+        this.padding = new ChartPadding(40, 75, 5, 85);
         this.x = new ChartSeriesAxis("Group Code", domain, [0, this.width - this.padding.yAxis - this.padding.right]);
         d3.select(`#${this.id} svg`).remove();
         this.thresholdAxis = this.y.setThresholdAxis(30, 70);
@@ -517,9 +517,9 @@ class ChartPadding implements IChartPadding {
     top: number;
     right: number;
     constructor(xAxis?: number, yAxis?: number, top?: number, right?: number) {
-        this.xAxis = xAxis == undefined ? 50 : xAxis;
+        this.xAxis = xAxis == undefined ? 40 : xAxis;
         this.yAxis = yAxis == undefined ? 75 : yAxis;
-        this.top = top == undefined ? 25 : top;
+        this.top = top == undefined ? 5 : top;
         this.right = right == undefined ? 0 : right;
     }
 }
@@ -637,25 +637,11 @@ class AdminControlCharts implements IAdminControlCharts {
     htmlContainers = new HtmlContainers();
     interactions = new AdminControlInteractions();
     sidebarBtn(): void {
-        let sidebarWidth = d3.select<HTMLDivElement, unknown>("#sidebar").node().getBoundingClientRect().width;
-        d3.select("#sidebar")
-            .style("width", `${sidebarWidth}px`);
-        d3.select("#content")
-            .style("margin-left", `${sidebarWidth}px`);
-        window.addEventListener("scroll", function () {
-            var top = d3.select<HTMLDivElement, unknown>("#main-nav-bar").node().getBoundingClientRect().top;
-            d3.select("#sidebar")
-                .style("top", top < 0 ? "0px" : "60px");
-        });
-
         //Handle side bar btn click
         d3.select("#sidebar-btn").on("click", (e: any) => {
-            let isActive = d3.select("#sidebar").attr("class") == "active";
+            let isActive = d3.select("#sidebar").attr("class").includes("active");
             d3.select("#sidebar")
-                .attr("class", isActive ? "" : "active")
-                .style("margin-left", isActive ? `${-sidebarWidth}px` : "");
-            d3.select("#content")
-                .style("margin-left", isActive ? "0px" : `${sidebarWidth}px` );
+                .attr("class", isActive ? "" : "active");
         });
     };
     preloadGroups(allEntries: IAnalyticsChartsData[]): IAnalyticsChartsData[] {
@@ -809,6 +795,8 @@ class AdminControlCharts implements IAdminControlCharts {
         return chart;
     }
     renderGroupStats(div: any, data: IAnalyticsChartsDataStats): any {
+        let height =  d3.select<HTMLDivElement, unknown>("#groups-chart .card").node().getBoundingClientRect().height;
+        div.style("height", `${height}px`);
         div.select(".card-body").html("");
         return div.select(".card-body")
             .attr("class", "card-body statistics-text")
@@ -825,8 +813,8 @@ class AdminControlCharts implements IAdminControlCharts {
                         <b>Max reflections per user: </b>${data.userMostReflective}<br>
                         <b>Min reflections per user: </b>${data.userLessReflective}<br>
                         <b>Total Users: </b>${data.totalUsers}<br>
-                        <b>Oldest reflection</b><br>${data.oldestReflection.toDateString()}<br>
-                        <b>Newest reflection</b><br>${data.newestReflection.toDateString()}<br>`);
+                        <b>Oldest reflection:</b> ${data.oldestReflection.toDateString()}<br>
+                        <b>Newest reflection:</b> ${data.newestReflection.toDateString()}<br>`);
     };
     renderViolin(chart: ViolinChartSeries, data: IAnalyticsChartsData[]): ViolinChartSeries {
         chart.setBandwidth(data);
