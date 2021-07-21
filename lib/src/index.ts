@@ -882,7 +882,6 @@ class AdminControlCharts implements IAdminControlCharts {
         this.interactions.violin(chart);
 
         //Append tooltip container
-        this.interactions.tooltip.appendTooltipContainer(chart);
         this.handleViolinHover(chart);       
         return chart;
     };
@@ -892,6 +891,7 @@ class AdminControlCharts implements IAdminControlCharts {
             .on("mouseover", onMouseover)
             .on("mouseout", onMouseout);
         function onMouseover(e: Event, d: IBinHoverData) {
+            _this.interactions.tooltip.appendTooltipContainer(chart);
             _this.interactions.tooltip.appendTooltipText(chart, `Count: ${d.bin.length.toString()}`);
             _this.interactions.tooltip.positionTooltipContainer(chart, chart.x.scale(d.group) + parseInt(d3.select(this).attr("x")) + d3.select<SVGAElement, unknown>(".violin-text-box").node().getBBox().width, parseInt(d3.select(this).attr("y")) - d3.select<SVGAElement, unknown>(".violin-text-box").node().getBBox().height);
         }
