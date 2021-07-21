@@ -555,7 +555,7 @@ interface IHtmlContainers {
     remove(): void;
     removeUsers(): void;
     appendDiv(id: string, css: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
-    appendCard(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, header: string, id?: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
+    appendCard(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, header: string, id?: string, help?: boolean): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
 }
 
 // Basic class for Html containers
@@ -595,12 +595,12 @@ class HtmlContainers implements IHtmlContainers {
             .attr("id", id)
             .attr("class", css);
     };
-    appendCard(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, header: string, id?: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any> {
+    appendCard(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, header: string, id?: string, help: boolean = false): d3.Selection<HTMLDivElement, unknown, HTMLElement, any> {
         let card = div.append("div")
             .attr("class", "card")
         card.append("div")
             .attr("class", "card-header")
-            .html(header);
+            .html(!help ? header : header + `<button type="button" class"btn btn-light btn-small"><i class="fa-solid fa-circle-question"></i></button>`);
         card.append("div")
             .attr("class", "card-body chart-container");
         if (id != null) {
@@ -2021,7 +2021,7 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
 
         //Append groups chart container
         adminControlCharts.htmlContainers.groupsChart = adminControlCharts.htmlContainers.appendDiv("groups-chart", "col-md-9");
-        adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.groupsChart, "Reflections box plot by group");
+        adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.groupsChart, "Reflections box plot by group", undefined, true);
 
         //Create group chart with current data
         let groupChart = new ChartSeries("groups-chart", data.map(d => d.group));
