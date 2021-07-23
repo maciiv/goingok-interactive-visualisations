@@ -21,15 +21,15 @@
                 </div>
                 <ul id="groups" class="list-unstyled components"></ul>
             </nav>
-            <div id="content" class="content">
-                <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
+            <div class="content">
+                <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top" id="analytics-navbar">
                     <div class="container-fluid">
                         <button type="button" id="sidebar-btn" class="btn btn-info"> <i class="fa fa-align-justify mr-2"></i>Toggle Groups Bar</button>
                     </div>
                 </nav>
                 <div class="content-wrapper">
                     <div class="container-fluid">            
-                        <div class="row" id="analytics-charts"></div>
+                        <div class="row" id="analytics-charts" data-spy="scroll" data-target="#analytics-navbar" data-offset="0"></div>
                     </div>
                 </div>
             </div>
