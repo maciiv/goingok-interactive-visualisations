@@ -579,6 +579,9 @@ interface IHtmlContainers {
     appendCard(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, header: string, id?: string, help?: boolean): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
     helpPopover(button: any, id: string, content?: string): boolean;
     removeHelp(chart: IChart): void;
+    renderNavbarScrollspy(): void;
+    renderNavbarScrollspyItem(id: string, name: string): void;
+    removeNavbarScrollspyItem(id: string): void;
 }
 
 // Basic class for Html containers
@@ -593,15 +596,21 @@ class HtmlContainers implements IHtmlContainers {
     remove() {
         if (this.statistics != undefined) {
             this.statistics.remove();
+            this.statistics = undefined;
         }
         if (this.timeline != undefined) {
+            this.removeNavbarScrollspyItem(this.timeline.attr("id"));
             this.timeline.remove();
+            this.timeline = undefined;
         }
         if (this.violin != undefined) {
+            this.removeNavbarScrollspyItem(this.violin.attr("id"));
             this.violin.remove();
+            this.violin = undefined;
         }
         if (this.userViolin != undefined) {
             this.userViolin.remove();
+            this.userViolin = undefined;
         }
         if (this.compare != undefined) {
             this.compare.remove();
@@ -610,6 +619,7 @@ class HtmlContainers implements IHtmlContainers {
     };
     removeUsers() {
         if (this.userStatistics != undefined) {
+            this.removeNavbarScrollspyItem(this.userStatistics.attr("id"));
             this.userStatistics.remove();
             this.userStatistics = undefined;
         }
@@ -643,7 +653,7 @@ class HtmlContainers implements IHtmlContainers {
                 .style("top", "6px");
             popover.append("div")
                 .attr("class", "popover-body")
-                .html(content == undefined ? "Interactive elements are blurred" : content);
+                .html(content == undefined ? "Interactive elements are faded" : content);
             popover.style("left", `${button.node().getBoundingClientRect().left - popover.node().getBoundingClientRect().width}px`);
             return true;
         } else {
@@ -666,6 +676,40 @@ class HtmlContainers implements IHtmlContainers {
         chart.elements.contentContainer.selectAll("rect").attr("filter", null);
         chart.elements.contentContainer.selectAll("circle").attr("filter", null);
     };
+    renderNavbarScrollspy(): void {
+        d3.select("body")
+            .attr("data-spy", "scroll")
+            .attr("data-target", "#analytics-navbar")
+            .attr("data-offset", 0);
+
+        this.renderNavbarScrollspyItem(this.boxPlot.attr("id"), "Box Plot");
+        if(this.violin != undefined) {
+            this.renderNavbarScrollspyItem(this.violin.attr("id"), "Histograms");
+        }
+        if(this.timeline != undefined) {
+            this.renderNavbarScrollspyItem(this.timeline.attr("id"), "Timeline");
+        }        
+        if(this.userStatistics != undefined) {
+            this.renderNavbarScrollspyItem(this.userStatistics.attr("id"), "Users");
+        }
+    };
+    renderNavbarScrollspyItem(id: string, name: string): void {
+        let exists = d3.select("#analytics-navbar ul").selectAll("a").filter(function() {
+            return d3.select(this).attr("href") == `#${id}`;
+        });
+        if(exists.empty()) {
+            d3.select("#analytics-navbar ul").append("li")
+                .attr("class", "nav-item")
+                .attr("id", `${id}-li`)
+                .append("a")
+                .attr("class", "nav-link")
+                .attr("href", `#${id}`)
+                .html(name);   
+        }
+    };
+    removeNavbarScrollspyItem(id: string): void {
+        d3.select(`#analytics-navbar ul #${id}-li`).remove();
+    }
 }
 
 /* ------------------------------------------------
@@ -689,7 +733,6 @@ interface IAdminControlCharts {
     renderTimelineScatter(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData): ChartTime;
     handleTimelineButtons(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData): void;
     renderUserStatistics(card: any, data: IAnalyticsChartsData, pseudonym?: string): void;
-    renderNavbarScrollspy(): void;
 }
 
 class AdminControlCharts implements IAdminControlCharts {
@@ -1228,37 +1271,6 @@ class AdminControlCharts implements IAdminControlCharts {
                 }, 250);
             });
     };
-    renderNavbarScrollspy(): void {
-        d3.select("body")
-            .attr("data-spy", "scroll")
-            .attr("data-target", "#analytics-navbar")
-            .attr("data-offset", 0);
-        let ul = d3.select("#analytics-navbar")
-            .append("ul")
-            .attr("class", "nav nav-pills");
-
-        this.renderNavbarScrollspyItem(this.htmlContainers.boxPlot.attr("id"), "Box Plot");
-        this.renderNavbarScrollspyItem(this.htmlContainers.violin.attr("id"), "Histograms");
-        this.renderNavbarScrollspyItem(this.htmlContainers.timeline.attr("id"), "Timeline");
-
-        if(this.htmlContainers.userStatistics != undefined) {
-            this.renderNavbarScrollspyItem(this.htmlContainers.userStatistics.attr("id"), "Users");
-        }
-    };
-    protected renderNavbarScrollspyItem(id: string, name: string) {
-        let exists = d3.select("#analytics-navbar ul").selectAll("a").filter(function() {
-            return d3.select(this).attr("href") == `#${id}`;
-        });
-        if(exists.empty()) {
-            d3.select("#analytics-navbar ul").append("li")
-                .attr("class", "nav-item")
-                .attr("id", `${id}-li`)
-                .append("a")
-                .attr("class", "nav-link")
-                .attr("href", `#${id}`)
-                .html(name);   
-        }
-    };
 }
 
 interface IAdminControlTransitions {
@@ -1645,6 +1657,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries {
         chart = super.renderGroupChart(chart, data);
         let _this = this
+        _this.htmlContainers.renderNavbarScrollspy();
         _this.interactions.click.enableClick(chart, onClick);
         chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
             _this.interactions.click.removeClick(chart);
@@ -1665,7 +1678,6 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 _this.interactions.click.removeClick(chart);
                 d3.select(this).attr("class", "bar");
                 _this.htmlContainers.remove();
-                d3.select("#analytics-navbar").selectAll("ul").remove();
                 return;
             }
             _this.interactions.click.removeClick(chart);
@@ -1760,7 +1772,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.htmlContainers.removeHelp(chart);
             //Scroll
             document.querySelector("#groups-statistics").scrollIntoView({ behavior: 'smooth', block: 'start' });
-            _this.renderNavbarScrollspy();
+            _this.htmlContainers.renderNavbarScrollspy();
         }
         return chart;
     };
@@ -1933,7 +1945,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.htmlContainers.removeHelp(chart);
             //Scroll
             document.querySelector("#group-timeline").scrollIntoView({ behavior: 'smooth', block: 'start' });
-            _this.renderNavbarScrollspyItem(_this.htmlContainers.userStatistics.attr("id"), "Users");
+            _this.htmlContainers.renderNavbarScrollspy();
         }
         return chart;
     };
@@ -2361,7 +2373,7 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
                     .style("height", `${usersCards.select(`${buttonId} .tab-pane.fade.show.active`).node().getBoundingClientRect().height}px`)
                 }, 250);
             });
-        adminControlCharts.renderNavbarScrollspy();
+        adminControlCharts.htmlContainers.renderNavbarScrollspy();
     }
 }
 
