@@ -611,6 +611,7 @@ class HtmlContainers implements IHtmlContainers {
     removeUsers() {
         if (this.userStatistics != undefined) {
             this.userStatistics.remove();
+            this.userStatistics = undefined;
         }
     };
     appendDiv(id: string, css: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any> {
@@ -1228,21 +1229,35 @@ class AdminControlCharts implements IAdminControlCharts {
             });
     };
     renderNavbarScrollspy(): void {
-        d3.select("#analytics-navbar")
+        d3.select("body")
+            .attr("data-spy", "scroll")
+            .attr("data-target", "#analytics-navbar")
+            .attr("data-offset", 0);
+        let ul = d3.select("#analytics-navbar")
             .append("ul")
-            .attr("class", "nav nav-pills")
-            .html(`<li class="nav-item">
-                        <a class="nav-link" href="#${this.htmlContainers.boxPlot.attr("id")}">Box Plot</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#${this.htmlContainers.violin.attr("id")}">Histograms</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#${this.htmlContainers.timeline.attr("id")}">Timeline</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#${this.htmlContainers.userStatistics.attr("id")}">Users</a>
-                    </li>`);
+            .attr("class", "nav nav-pills");
+
+        this.renderNavbarScrollspyItem(this.htmlContainers.boxPlot.attr("id"), "Box Plot");
+        this.renderNavbarScrollspyItem(this.htmlContainers.violin.attr("id"), "Histograms");
+        this.renderNavbarScrollspyItem(this.htmlContainers.timeline.attr("id"), "Timeline");
+
+        if(this.htmlContainers.userStatistics != undefined) {
+            this.renderNavbarScrollspyItem(this.htmlContainers.userStatistics.attr("id"), "Users");
+        }
+    };
+    protected renderNavbarScrollspyItem(id: string, name: string) {
+        let exists = d3.select("#analytics-navbar ul").selectAll("a").filter(function() {
+            return d3.select(this).attr("href") == `#${id}`;
+        });
+        if(exists.empty()) {
+            d3.select("#analytics-navbar ul").append("li")
+                .attr("class", "nav-item")
+                .attr("id", `${id}-li`)
+                .append("a")
+                .attr("class", "nav-link")
+                .attr("href", `#${id}`)
+                .html(name);   
+        }
     };
 }
 
@@ -1650,6 +1665,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 _this.interactions.click.removeClick(chart);
                 d3.select(this).attr("class", "bar");
                 _this.htmlContainers.remove();
+                d3.select("#analytics-navbar").selectAll("ul").remove();
                 return;
             }
             _this.interactions.click.removeClick(chart);
@@ -1744,6 +1760,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.htmlContainers.removeHelp(chart);
             //Scroll
             document.querySelector("#groups-statistics").scrollIntoView({ behavior: 'smooth', block: 'start' });
+            _this.renderNavbarScrollspy();
         }
         return chart;
     };
@@ -1882,6 +1899,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 _this.interactions.click.removeClick(chart);
                 chart.elements.content.attr("class", "line-circle");
                 chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`).remove();
+                d3.select("#analytics-navbar").select(`#${_this.htmlContainers.userStatistics.attr("id")}-li`).remove();
                 _this.htmlContainers.removeUsers();
                 return;
             }
@@ -1915,6 +1933,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.htmlContainers.removeHelp(chart);
             //Scroll
             document.querySelector("#group-timeline").scrollIntoView({ behavior: 'smooth', block: 'start' });
+            _this.renderNavbarScrollspyItem(_this.htmlContainers.userStatistics.attr("id"), "Users");
         }
         return chart;
     };
@@ -1990,7 +2009,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                     .style("height", `${card.select(".tab-pane.fade.show.active").node().getBoundingClientRect().height}px`)
                 }, 250);
             })
-    }
+    };
 }
 
 interface IAdminExperimentalInteractions extends IAdminControlInteractions {
