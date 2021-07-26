@@ -30,7 +30,7 @@ class AnalyticsChartsDataRaw implements IAnalyticsChartsDataRaw {
     transformData(): AnalyticsChartsData {
         return new AnalyticsChartsData(this.group, this.value.map(d => {
             return {
-            timestamp: new Date(d.timestamp), pseudonym: d.pseudonym, point: parseInt(d.point), text: d.text
+                timestamp: new Date(d.timestamp), pseudonym: d.pseudonym, point: parseInt(d.point), text: d.text
             }
         }) as IReflectionAuthorEntry[], new Date(this.createDate), undefined, false);
     }
@@ -198,7 +198,7 @@ class ChartTime implements IChart {
         this.padding = new ChartPadding(75, 75, 5);
         this.htmlContainers = new HtmlContainers();
         this.y = new ChartLinearAxis("State", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left");
-        this.x = new ChartTimeAxis("Time", domain, [0, this.width - this.padding.yAxis]);        
+        this.x = new ChartTimeAxis("Time", domain, [0, this.width - this.padding.yAxis]);
         this.click = false;
         this.elements = new ChartElements(this);
     }
@@ -231,8 +231,8 @@ class ViolinChartSeries extends ChartSeries implements IViolinChartSeries {
     bandwidth: d3.ScaleLinear<number, number, never>;
     bin: d3.HistogramGeneratorNumber<number, number>;
     constructor(id: string, domain: string[]) {
-        super(id, domain);        
-        this.padding = new ChartPadding(50, 75, 25, 85);
+        super(id, domain);
+        this.padding = new ChartPadding(40, 75, 5, 85);
         this.x = new ChartSeriesAxis("Group Code", domain, [0, this.width - this.padding.yAxis - this.padding.right]);
         d3.select(`#${this.id} svg`).remove();
         this.thresholdAxis = this.y.setThresholdAxis(30, 70);
@@ -240,8 +240,8 @@ class ViolinChartSeries extends ChartSeries implements IViolinChartSeries {
     }
     setBandwidth(data: IAnalyticsChartsData[]): void {
         this.bandwidth = d3.scaleLinear()
-        .range([0, this.x.scale.bandwidth()])
-        .domain([-d3.max(data.map(r => r.value.length)), d3.max(data.map(r => r.value.length))]);
+            .range([0, this.x.scale.bandwidth()])
+            .domain([-d3.max(data.map(r => r.value.length)), d3.max(data.map(r => r.value.length))]);
     };
     setBin(): void {
         this.bin = d3.bin().domain([0, 100]).thresholds([0, this.elements.getThresholdsValues(this)[0], this.elements.getThresholdsValues(this)[1]]);
@@ -342,12 +342,33 @@ class ChartElements implements IChartElements {
         this.appendYAxisLabel(chart);
     }
     private appendSVG(chart: IChart) {
-        return d3.select(`#${chart.id}`)
+        let svg = d3.select(`#${chart.id}`)
             .select(".chart-container")
             .append("svg")
             .attr("id", `chart-${chart.id}`)
             .attr("preserveAspectRatio", "xMinYMin meet")
             .attr("viewBox", `0 0 ${chart.width} ${chart.height}`);
+        let filter = svg.append("defs")
+            .append("filter")
+            .attr("id", "f-help")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", "200%")
+            .attr("height", "200%");
+        filter.append("feOffset")
+            .attr("result", "offOut")
+            .attr("in", "SourceGraphic")
+            .attr("dx", 10)
+            .attr("dy", 10);
+        filter.append("feGaussianBlur")
+            .attr("result", "blurOut")
+            .attr("in", "offOut")
+            .attr("stdDeviation", 10)
+        filter.append("feBlend")
+            .attr("in", "SourceGraphic")
+            .attr("in2", "blurOut")
+            .attr("mode", "normal");
+        return svg;
     };
     private appendContentContainer(chart: IChart) {
         let result = this.svg.append("g")
@@ -517,9 +538,9 @@ class ChartPadding implements IChartPadding {
     top: number;
     right: number;
     constructor(xAxis?: number, yAxis?: number, top?: number, right?: number) {
-        this.xAxis = xAxis == undefined ? 50 : xAxis;
+        this.xAxis = xAxis == undefined ? 40 : xAxis;
         this.yAxis = yAxis == undefined ? 75 : yAxis;
-        this.top = top == undefined ? 25 : top;
+        this.top = top == undefined ? 5 : top;
         this.right = right == undefined ? 0 : right;
     }
 }
@@ -545,40 +566,51 @@ class BinHoverData implements IBinHoverData {
 
 // Basic interface for Html containers
 interface IHtmlContainers {
-    groupsChart: any,
-    groupStatistics: any,
-    groupTimeline: any,
-    groupViolin: any,
+    boxPlot: any,
+    statistics: any,
+    timeline: any,
+    violin: any,
     userViolin: any,
     compare: any
     userStatistics: any;
     remove(): void;
     removeUsers(): void;
     appendDiv(id: string, css: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
-    appendCard(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, header: string, id?: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
+    appendCard(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, header: string, id?: string, help?: boolean): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
+    helpPopover(button: any, id: string, content?: string): boolean;
+    removeHelp(chart: IChart): void;
+    renderNavbarScrollspy(): void;
+    renderNavbarScrollspyItem(id: string, name: string): void;
+    removeNavbarScrollspyItem(id: string): void;
 }
 
 // Basic class for Html containers
 class HtmlContainers implements IHtmlContainers {
-    groupsChart: any;
-    groupStatistics: any;
-    groupTimeline: any;
-    groupViolin: any;
+    boxPlot: any;
+    statistics: any;
+    timeline: any;
+    violin: any;
     userViolin: any;
     compare: any;
     userStatistics: any;
     remove() {
-        if (this.groupStatistics != undefined) {
-            this.groupStatistics.remove();
+        if (this.statistics != undefined) {
+            this.statistics.remove();
+            this.statistics = undefined;
         }
-        if (this.groupTimeline != undefined) {
-            this.groupTimeline.remove();
+        if (this.timeline != undefined) {
+            this.removeNavbarScrollspyItem(this.timeline.attr("id"));
+            this.timeline.remove();
+            this.timeline = undefined;
         }
-        if (this.groupViolin != undefined) {
-            this.groupViolin.remove();
+        if (this.violin != undefined) {
+            this.removeNavbarScrollspyItem(this.violin.attr("id"));
+            this.violin.remove();
+            this.violin = undefined;
         }
         if (this.userViolin != undefined) {
             this.userViolin.remove();
+            this.userViolin = undefined;
         }
         if (this.compare != undefined) {
             this.compare.remove();
@@ -587,7 +619,9 @@ class HtmlContainers implements IHtmlContainers {
     };
     removeUsers() {
         if (this.userStatistics != undefined) {
+            this.removeNavbarScrollspyItem(this.userStatistics.attr("id"));
             this.userStatistics.remove();
+            this.userStatistics = undefined;
         }
     };
     appendDiv(id: string, css: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any> {
@@ -595,12 +629,12 @@ class HtmlContainers implements IHtmlContainers {
             .attr("id", id)
             .attr("class", css);
     };
-    appendCard(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, header: string, id?: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any> {
+    appendCard(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, header: string, id?: string, help: boolean = false): d3.Selection<HTMLDivElement, unknown, HTMLElement, any> {
         let card = div.append("div")
             .attr("class", "card")
         card.append("div")
             .attr("class", "card-header")
-            .html(header);
+            .html(!help ? header : header + `<button type="button" class="btn btn-light btn-sm float-right"><i class="fas fa-question-circle"></i></button>`);
         card.append("div")
             .attr("class", "card-body chart-container");
         if (id != null) {
@@ -608,6 +642,74 @@ class HtmlContainers implements IHtmlContainers {
         }
         return card;
     };
+    helpPopover(button: any, id: string, content?: string): boolean {
+        if (d3.select(`#${id}`).empty()) {
+            let popover = d3.select("body").append("div")
+                .attr("id", id)
+                .attr("class", "popover fade bs-popover-left show")
+                .style("top", `${window.pageYOffset + button.node().getBoundingClientRect().top}px`);
+            popover.append("div")
+                .attr("class", "arrow")
+                .style("top", "6px");
+            popover.append("div")
+                .attr("class", "popover-body")
+                .html(content == undefined ? "Interactive elements are faded" : content);
+            popover.style("left", `${button.node().getBoundingClientRect().left - popover.node().getBoundingClientRect().width}px`);
+            return true;
+        } else {
+            d3.select(`#${id}`).remove();
+            return false;
+        }
+    };
+    removeHelp(chart: IChart): void {
+        d3.select(`#${chart.id}-help`).remove();
+        d3.select(`#${chart.id}-help-button`).remove();
+        d3.select(`#${chart.id}-help-data`).remove();
+        d3.select(`#${chart.id}-help-drag`).remove();
+        d3.select(`#${chart.id}-help-zoom`).remove();
+        if(!d3.select(`#${chart.id} #sort-by`).empty()) {
+            d3.select(`#${chart.id} #sort-by`).style("box-shadow", null);
+        }
+        if(!d3.select(`#${chart.id} #timeline-plot`).empty()) {
+            d3.select(`#${chart.id} #timeline-plot`).style("box-shadow", null);
+        }
+        chart.elements.contentContainer.selectAll("rect").attr("filter", null);
+        chart.elements.contentContainer.selectAll("circle").attr("filter", null);
+    };
+    renderNavbarScrollspy(): void {
+        d3.select("body")
+            .attr("data-spy", "scroll")
+            .attr("data-target", "#analytics-navbar")
+            .attr("data-offset", 0);
+
+        this.renderNavbarScrollspyItem(this.boxPlot.attr("id"), "Box Plot");
+        if(this.violin != undefined) {
+            this.renderNavbarScrollspyItem(this.violin.attr("id"), "Histograms");
+        }
+        if(this.timeline != undefined) {
+            this.renderNavbarScrollspyItem(this.timeline.attr("id"), "Timeline");
+        }        
+        if(this.userStatistics != undefined) {
+            this.renderNavbarScrollspyItem(this.userStatistics.attr("id"), "Users");
+        }
+    };
+    renderNavbarScrollspyItem(id: string, name: string): void {
+        let exists = d3.select("#analytics-navbar ul").selectAll("a").filter(function() {
+            return d3.select(this).attr("href") == `#${id}`;
+        });
+        if(exists.empty()) {
+            d3.select("#analytics-navbar ul").append("li")
+                .attr("class", "nav-item")
+                .attr("id", `${id}-li`)
+                .append("a")
+                .attr("class", "nav-link")
+                .attr("href", `#${id}`)
+                .html(name);   
+        }
+    };
+    removeNavbarScrollspyItem(id: string): void {
+        d3.select(`#analytics-navbar ul #${id}-li`).remove();
+    }
 }
 
 /* ------------------------------------------------
@@ -637,25 +739,11 @@ class AdminControlCharts implements IAdminControlCharts {
     htmlContainers = new HtmlContainers();
     interactions = new AdminControlInteractions();
     sidebarBtn(): void {
-        let sidebarWidth = d3.select<HTMLDivElement, unknown>("#sidebar").node().getBoundingClientRect().width;
-        d3.select("#sidebar")
-            .style("width", `${sidebarWidth}px`);
-        d3.select("#content")
-            .style("margin-left", `${sidebarWidth}px`);
-        window.addEventListener("scroll", function () {
-            var top = d3.select<HTMLDivElement, unknown>("#main-nav-bar").node().getBoundingClientRect().top;
-            d3.select("#sidebar")
-                .style("top", top < 0 ? "0px" : "60px");
-        });
-
         //Handle side bar btn click
         d3.select("#sidebar-btn").on("click", (e: any) => {
-            let isActive = d3.select("#sidebar").attr("class") == "active";
+            let isActive = d3.select("#sidebar").attr("class").includes("active");
             d3.select("#sidebar")
-                .attr("class", isActive ? "" : "active")
-                .style("margin-left", isActive ? `${-sidebarWidth}px` : "");
-            d3.select("#content")
-                .style("margin-left", isActive ? "0px" : `${sidebarWidth}px` );
+                .attr("class", isActive ? "" : "active");
         });
     };
     preloadGroups(allEntries: IAnalyticsChartsData[]): IAnalyticsChartsData[] {
@@ -825,8 +913,8 @@ class AdminControlCharts implements IAdminControlCharts {
                         <b>Max reflections per user: </b>${data.userMostReflective}<br>
                         <b>Min reflections per user: </b>${data.userLessReflective}<br>
                         <b>Total Users: </b>${data.totalUsers}<br>
-                        <b>Oldest reflection</b><br>${data.oldestReflection.toDateString()}<br>
-                        <b>Newest reflection</b><br>${data.newestReflection.toDateString()}<br>`);
+                        <b>Oldest reflection:</b> ${data.oldestReflection.toDateString()}<br>
+                        <b>Newest reflection:</b> ${data.newestReflection.toDateString()}<br>`);
     };
     renderViolin(chart: ViolinChartSeries, data: IAnalyticsChartsData[]): ViolinChartSeries {
         chart.setBandwidth(data);
@@ -854,18 +942,18 @@ class AdminControlCharts implements IAdminControlCharts {
             .attr("transform", (d: IAnalyticsChartsData) => `translate(${chart.x.scale(d.group)}, 0)`);
 
         //Draw violins
-        binContainerEnter.each((d : IAnalyticsChartsData, i: number, g: any) => {
+        binContainerEnter.each((d: IAnalyticsChartsData, i: number, g: any) => {
             d3.select(g[i])
                 .selectAll(".violin-rect")
                 .data(chart.bin(d.value.map(d => d.point)))
                 .enter()
                 .append("rect")
-                .attr("id", `${chart.id}-violin`)            
+                .attr("id", `${chart.id}-data`)
                 .attr("class", "violin-rect")
-                .attr("x", (d: any) => chart.bandwidth(-d.length))
-                .attr("y", (d: any) => chart.y.scale(d.x1))
-                .attr("height", (d: any) => chart.y.scale(d.x0) - chart.y.scale(d.x1))
-                .attr("width", (d: number[]) => chart.bandwidth(d.length) - chart.bandwidth(-d.length))
+                .attr("x", (c: any) => chart.bandwidth(-c.length))
+                .attr("y", (c: any) => chart.y.scale(c.x1))
+                .attr("height", (c: any) => chart.y.scale(c.x0) - chart.y.scale(c.x1))
+                .attr("width", (c: number[]) => chart.bandwidth(c.length) - chart.bandwidth(-c.length))
                 .style("stroke", d.colour)
                 .style("fill", d.colour);
         });
@@ -882,7 +970,7 @@ class AdminControlCharts implements IAdminControlCharts {
         this.interactions.violin(chart);
 
         //Append tooltip container
-        this.handleViolinHover(chart);       
+        this.handleViolinHover(chart);
         return chart;
     };
     handleViolinHover(chart: ViolinChartSeries): void {
@@ -902,6 +990,8 @@ class AdminControlCharts implements IAdminControlCharts {
         }
     }
     renderTimelineDensity(chart: ChartTime, data: IAnalyticsChartsData): ChartTime {
+        let _this = this;
+
         //Remove scatter plot
         chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles`).remove();
         chart.elements.svg.selectAll(".zoom-container").remove();
@@ -960,6 +1050,7 @@ class AdminControlCharts implements IAdminControlCharts {
 
             chart.x.axis.ticks(newChartRange[1] / 75);
             chart.elements.xAxis.call(chart.x.axis);
+            _this.htmlContainers.removeHelp(chart);
         }
         return chart;
     };
@@ -1003,7 +1094,7 @@ class AdminControlCharts implements IAdminControlCharts {
                 return;
             }
             _this.interactions.tooltip.appendTooltipContainer(chart);
-            let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.timestamp.toDateString(), [ new TooltipValues("User", d.pseudonym), new TooltipValues("State", d.point)]);
+            let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.timestamp.toDateString(), [new TooltipValues("User", d.pseudonym), new TooltipValues("State", d.point)]);
             _this.interactions.tooltip.positionTooltipContainer(chart, xTooltip(d.timestamp, tooltipBox), yTooltip(d.point, tooltipBox));
 
             function xTooltip(x: Date, tooltipBox: any) {
@@ -1098,12 +1189,13 @@ class AdminControlCharts implements IAdminControlCharts {
 
             chart.x.axis.ticks(newChartRange[1] / 75);
             chart.elements.xAxis.call(chart.x.axis);
+            _this.htmlContainers.removeHelp(chart);
         }
         return chart;
     };
     handleTimelineButtons(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData): void {
         let _this = this
-        d3.select("#group-timeline #timeline-plot").on("click", (e: any) => {
+        d3.select(`#${chart.id} #timeline-plot`).on("click", (e: any) => {
             var selectedOption = e.target.control.value;
             if (selectedOption == "density") {
                 _this.htmlContainers.removeUsers();
@@ -1112,38 +1204,41 @@ class AdminControlCharts implements IAdminControlCharts {
             if (selectedOption == "scatter") {
                 _this.renderTimelineScatter(chart, zoomChart, data);
             }
+            if (!d3.select(`#${chart.id}-help`).empty()) {
+                _this.htmlContainers.removeHelp(chart);
+            }
         });
     };
     renderUserStatistics(card: any, data: IAnalyticsChartsData, pseudonym?: string): void {
         let userData = data.getUsersData();
         let groupMean = Math.round(d3.mean(data.value.map(d => d.point)));
         let cardRow = card.select(".card-body")
-        .append("div")
-        .attr("class", "row");
+            .append("div")
+            .attr("class", "row");
         cardRow.append("div")
-        .attr("class", "col-md-3")
-        .append("div")
-        .attr("class", "list-group scroll-list")
-        .selectAll("a")
-        .data(userData.value)
-        .enter()
-        .append("a")
-        .attr("class", (d: IReflectionAuthorEntry, i: number) => `list-group-item list-group-item-action ${pseudonym == undefined ? i == 0 ? "active" : "" : d.pseudonym == pseudonym ? "active" : ""}`)
-        .attr("data-toggle", "list")
-        .attr("href", (d: IReflectionAuthorEntry) => `#${userData.group}-${d.pseudonym}`)
-        .html((d: IReflectionAuthorEntry) => d.pseudonym);
-        
+            .attr("class", "col-md-3")
+            .append("div")
+            .attr("class", "list-group scroll-list")
+            .selectAll("a")
+            .data(userData.value)
+            .enter()
+            .append("a")
+            .attr("class", (d: IReflectionAuthorEntry, i: number) => `list-group-item list-group-item-action ${pseudonym == undefined ? i == 0 ? "active" : "" : d.pseudonym == pseudonym ? "active" : ""}`)
+            .attr("data-toggle", "list")
+            .attr("href", (d: IReflectionAuthorEntry) => `#${userData.group}-${d.pseudonym}`)
+            .html((d: IReflectionAuthorEntry) => d.pseudonym);
+
         let tabPane = cardRow.append("div")
-        .attr("class", "col-md-9")
-        .append("div")
-        .attr("class", "tab-content")
-        .selectAll("div")
-        .data(userData.value)
-        .enter()
-        .append("div")
-        .attr("class", (d: IReflectionAuthorEntry, i: number) => `tab-pane fade ${pseudonym == undefined ? i == 0 ? "show active" : "" : d.pseudonym == pseudonym ? "show active" : ""}`)
-        .attr("id", (d: IReflectionAuthorEntry) => `${userData.group}-${d.pseudonym}`)
-        .html((d: IReflectionAuthorEntry) => `<div class="row">
+            .attr("class", "col-md-9")
+            .append("div")
+            .attr("class", "tab-content")
+            .selectAll("div")
+            .data(userData.value)
+            .enter()
+            .append("div")
+            .attr("class", (d: IReflectionAuthorEntry, i: number) => `tab-pane fade ${pseudonym == undefined ? i == 0 ? "show active" : "" : d.pseudonym == pseudonym ? "show active" : ""}`)
+            .attr("id", (d: IReflectionAuthorEntry) => `${userData.group}-${d.pseudonym}`)
+            .html((d: IReflectionAuthorEntry) => `<div class="row">
                                                 <div class="col-md-4 statistics-text">
                                                     <b>Mean: </b>${d.point} (<span class="${(d.point - groupMean) < 0 ? "negative" : "positive"}">${(d.point - groupMean) < 0 ? "" : "+"}${d.point - groupMean}</span> compared to the group mean)<br>
                                                     <b>Min: </b>${d3.min(d3.filter(data.value, x => x.pseudonym == d.pseudonym).map(r => r.point))}<br>
@@ -1168,10 +1263,12 @@ class AdminControlCharts implements IAdminControlCharts {
             .style("height", `${cardRow.select(".tab-pane.fade.show.active").node().getBoundingClientRect().height}px`);
         cardRow.selectAll("a")
             .on("click", function () {
-                setTimeout(() => {cardRow.select(".scroll-list")
+                setTimeout(() => {
+                    cardRow.select(".scroll-list")
                     .transition()
                     .duration(750)
-                    .style("height", `${cardRow.select(".tab-pane.fade.show.active").node().getBoundingClientRect().height}px`)}, 250);
+                    .style("height", `${cardRow.select(".tab-pane.fade.show.active").node().getBoundingClientRect().height}px`)
+                }, 250);
             });
     };
 }
@@ -1316,7 +1413,7 @@ class Tooltip implements ITooltip {
         chart.elements.contentContainer.selectAll(".tooltip-container").remove();
         chart.elements.contentContainer.selectAll(".tooltip-line").remove();
     };
-    appendTooltipContainer(chart: IChart): void {       
+    appendTooltipContainer(chart: IChart): void {
         chart.elements.contentContainer.append("g")
             .attr("class", "tooltip-container");
     };
@@ -1492,27 +1589,28 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                     }
                 }
             }
+            _this.htmlContainers.removeHelp(boxPlot);
         });
     };
     handleGroupsColours(boxPlot: ChartSeries): void {
         let _this = this;
         d3.selectAll("#groups input[type=color]").on("change", (e: Event) => {
             let target = e.target as HTMLInputElement;
-            let groupId = target.id.replace("colour-","");
+            let groupId = target.id.replace("colour-", "");
             _this.allEntries.find(d => d.group == groupId).colour = target.value;
             let entries = d3.filter(_this.allEntries, d => d.selected);
             let data = entries.map(d => new AnalyticsChartsDataStats(d));
             _this.renderGroupChart(boxPlot, data);
-            if(boxPlot.click) {
+            if (boxPlot.click) {
                 let currentClickGroup = d3.select("#groups-statistics .card").attr("id");
                 let violinData = _this.getGroupCompareData();
-                if(violinData.map(d => d.group).includes(groupId)) {
+                if (violinData.map(d => d.group).includes(groupId)) {
                     _this.renderViolin(_this.violin, violinData);
                     let usersData = violinData.map(d => d.getUsersData());
                     _this.renderViolin(_this.usersViolin, usersData);
                     _this.handleGroupCompare();
                 }
-                if(currentClickGroup == groupId) {
+                if (currentClickGroup == groupId) {
                     if (_this.timeline.elements.contentContainer.selectAll(`#${_this.timeline.id}-timeline-contours`).empty()) {
                         _this.renderTimelineScatter(_this.timeline, _this.timelineZoom, _this.allEntries.find(d => d.group == groupId));
                     } else {
@@ -1520,7 +1618,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                         _this.renderTimelineDensity(_this.timeline, _this.allEntries.find(d => d.group == groupId));
                     }
                     _this.handleTimelineButtons(_this.timeline, _this.timelineZoom, _this.allEntries.find(d => d.group == groupId));
-                }               
+                }
             }
         });
     };
@@ -1529,21 +1627,21 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         d3.select("#groups-chart #sort-by").on("click", (e: any) => {
             var selectedOption = e.target.control.value;
             _this.allEntries = _this.allEntries.sort(function (a, b) {
-                if(selectedOption == "date") {
+                if (selectedOption == "date") {
                     return _this.interactions.sort.sortData(a.creteDate, b.creteDate, _this.sorted == "date" ? true : false);
                 } else if (selectedOption == "name") {
                     return _this.interactions.sort.sortData(a.group, b.group, _this.sorted == "name" ? true : false);
                 } else if (selectedOption == "mean") {
                     return _this.interactions.sort.sortData(d3.mean(a.value.map(d => d.point)), d3.mean(b.value.map(d => d.point)), _this.sorted == "mean" ? true : false);
-                }                   
+                }
             });
-            _this.sorted = _this.interactions.sort.setSorted(_this.sorted, selectedOption);               
+            _this.sorted = _this.interactions.sort.setSorted(_this.sorted, selectedOption);
             let entries = d3.filter(_this.allEntries, d => d.selected);
             let data = entries.map(d => new AnalyticsChartsDataStats(d));
             boxPlot.x.scale.domain(data.map(r => r.group));
             _this.interactions.axisSeries(boxPlot, data);
             _this.renderGroupChart(boxPlot, data);
-            if(boxPlot.click) {
+            if (boxPlot.click) {
                 _this.interactions.click.appendGroupsText(boxPlot, data, data.find(d => d.group == d3.select("#groups-statistics .card").attr("id")))
                 let violinData = _this.getGroupCompareData();
                 _this.interactions.axisSeries(_this.violin, violinData);
@@ -1553,17 +1651,28 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 _this.renderViolin(_this.usersViolin, usersData);
                 _this.handleGroupCompare();
             }
+            _this.htmlContainers.removeHelp(boxPlot);
         });
     };
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries {
         chart = super.renderGroupChart(chart, data);
         let _this = this
+        _this.htmlContainers.renderNavbarScrollspy();
         _this.interactions.click.enableClick(chart, onClick);
         chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
             _this.interactions.click.removeClick(chart);
             _this.interactions.click.removeClickClass(chart, "bar");
             _this.htmlContainers.remove();
         });
+        _this.htmlContainers.boxPlot.select(".card-header button")
+            .on("click", function (e: Event) {
+                let showHelp = _this.htmlContainers.helpPopover(d3.select(this), `${chart.id}-help`);
+                chart.elements.contentContainer.selectAll(`#${chart.id}-data`).attr("filter", showHelp ? "url(#f-help)" : null);
+                _this.htmlContainers.helpPopover(chart.elements.contentContainer.select(`#${chart.id}-data`), `${chart.id}-help-data`, "hover or click me!");
+                _this.htmlContainers.boxPlot.select("#sort-by")
+                    .style("box-shadow", showHelp ? "5px 5px 15px #ffff00" : null);
+                _this.htmlContainers.helpPopover(_this.htmlContainers.boxPlot.select("#sort-by"), `${chart.id}-help-button`, "click me!");
+            });
         function onClick(e: Event, d: IAnalyticsChartsDataStats) {
             if (d3.select(this).attr("class") == "bar clicked") {
                 _this.interactions.click.removeClick(chart);
@@ -1578,8 +1687,8 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.interactions.click.appendGroupsText(chart, data, d);
 
             //Draw group statistics
-            _this.htmlContainers.groupStatistics = _this.htmlContainers.appendDiv("groups-statistics", "col-md-3");
-            let groupsStatisticsCard = _this.htmlContainers.appendCard(_this.htmlContainers.groupStatistics, `Statistics (${d.group})`, d.group);
+            _this.htmlContainers.statistics = _this.htmlContainers.appendDiv("groups-statistics", "col-md-3");
+            let groupsStatisticsCard = _this.htmlContainers.appendCard(_this.htmlContainers.statistics, `Statistics (${d.group})`, d.group);
             _this.renderGroupStats(groupsStatisticsCard, d)
 
             //Draw compare
@@ -1590,22 +1699,42 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.renderGroupCompare();
 
             //Draw groups violin container  
-            _this.htmlContainers.groupViolin = _this.htmlContainers.appendDiv("group-violin-chart", "col-md-5 mt-3");
-            _this.htmlContainers.appendCard(_this.htmlContainers.groupViolin, `Reflections histogram (${d.group})`);
+            _this.htmlContainers.violin = _this.htmlContainers.appendDiv("group-violin-chart", "col-md-5 mt-3");
+            _this.htmlContainers.appendCard(_this.htmlContainers.violin, `Reflections histogram (${d.group})`, undefined, true);
             _this.violin = new ViolinChartSeries("group-violin-chart", violinData.map(d => d.group));
             _this.violin = _this.renderViolin(_this.violin, violinData);
+            _this.htmlContainers.violin.select(".card-header button")
+                .on("click", function (e: Event) {
+                    let showHelp = _this.htmlContainers.helpPopover(d3.select(this), `${_this.violin.id}-help`);
+                    _this.violin.elements.contentContainer.selectAll(`#${_this.violin.id}-data`).attr("filter", showHelp ? "url(#f-help)" : null);
+                    _this.htmlContainers.helpPopover(_this.violin.elements.contentContainer.select(`#${_this.violin.id}-data`), `${_this.violin.id}-help-data`, "hover me!");
+                    let showDragHelp = _this.htmlContainers.helpPopover(_this.violin.elements.contentContainer.select(".threshold-line.soaring"), `${_this.violin.id}-help-drag`, "drag me!");
+                    if (showDragHelp) {
+                        d3.select(`#${_this.violin.id}-help-drag`).style("top", parseInt(d3.select(`#${_this.violin.id}-help-drag`).style("top")) - 19 + "px");
+                    }
+                });
 
             //Draw users violin container
             _this.htmlContainers.userViolin = _this.htmlContainers.appendDiv("group-violin-users-chart", "col-md-5 mt-3");
-            _this.htmlContainers.appendCard(_this.htmlContainers.userViolin, `Users histogram (${d.group})`);
+            _this.htmlContainers.appendCard(_this.htmlContainers.userViolin, `Users histogram (${d.group})`, undefined, true);
             let usersData = violinData.map(d => d.getUsersData());
             _this.usersViolin = new ViolinChartSeries("group-violin-users-chart", violinData.map(d => d.group));
             _this.usersViolin = _this.renderViolin(_this.usersViolin, usersData);
+            _this.htmlContainers.userViolin.select(".card-header button")
+                .on("click", function (e: Event) {
+                    let showHelp = _this.htmlContainers.helpPopover(d3.select(this), `${_this.usersViolin.id}-help`);
+                    _this.usersViolin.elements.contentContainer.selectAll(`#${_this.usersViolin.id}-data`).attr("filter", showHelp ? "url(#f-help)" : null);
+                    _this.htmlContainers.helpPopover(_this.usersViolin.elements.contentContainer.select(`#${_this.usersViolin.id}-data`), `${_this.usersViolin.id}-help-data`, "hover me!");
+                    let showDragHelp = _this.htmlContainers.helpPopover(_this.usersViolin.elements.contentContainer.select(".threshold-line.soaring"), `${_this.usersViolin.id}-help-drag`, "drag me!");
+                    if (showDragHelp) {
+                        d3.select(`#${_this.usersViolin.id}-help-drag`).style("top", parseInt(d3.select(`#${_this.usersViolin.id}-help-drag`).style("top")) - 19 + "px");
+                    }
+                });
             _this.handleGroupCompare();
 
             //Draw selected group timeline 
-            _this.htmlContainers.groupTimeline = _this.htmlContainers.appendDiv("group-timeline", "col-md-12 mt-3");
-            let timelineCard = _this.htmlContainers.appendCard(_this.htmlContainers.groupTimeline, `Reflections vs Time (${d.group})`);
+            _this.htmlContainers.timeline = _this.htmlContainers.appendDiv("group-timeline", "col-md-12 mt-3");
+            let timelineCard = _this.htmlContainers.appendCard(_this.htmlContainers.timeline, `Reflections vs Time (${d.group})`, undefined, true);
             timelineCard.select(".card-body")
                 .attr("class", "card-body")
                 .html(`<div class="row">
@@ -1624,12 +1753,34 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.renderTimelineDensity(_this.timeline, d);
             _this.timelineZoom = new ChartTimeZoom(_this.timeline, d3.extent(d.value.map(d => d.timestamp)));
             _this.handleTimelineButtons(_this.timeline, _this.timelineZoom, d);
+            _this.htmlContainers.timeline.select(".card-header button")
+                .on("click", function (e: Event) {
+                    let showHelp = _this.htmlContainers.helpPopover(d3.select(this), `${_this.timeline.id}-help`);
+                    _this.timeline.elements.contentContainer.selectAll(`#${_this.timeline.id}-timeline-circles`).attr("filter", showHelp ? "url(#f-help)" : null);
+                    _this.htmlContainers.timeline.select("#timeline-plot")
+                        .style("box-shadow", showHelp ? "5px 5px 15px #ffff00" : null);
+                    _this.htmlContainers.helpPopover(_this.htmlContainers.timeline.select("#timeline-plot"), `${_this.timeline.id}-help-button`, "click me!");
+                    _this.htmlContainers.helpPopover(_this.htmlContainers.timeline.select(".zoom-rect.active"), `${_this.timeline.id}-help-zoom`, "zoom me!");
+                    if (!_this.timeline.elements.contentContainer.select(`#${_this.timeline.id}-timeline-circles`).empty()) {
+                        let showDataHelp = _this.htmlContainers.helpPopover(_this.timeline.elements.contentContainer.select(`#${_this.timeline.id}-timeline-circles`), `${_this.timeline.id}-help-data`, "hover or click me!");
+                        if (showDataHelp) {
+                            d3.select(`#${_this.timeline.id}-help-data`).style("top", parseInt(d3.select(`#${_this.timeline.id}-help-data`).style("top")) - 14 + "px");
+                        }
+                    }
+                });
 
+            _this.htmlContainers.removeHelp(chart);
             //Scroll
             document.querySelector("#groups-statistics").scrollIntoView({ behavior: 'smooth', block: 'start' });
+            _this.htmlContainers.renderNavbarScrollspy();
         }
         return chart;
     };
+    renderGroupStats(div: any, data: IAnalyticsChartsDataStats) {
+        super.renderGroupStats(div, data);
+        let height = d3.select<HTMLDivElement, unknown>("#groups-chart .card").node().getBoundingClientRect().height;
+        div.style("height", `${height}px`);
+    }
     renderViolin(chart: ViolinChartSeries, data: IAnalyticsChartsData[]): ViolinChartSeries {
         let _this = this;
         chart = super.renderViolin(chart, data);
@@ -1654,7 +1805,8 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         //Start drag soaring functions           
         function dragStartSoaring(e: Event, d: IAnalyticsChartsData) {
             chart.elements.contentContainer.selectAll(`.${chart.id}-violin-text-container`).remove();
-            d3.select(this).attr("class", d3.select(this).attr("class") + " grabbing")
+            d3.select(this).attr("class", d3.select(this).attr("class") + " grabbing");
+            _this.htmlContainers.removeHelp(chart);
         }
         function draggingSoaring(e: MouseEvent, d: IAnalyticsChartsData) {
             if (chart.y.scale.invert(e.y) < 51 || chart.y.scale.invert(e.y) > 99) {
@@ -1689,14 +1841,15 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             }
             chart.setBin();
             _this.interactions.violin(chart);
-            d3.select(this).attr("class", d3.select(this).attr("class").replace(" grabbing", ""));  
-            _this.handleViolinHover(chart);         
+            d3.select(this).attr("class", d3.select(this).attr("class").replace(" grabbing", ""));
+            _this.handleViolinHover(chart);
         }
 
         //Start drag distressed functions
         function dragStartDistressed(e: Event, d: IAnalyticsChartsData) {
             chart.elements.contentContainer.selectAll(`.${chart.id}-violin-text-container`).remove();
             d3.select(this).attr("class", d3.select(this).attr("class") + " grabbing");
+            _this.htmlContainers.removeHelp(chart);
         }
         function draggingDistressed(e: MouseEvent, d: IAnalyticsChartsData) {
             if (chart.y.scale.invert(e.y) < 1 || chart.y.scale.invert(e.y) > 49) {
@@ -1758,6 +1911,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 _this.interactions.click.removeClick(chart);
                 chart.elements.content.attr("class", "line-circle");
                 chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`).remove();
+                d3.select("#analytics-navbar").select(`#${_this.htmlContainers.userStatistics.attr("id")}-li`).remove();
                 _this.htmlContainers.removeUsers();
                 return;
             }
@@ -1787,9 +1941,11 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.htmlContainers.userStatistics = _this.htmlContainers.appendDiv("user-statistics", "col-md-12 mt-3");
             let userStatisticsCard = _this.htmlContainers.appendCard(_this.htmlContainers.userStatistics, `${d.pseudonym}'s statistics`);
             _this.renderUserStatistics(userStatisticsCard, data, d.pseudonym);
-           
+
+            _this.htmlContainers.removeHelp(chart);
             //Scroll
             document.querySelector("#group-timeline").scrollIntoView({ behavior: 'smooth', block: 'start' });
+            _this.htmlContainers.renderNavbarScrollspy();
         }
         return chart;
     };
@@ -1831,37 +1987,41 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.interactions.axisSeries(_this.usersViolin, usersData);
             _this.renderViolin(_this.violin, groupData);
             _this.renderViolin(_this.usersViolin, usersData);
+            _this.htmlContainers.removeHelp(_this.violin);
+            _this.htmlContainers.removeHelp(_this.usersViolin);
         });
-    };   
+    };
     renderUserStatistics(card: any, data: IAnalyticsChartsData, pseudonym?: string): void {
         super.renderUserStatistics(card, data, pseudonym);
         let _this = this;
         card.selectAll("a")
-            .on("click", (e: Event, d: IReflectionAuthorEntry) => {                
+            .on("click", (e: Event, d: IReflectionAuthorEntry) => {
                 _this.interactions.click.removeClick(_this.timeline);
                 _this.timeline.elements.content.attr("class", "line-circle");
                 _this.timeline.elements.contentContainer.selectAll(`#${_this.timeline.id}-timeline-circles-line`).remove();
                 _this.timeline.elements.content.attr("class", (data: IReflectionAuthorEntry) => `line-circle ${data.pseudonym == d.pseudonym ? "clicked" : ""}`);
                 let userData = data.value.filter(c => c.pseudonym == d.pseudonym);
                 let line = d3.line<IReflectionAuthorEntry>()
-                    .x(d =>  _this.timeline.x.scale(d.timestamp))
-                    .y(d =>  _this.timeline.y.scale(d.point));
+                    .x(d => _this.timeline.x.scale(d.timestamp))
+                    .y(d => _this.timeline.y.scale(d.point));
 
                 _this.timeline.elements.contentContainer.append("path")
                     .datum(d3.sort(userData, (d: IReflectionAuthorEntry) => d.timestamp))
                     .classed("line", true)
-                    .attr("id", `${ _this.timeline.id}-timeline-circles-line`)
+                    .attr("id", `${_this.timeline.id}-timeline-circles-line`)
                     .attr("d", (d: IReflectionAuthorEntry[]) => line(d))
                     .style("stroke", data.colour);
                 userData.forEach(c => _this.interactions.click.appendScatterText(_this.timeline, c, c.point.toString()));
                 card.select(".card-header")
                     .html(`${d.pseudonym} statistics`);
-                    setTimeout(() => {card.select(".scroll-list")
+                setTimeout(() => {
+                    card.select(".scroll-list")
                     .transition()
                     .duration(750)
-                    .style("height", `${card.select(".tab-pane.fade.show.active").node().getBoundingClientRect().height}px`)}, 250);
+                    .style("height", `${card.select(".tab-pane.fade.show.active").node().getBoundingClientRect().height}px`)
+                }, 250);
             })
-    }
+    };
 }
 
 interface IAdminExperimentalInteractions extends IAdminControlInteractions {
@@ -2032,16 +2192,24 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
         let data = allEntries.map(d => new AnalyticsChartsDataStats(d));
 
         //Append groups chart container
-        adminControlCharts.htmlContainers.groupsChart = adminControlCharts.htmlContainers.appendDiv("groups-chart", "col-md-9");
-        adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.groupsChart, "Reflections box plot by group");
+        adminControlCharts.htmlContainers.boxPlot = adminControlCharts.htmlContainers.appendDiv("groups-chart", "col-md-9");
+        adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.boxPlot, "Reflections box plot", undefined, true);
 
-        //Create group chart with current data
+        //Create groups chart with current data
         let groupChart = new ChartSeries("groups-chart", data.map(d => d.group));
         adminControlCharts.renderGroupChart(groupChart, data);
 
+        //Handle groups chart help
+        adminControlCharts.htmlContainers.boxPlot.select(".card-header button")
+            .on("click", function (e: Event) {
+                let showHelp = adminControlCharts.htmlContainers.helpPopover(d3.select(this), `${groupChart.id}-help`);
+                groupChart.elements.contentContainer.selectAll(`#${groupChart.id}-data`).attr("filter", showHelp ? "url(#f-help)" : null);
+                adminControlCharts.htmlContainers.helpPopover(groupChart.elements.contentContainer.select(`#${groupChart.id}-data`), `${groupChart.id}-help-data`, "hover me!");
+            });
+
         //Append group general statistics
-        adminControlCharts.htmlContainers.groupStatistics = adminControlCharts.htmlContainers.appendDiv("groups-statistics", "col-md-3");
-        let cardGroupStats = adminControlCharts.htmlContainers.groupStatistics.selectAll("div")
+        adminControlCharts.htmlContainers.statistics = adminControlCharts.htmlContainers.appendDiv("groups-statistics", "col-md-3");
+        let cardGroupStats = adminControlCharts.htmlContainers.statistics.selectAll("div")
             .data(data)
             .enter()
             .append("div")
@@ -2066,21 +2234,37 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
         });
 
         //Draw groups violin container  
-        adminControlCharts.htmlContainers.groupViolin = adminControlCharts.htmlContainers.appendDiv("group-violin-chart", "col-md-6 mt-3");
-        adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.groupViolin, `Reflections distribution`);
+        adminControlCharts.htmlContainers.violin = adminControlCharts.htmlContainers.appendDiv("group-violin-chart", "col-md-6 mt-3");
+        adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.violin, `Reflections histogram`, undefined, true);
         let violinChart = new ViolinChartSeries("group-violin-chart", data.map(d => d.group));
         adminControlCharts.renderViolin(violinChart, data);
 
+        //Handle violin chart help
+        adminControlCharts.htmlContainers.violin.select(".card-header button")
+            .on("click", function (e: Event) {
+                let showHelp = adminControlCharts.htmlContainers.helpPopover(d3.select(this), `${violinChart.id}-help`);
+                violinChart.elements.contentContainer.selectAll(`#${violinChart.id}-data`).attr("filter", showHelp ? "url(#f-help)" : null);
+                adminControlCharts.htmlContainers.helpPopover(violinChart.elements.contentContainer.select(`#${violinChart.id}-data`), `${violinChart.id}-help-data`, "hover me!");
+            });
+
         //Draw users violin container
         adminControlCharts.htmlContainers.userViolin = adminControlCharts.htmlContainers.appendDiv("group-violin-users-chart", "col-md-6 mt-3");
-        adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.userViolin, `Users distribution`);
+        adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.userViolin, `Users histogram`, undefined, true);
         let usersData = data.map(d => d.getUsersData());
         let violinUsersChart = new ViolinChartSeries("group-violin-users-chart", data.map(d => d.group));
         adminControlCharts.renderViolin(violinUsersChart, usersData);
 
-        //Draw selected group timeline 
-        adminControlCharts.htmlContainers.groupTimeline = adminControlCharts.htmlContainers.appendDiv("group-timeline", "col-md-12 mt-3");
-        let timelineCard = adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.groupTimeline, `Reflections vs Time`);
+        //Handle users violin chart help
+        adminControlCharts.htmlContainers.userViolin.select(".card-header button")
+            .on("click", function (e: Event) {
+                let showHelp = adminControlCharts.htmlContainers.helpPopover(d3.select(this), `${violinUsersChart.id}-help`);
+                violinUsersChart.elements.contentContainer.selectAll(`#${violinUsersChart.id}-data`).attr("filter", showHelp ? "url(#f-help)" : null);
+                adminControlCharts.htmlContainers.helpPopover(violinUsersChart.elements.contentContainer.select(`#${violinUsersChart.id}-data`), `${violinUsersChart.id}-help-data`, "hover me!");
+            });
+
+        //Draw timeline 
+        adminControlCharts.htmlContainers.timeline = adminControlCharts.htmlContainers.appendDiv("group-timeline", "col-md-12 mt-3");
+        let timelineCard = adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.timeline, `Reflections vs Time`, undefined, true);
         timelineCard.select(".card-body")
             .attr("class", "card-body")
             .append("ul")
@@ -2117,7 +2301,7 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
             .on("click", (e: Event, d: IAnalyticsChartsDataStats) => {
                 timelineCard.selectAll("a")
                     .each((x: IAnalyticsChartsDataStats, i: number, g: any) => {
-                        if(x == d) {
+                        if (x == d) {
                             d3.select(g[i])
                                 .attr("class", "nav-link active")
                         } else {
@@ -2125,8 +2309,8 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
                                 .attr("class", "nav-link")
                         }
                     });
-                timelineChart.x = new ChartTimeAxis("Time", d3.extent(d.value.map(d => d.timestamp)), [0, timelineChart.width - timelineChart.padding.yAxis]);
-                timelineZoomChart.x = new ChartTimeAxis("Time", d3.extent(d.value.map(d => d.timestamp)), [0, timelineChart.width - timelineChart.padding.yAxis]);
+                timelineChart.x.scale.domain(d3.extent(d.value.map(d => d.timestamp)));
+                timelineZoomChart.x.scale.domain(d3.extent(d.value.map(d => d.timestamp)));
                 adminControlCharts.interactions.axisTime(timelineChart, d);
                 if (timelineChart.elements.contentContainer.selectAll(`#${timelineChart.id}-timeline-contours`).empty()) {
                     adminControlCharts.renderTimelineScatter(timelineChart, timelineZoomChart, d);
@@ -2136,7 +2320,25 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
                 }
                 adminControlCharts.handleTimelineButtons(timelineChart, timelineZoomChart, d);
             });
-        
+
+        //Handle timeline chart help
+        adminControlCharts.htmlContainers.timeline.select(".card-header button")
+            .on("click", function (e: Event) {
+                let showHelp = adminControlCharts.htmlContainers.helpPopover(d3.select(this), `${timelineChart.id}-help`);
+                timelineChart.elements.contentContainer.selectAll(`#${timelineChart.id}-timeline-circles`).attr("filter", showHelp ? "url(#f-help)" : null);
+                adminControlCharts.htmlContainers.timeline.select("#timeline-plot")
+                    .style("box-shadow", showHelp ? "5px 5px 15px #ffff00" : null);
+                adminControlCharts.htmlContainers.helpPopover(adminControlCharts.htmlContainers.timeline.select("#timeline-plot"), `${timelineChart.id}-help-button`, "click me!");
+                adminControlCharts.htmlContainers.helpPopover(adminControlCharts.htmlContainers.timeline.select(".zoom-rect.active"), `${timelineChart.id}-help-zoom`, "zoom me!");
+                if (!timelineChart.elements.contentContainer.select(`#${timelineChart.id}-timeline-circles`).empty()) {
+                    let showDataHelp = adminControlCharts.htmlContainers.helpPopover(timelineChart.elements.contentContainer.select(`#${timelineChart.id}-timeline-circles`), `${timelineChart.id}-help-data`, "hover me!");
+                    if (showDataHelp) {
+                        d3.select(`#${timelineChart.id}-help-data`).style("top", parseInt(d3.select(`#${timelineChart.id}-help-data`).style("top")) - 14 + "px");
+                    }
+                }
+            });
+
+        //Draw users data
         adminControlCharts.htmlContainers.userStatistics = adminControlCharts.htmlContainers.appendDiv("user-statistics", "col-md-12 mt-3");
         let usersCards = adminControlCharts.htmlContainers.userStatistics.selectAll("div")
             .data(data)
@@ -2164,11 +2366,14 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
         usersCards.selectAll("button")
             .on("click", function () {
                 let buttonId = d3.select(this).attr("data-target");
-                setTimeout(() => {usersCards.select(`${buttonId} .scroll-list`)
+                setTimeout(() => {
+                    usersCards.select(`${buttonId} .scroll-list`)
                     .transition()
                     .duration(750)
-                    .style("height", `${usersCards.select(`${buttonId} .tab-pane.fade.show.active`).node().getBoundingClientRect().height}px`)}, 250);
+                    .style("height", `${usersCards.select(`${buttonId} .tab-pane.fade.show.active`).node().getBoundingClientRect().height}px`)
+                }, 250);
             });
+        adminControlCharts.htmlContainers.renderNavbarScrollspy();
     }
 }
 
@@ -2190,8 +2395,8 @@ export function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalyticsCharts
         let data = entries.map(d => new AnalyticsChartsDataStats(d));
 
         //Append groups chart container
-        adminExperimentalCharts.htmlContainers.groupsChart = adminExperimentalCharts.htmlContainers.appendDiv("groups-chart", "col-md-9");
-        let groupCard = adminExperimentalCharts.htmlContainers.appendCard(adminExperimentalCharts.htmlContainers.groupsChart, "Reflections box plot by group");
+        adminExperimentalCharts.htmlContainers.boxPlot = adminExperimentalCharts.htmlContainers.appendDiv("groups-chart", "col-md-9");
+        let groupCard = adminExperimentalCharts.htmlContainers.appendCard(adminExperimentalCharts.htmlContainers.boxPlot, "Reflections box plot", undefined, true);
         groupCard.select(".card-body")
             .attr("class", "card-body")
             .html(`<div class="row">

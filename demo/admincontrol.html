@@ -14,18 +14,17 @@
             <h3 class="mb-3 text-light d-block mx-auto">GoingOk Navbar</h3>
         </nav>
         <div class="wrapper">            
-            <nav id="sidebar" class="active">
+            <nav id="sidebar" class="active sticky-top">
                 <div class="sidebar-header">
                     <h3>GoingOK</h3>
                     <hr>
                 </div>
                 <ul id="groups" class="list-unstyled components"></ul>
             </nav>
-            <div id="content" class="content">
-                <nav class="navbar navbar-expand-lg navbar-light bg-light">
-                    <div class="container-fluid">
-                        <button type="button" id="sidebar-btn" class="btn btn-info"> <i class="fa fa-align-justify mr-2"></i>Toggle Groups Bar</button>
-                    </div>
+            <div class="content">
+                <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top" id="analytics-navbar">
+                    <button type="button" id="sidebar-btn" class="btn btn-info mr-3"> <i class="fa fa-align-justify mr-2"></i>Toggle Groups Bar</button>
+                    <ul class="nav nav-pills"></ul>
                 </nav>
                 <div class="content-wrapper">
                     <div class="container-fluid">            
