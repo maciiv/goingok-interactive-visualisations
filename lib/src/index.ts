@@ -1198,7 +1198,9 @@ class AdminControlCharts implements IAdminControlCharts {
         d3.select(`#${chart.id} #timeline-plot`).on("click", (e: any) => {
             var selectedOption = e.target.control.value;
             if (selectedOption == "density") {
-                _this.htmlContainers.removeUsers();
+                if (!chart.elements.contentContainer.select(`#${chart.id}-timeline-circles-line`).empty()) {
+                    _this.htmlContainers.removeUsers();
+                }
                 _this.renderTimelineDensity(chart, data);
             }
             if (selectedOption == "scatter") {
