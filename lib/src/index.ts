@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+import { NumberValue } from "d3";
 
 /* ------------------------------------------------
     Start data interfaces and classes 
@@ -316,7 +317,7 @@ class ChartTimeAxis implements IChartAxis {
 // Basic interface for chart elements (includes zoom)
 interface IChartElements {
     svg: any;
-    contentContainer: any;
+    contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
     content: any;
     xAxis: any;
     yAxis: any;
@@ -327,7 +328,7 @@ interface IChartElements {
 // Basic class for chart elements (includes zoom)
 class ChartElements implements IChartElements {
     svg: any;
-    contentContainer: any;
+    contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
     content: any;
     xAxis: any;
     yAxis: any;
@@ -449,7 +450,7 @@ class ViolinChartElements extends ChartElements implements IViolinChartElements 
             .attr("class", "y-label-text")
             .attr("text-anchor", "middle")
             .text("Thresholds");
-        label.attr("transform", `translate(${chart.width - chart.padding.right + this.contentContainer.select(".threshold-axis").node().getBBox().width + label.node().getBBox().height}, ${chart.padding.top + this.svg.select(".y-axis").node().getBBox().height / 2}) rotate(-90)`);
+        label.attr("transform", `translate(${chart.width - chart.padding.right + this.contentContainer.select<SVGGElement>(".threshold-axis").node().getBBox().width + label.node().getBBox().height}, ${chart.padding.top + this.svg.select(".y-axis").node().getBBox().height / 2}) rotate(-90)`);
         return label;
     };
     private appendThresholdIndicators(chart: IViolinChartSeries, thresholds: number[]): void {
@@ -511,13 +512,13 @@ class ViolinChartElements extends ChartElements implements IViolinChartElements 
     };
     getThresholdsValues(chart: IViolinChartSeries): number[] {
         let result: number[] = [30, 70];
-        let dThreshold = this.contentContainer.select(".threshold-line.distressed");
+        let dThreshold = this.contentContainer.select<SVGLineElement>(".threshold-line.distressed");
         if (!dThreshold.empty()) {
-            result[0] = chart.y.scale.invert(dThreshold.attr("y1"));
+            result[0] = chart.y.scale.invert(parseInt(dThreshold.attr("y1")));
         }
-        let sThreshold = this.contentContainer.select(".threshold-line.soaring");
+        let sThreshold = this.contentContainer.select<SVGLineElement>(".threshold-line.soaring");
         if (!sThreshold.empty()) {
-            result[1] = chart.y.scale.invert(sThreshold.attr("y1"));
+            result[1] = chart.y.scale.invert(parseInt(sThreshold.attr("y1")));
         }
         return result;
     };
@@ -771,7 +772,7 @@ class AdminControlCharts implements IAdminControlCharts {
         //Select existing minMax lines
         let minMax = chart.elements.contentContainer.selectAll(`#${chart.id}-data-min-max`)
             .data(data)
-            .style("stroke", (d: IAnalyticsChartsDataStats) => d.colour);
+            .style("stroke", d => d.colour);
 
         //Remove old minMax lines
         minMax.exit().remove();
@@ -781,11 +782,11 @@ class AdminControlCharts implements IAdminControlCharts {
             .append("line")
             .attr("id", `${chart.id}-data-min-max`)
             .attr("class", "box-line")
-            .attr("x1", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
-            .attr("x2", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
-            .attr("y1", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.min))
-            .attr("y2", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.max))
-            .style("stroke", (d: IAnalyticsChartsDataStats) => d.colour);
+            .attr("x1", d => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
+            .attr("x2", d => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
+            .attr("y1", d => chart.y.scale(d.min))
+            .attr("y2", d => chart.y.scale(d.max))
+            .style("stroke", d => d.colour);
 
         //Merge existing and new minMax lines
         minMax.merge(minMaxEnter);
@@ -793,7 +794,7 @@ class AdminControlCharts implements IAdminControlCharts {
         //Select existing median lines
         let median = chart.elements.contentContainer.selectAll(`#${chart.id}-data-median`)
             .data(data)
-            .style("stroke", (d: IAnalyticsChartsDataStats) => d.colour);
+            .style("stroke", d => d.colour);
 
         //Remove old median lines
         median.exit().remove();
@@ -803,11 +804,11 @@ class AdminControlCharts implements IAdminControlCharts {
             .append("line")
             .attr("id", `${chart.id}-data-median`)
             .attr("class", "box-line")
-            .attr("x1", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group))
-            .attr("x2", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group) + chart.x.scale.bandwidth())
-            .attr("y1", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.median))
-            .attr("y2", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.median))
-            .style("stroke", (d: IAnalyticsChartsDataStats) => d.colour);
+            .attr("x1", d => chart.x.scale(d.group))
+            .attr("x2", d => chart.x.scale(d.group) + chart.x.scale.bandwidth())
+            .attr("y1", d => chart.y.scale(d.median))
+            .attr("y2", d => chart.y.scale(d.median))
+            .style("stroke", d => d.colour);
 
         //Merge existing and new median lines
         median.merge(medianEnter);
@@ -815,8 +816,8 @@ class AdminControlCharts implements IAdminControlCharts {
         //Select existing boxes
         let boxes = chart.elements.contentContainer.selectAll(`#${chart.id}-data`)
             .data(data)
-            .style("stroke", (d: IAnalyticsChartsDataStats) => d.colour)
-            .style("fill", (d: IAnalyticsChartsDataStats) => d.colour);
+            .style("stroke", d => d.colour)
+            .style("fill", d => d.colour);
 
         //Remove old boxes
         boxes.exit().remove();
@@ -826,12 +827,12 @@ class AdminControlCharts implements IAdminControlCharts {
             .append("rect")
             .attr("id", `${chart.id}-data`)
             .classed("bar", true)
-            .attr("y", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.q3))
-            .attr("x", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group))
-            .attr("width", (d: IAnalyticsChartsDataStats) => chart.x.scale.bandwidth())
-            .attr("height", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.q1) - chart.y.scale(d.q3))
-            .style("stroke", (d: IAnalyticsChartsDataStats) => d.colour)
-            .style("fill", (d: IAnalyticsChartsDataStats) => d.colour);
+            .attr("y", d => chart.y.scale(d.q3))
+            .attr("x", d => chart.x.scale(d.group))
+            .attr("width", chart.x.scale.bandwidth())
+            .attr("height", d => chart.y.scale(d.q1) - chart.y.scale(d.q3))
+            .style("stroke", d => d.colour)
+            .style("fill", d => d.colour);
 
         //Merge existing and new boxes
         boxes.merge(boxesEnter);
@@ -1420,7 +1421,7 @@ class Tooltip implements ITooltip {
             .attr("class", "tooltip-container");
     };
     appendTooltipText(chart: IChart, title: string, values: ITooltipValues[] = null): void {
-        let result = chart.elements.contentContainer.select(".tooltip-container").append("rect")
+        let result = chart.elements.contentContainer.select<SVGRectElement>(".tooltip-container").append("rect")
             .attr("class", "tooltip-box");
         let text = chart.elements.contentContainer.select(".tooltip-container").append("text")
             .attr("class", "tooltip-text title")
@@ -1439,7 +1440,6 @@ class Tooltip implements ITooltip {
         }
         chart.elements.contentContainer.select(".tooltip-box").attr("width", text.node().getBBox().width + 20)
             .attr("height", text.node().getBBox().height + 5);
-        return result;
     };
     positionTooltipContainer(chart: IChart, x: number, y: number): void {
         chart.elements.contentContainer.select(".tooltip-container")
@@ -1820,11 +1820,11 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             tSoaring = chart.y.scale.invert(e.y);
             chart.thresholdAxis.tickValues([tDistressed, chart.y.scale.invert(e.y)])
                 .tickFormat((d: number) => d == tDistressed ? "Distressed" : d == chart.y.scale.invert(e.y) ? "Soaring" : "");
-            chart.elements.contentContainer.selectAll(".threshold-axis")
+            chart.elements.contentContainer.selectAll<SVGGElement, unknown>(".threshold-axis")
                 .call(chart.thresholdAxis);
             let positionX = chart.width - chart.padding.yAxis - chart.padding.right + 5;
             let positionY = chart.y.scale(tSoaring) + 25;
-            let indicator = chart.elements.contentContainer.select(".threshold-indicator-container.soaring");
+            let indicator = chart.elements.contentContainer.select<SVGGElement>(".threshold-indicator-container.soaring");
             if (positionY + indicator.node().getBBox().height > chart.y.scale(tDistressed)) {
                 positionY = chart.y.scale(tSoaring) - 15;
             }
@@ -1865,10 +1865,10 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             chart.thresholdAxis.tickValues([chart.y.scale.invert(e.y), tSoaring])
                 .tickFormat((d: number) => d == chart.y.scale.invert(e.y) ? "Distressed" : d == tSoaring ? "Soaring" : "");
 
-            chart.elements.contentContainer.selectAll(".threshold-axis")
+            chart.elements.contentContainer.selectAll<SVGGElement, unknown>(".threshold-axis")
                 .call(chart.thresholdAxis);
 
-            let soaringIndicator = chart.elements.contentContainer.select(".threshold-indicator-container.soaring");
+            let soaringIndicator = chart.elements.contentContainer.select<SVGGElement>(".threshold-indicator-container.soaring");
             if (chart.y.scale(tDistressed) < chart.y.scale(tSoaring) + soaringIndicator.node().getBBox().height + 25) {
                 soaringIndicator.attr("transform", `translate(${chart.width - chart.padding.yAxis - chart.padding.right + 5}, ${chart.y.scale(tSoaring) - 15})`);
             } else {
@@ -2104,14 +2104,14 @@ class Click implements IClick {
 
         chart.elements.content.attr("class", (d: IAnalyticsChartsDataStats) => d.group == clickData.group ? "bar clicked" : "bar");
 
-        let clickContainer = chart.elements.contentContainer.selectAll(".click-container")
+        let clickContainer = chart.elements.contentContainer.selectAll<SVGGElement, unknown>(".click-container")
             .data(data);
         clickContainer.exit().remove();
         let clicontainerEnter = clickContainer.enter()
             .append("g")
             .merge(clickContainer)
             .attr("class", "click-container")
-            .attr("transform", (c: IAnalyticsChartsDataStats) => `translate(${chart.x.scale(c.group) + chart.x.scale.bandwidth() / 2}, 0)`);
+            .attr("transform", c => `translate(${chart.x.scale(c.group) + chart.x.scale.bandwidth() / 2}, 0)`);
         clickContainer.merge(clicontainerEnter);
 
         chart.elements.contentContainer.selectAll(".click-container").append("text")
