@@ -1,5 +1,4 @@
 import * as d3 from "d3";
-import { NumberValue } from "d3";
 
 /* ------------------------------------------------
     Start data interfaces and classes 
@@ -110,7 +109,7 @@ class AnalyticsChartsDataStats extends AnalyticsChartsData implements IAnalytics
     totalUsers: number;
     constructor(entries: IAnalyticsChartsData) {
         super(entries.group, entries.value, entries.creteDate, entries.colour, entries.selected);
-        let uniqueUsers = Array.from(d3.rollup(entries.value, (d: IReflectionAuthorEntry[]) => d.length, (d: IReflectionAuthorEntry) => d.pseudonym), ([key, value]) => ({ key, value }));
+        let uniqueUsers = Array.from(d3.rollup(entries.value, d => d.length, d => d.pseudonym), ([key, value]) => ({ key, value }));
         this.mean = Math.round(d3.mean(entries.value.map(r => r.point))),
             this.median = d3.median(entries.value.map(r => r.point)),
             this.q1 = d3.quantile(entries.value.map(r => r.point), 0.25),
@@ -291,12 +290,12 @@ class ChartLinearAxis implements IChartAxis {
         labels.set(50, "going ok");
         labels.set(100, "soaring");
         this.axis.tickValues([0, 25, 50, 75, 100])
-            .tickFormat((d: d3.AxisDomain, i: number) => labels.get(d));
+            .tickFormat(d => labels.get(d));
     };
-    setThresholdAxis(tDistressed: number, tSoaring: number) {
+    setThresholdAxis(tDistressed: number, tSoaring: number) : d3.Axis<d3.NumberValue> {
         return d3.axisRight(this.scale)
             .tickValues([tDistressed, tSoaring])
-            .tickFormat((d: number) => d == tDistressed ? "Distressed" : d == tSoaring ? "Soaring" : "");
+            .tickFormat(d => d == tDistressed ? "Distressed" : d == tSoaring ? "Soaring" : "");
     }
 }
 
@@ -316,24 +315,24 @@ class ChartTimeAxis implements IChartAxis {
 
 // Basic interface for chart elements (includes zoom)
 interface IChartElements {
-    svg: any;
+    svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>;
     contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
-    content: any;
-    xAxis: any;
-    yAxis: any;
-    zoomSVG: any;
-    zoomFocus: any;
+    content: d3.Selection<SVGRectElement | SVGCircleElement | SVGPathElement, unknown, SVGGElement, any>;
+    xAxis: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
+    yAxis: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
+    zoomSVG: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
+    zoomFocus: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
 }
 
 // Basic class for chart elements (includes zoom)
 class ChartElements implements IChartElements {
-    svg: any;
+    svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>;
     contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
-    content: any;
-    xAxis: any;
-    yAxis: any;
-    zoomSVG: any;
-    zoomFocus: any;
+    content: d3.Selection<SVGRectElement | SVGCircleElement | SVGPathElement, unknown, SVGGElement, any>;
+    xAxis: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
+    yAxis: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
+    zoomSVG: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
+    zoomFocus: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
     constructor(chart: IChart) {
         this.svg = this.appendSVG(chart);
         this.contentContainer = this.appendContentContainer(chart);
@@ -342,7 +341,7 @@ class ChartElements implements IChartElements {
         this.yAxis = this.appendYAxis(chart);
         this.appendYAxisLabel(chart);
     }
-    private appendSVG(chart: IChart) {
+    private appendSVG(chart: IChart): d3.Selection<SVGSVGElement, unknown, HTMLElement, any> {
         let svg = d3.select(`#${chart.id}`)
             .select(".chart-container")
             .append("svg")
@@ -371,7 +370,7 @@ class ChartElements implements IChartElements {
             .attr("mode", "normal");
         return svg;
     };
-    private appendContentContainer(chart: IChart) {
+    private appendContentContainer(chart: IChart): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
         let result = this.svg.append("g")
             .attr("class", "content-container")
             .attr("transform", `translate(${chart.padding.yAxis}, ${chart.padding.top})`)
@@ -388,32 +387,32 @@ class ChartElements implements IChartElements {
             .attr("height", chart.height - chart.padding.xAxis - chart.padding.top);
         return result;
     };
-    private appendXAxis(chart: IChart) {
+    private appendXAxis(chart: IChart): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
         return this.svg.append("g")
             .attr("transform", `translate(${chart.padding.yAxis}, ${chart.height - chart.padding.xAxis})`)
             .attr("class", "x-axis")
             .attr("clip-path", `url(#clip-${chart.id})`)
             .call(chart.x.axis);
     };
-    private appendXAxisLabel(chart: IChart) {
+    private appendXAxisLabel(chart: IChart): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
         return this.svg.append("g")
             .attr("class", "x-label-container")
-            .attr("transform", "translate(" + (this.svg.select(".x-axis").node().getBBox().width / 2 + chart.padding.yAxis) + ", " + (chart.height - chart.padding.xAxis + this.svg.select(".x-axis").node().getBBox().height * 2) + ")")
+            .attr("transform", "translate(" + (this.svg.select<SVGGElement>(".x-axis").node().getBBox().width / 2 + chart.padding.yAxis) + ", " + (chart.height - chart.padding.xAxis + this.svg.select<SVGGElement>(".x-axis").node().getBBox().height * 2) + ")")
             .append("text")
             .attr("class", "x-label-text")
             .attr("text-anchor", "middle")
             .text(chart.x.label);
     };
-    private appendYAxis(chart: IChart) {
+    private appendYAxis(chart: IChart): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
         return this.svg.append("g")
             .attr("transform", `translate(${chart.padding.yAxis}, ${chart.padding.top})`)
             .attr("class", "y-axis")
             .call(chart.y.axis);
     };
-    private appendYAxisLabel(chart: IChart) {
+    private appendYAxisLabel(chart: IChart): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
         return this.svg.append("g")
             .attr("class", "y-label-container")
-            .attr("transform", "translate(" + (chart.padding.yAxis - this.svg.select(".y-axis").node().getBBox().width) + ", " + (chart.padding.top + this.svg.select(".y-axis").node().getBBox().height / 2) + ") rotate(-90)")
+            .attr("transform", "translate(" + (chart.padding.yAxis - this.svg.select<SVGGElement>(".y-axis").node().getBBox().width) + ", " + (chart.padding.top + this.svg.select<SVGGElement>(".y-axis").node().getBBox().height / 2) + ") rotate(-90)")
             .append("text")
             .attr("class", "y-label-text")
             .attr("text-anchor", "middle")
@@ -437,20 +436,20 @@ class ViolinChartElements extends ChartElements implements IViolinChartElements 
         this.appendThresholdLabel(chart);
         this.appendThresholdLine(chart, thresholds);
     }
-    private appendThresholdAxis(chart: IViolinChartSeries) {
+    private appendThresholdAxis(chart: IViolinChartSeries): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
         return this.contentContainer.append("g")
             .attr("transform", `translate(${chart.width - chart.padding.yAxis - chart.padding.right}, 0)`)
             .attr("class", "threshold-axis")
             .call(chart.thresholdAxis);
     };
-    private appendThresholdLabel(chart: IViolinChartSeries) {
+    private appendThresholdLabel(chart: IViolinChartSeries): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
         let label = this.svg.append("g")
             .attr("class", "threshold-label-container")
         label.append("text")
             .attr("class", "y-label-text")
             .attr("text-anchor", "middle")
             .text("Thresholds");
-        label.attr("transform", `translate(${chart.width - chart.padding.right + this.contentContainer.select<SVGGElement>(".threshold-axis").node().getBBox().width + label.node().getBBox().height}, ${chart.padding.top + this.svg.select(".y-axis").node().getBBox().height / 2}) rotate(-90)`);
+        label.attr("transform", `translate(${chart.width - chart.padding.right + this.contentContainer.select<SVGGElement>(".threshold-axis").node().getBBox().width + label.node().getBBox().height}, ${chart.padding.top + this.svg.select<SVGGElement>(".y-axis").node().getBBox().height / 2}) rotate(-90)`);
         return label;
     };
     private appendThresholdIndicators(chart: IViolinChartSeries, thresholds: number[]): void {
@@ -567,13 +566,13 @@ class BinHoverData implements IBinHoverData {
 
 // Basic interface for Html containers
 interface IHtmlContainers {
-    boxPlot: any,
-    statistics: any,
-    timeline: any,
-    violin: any,
-    userViolin: any,
-    compare: any
-    userStatistics: any;
+    boxPlot: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>,
+    statistics: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>,
+    timeline: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>,
+    violin: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>,
+    userViolin: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>,
+    compare: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>
+    userStatistics: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
     remove(): void;
     removeUsers(): void;
     appendDiv(id: string, css: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
@@ -587,13 +586,13 @@ interface IHtmlContainers {
 
 // Basic class for Html containers
 class HtmlContainers implements IHtmlContainers {
-    boxPlot: any;
-    statistics: any;
-    timeline: any;
-    violin: any;
-    userViolin: any;
-    compare: any;
-    userStatistics: any;
+    boxPlot: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
+    statistics: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
+    timeline: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
+    violin: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
+    userViolin: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
+    compare: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
+    userStatistics: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
     remove() {
         if (this.statistics != undefined) {
             this.statistics.remove();
@@ -727,13 +726,13 @@ interface IAdminControlCharts {
     sidebarBtn(): void;
     preloadGroups(allEntries: IAnalyticsChartsData[]): IAnalyticsChartsData[];
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries;
-    renderGroupStats(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsDataStats): any;
+    renderGroupStats(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsDataStats): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
     renderViolin(chart: ViolinChartSeries, data: IAnalyticsChartsData[]): ViolinChartSeries;
     handleViolinHover(chart: ViolinChartSeries, bandwidth: d3.ScaleLinear<number, number, never>): void;
     renderTimelineDensity(chart: ChartTime, data: IAnalyticsChartsData): ChartTime;
     renderTimelineScatter(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData): ChartTime;
     handleTimelineButtons(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData): void;
-    renderUserStatistics(card: any, data: IAnalyticsChartsData, pseudonym?: string): void;
+    renderUserStatistics(card: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsData, pseudonym?: string): void;
 }
 
 class AdminControlCharts implements IAdminControlCharts {
@@ -741,7 +740,7 @@ class AdminControlCharts implements IAdminControlCharts {
     interactions = new AdminControlInteractions();
     sidebarBtn(): void {
         //Handle side bar btn click
-        d3.select("#sidebar-btn").on("click", (e: any) => {
+        d3.select("#sidebar-btn").on("click", () => {
             let isActive = d3.select("#sidebar").attr("class").includes("active");
             d3.select("#sidebar")
                 .attr("class", isActive ? "" : "active");
@@ -842,7 +841,7 @@ class AdminControlCharts implements IAdminControlCharts {
         _this.interactions.bars(chart, data);
 
         //Set render elements content to boxes
-        chart.elements.content = chart.elements.contentContainer.selectAll(`#${chart.id}-data`);
+        chart.elements.content = chart.elements.contentContainer.selectAll(`#${chart.id}-data`) ;
 
         //Enable tooltip
         this.interactions.tooltip.enableTooltip(chart, onMouseover, onMouseout);
@@ -864,7 +863,7 @@ class AdminControlCharts implements IAdminControlCharts {
 
             //Position tooltip container
             _this.interactions.tooltip.positionTooltipContainer(chart, xTooltip(d.group, tooltipBox), yTooltip(d.q3, tooltipBox));
-            function xTooltip(x: string, tooltipBox: any) {
+            function xTooltip(x: string, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
                 //Position tooltip right of the box
                 let xTooltip = chart.x.scale(x) + chart.x.scale.bandwidth();
 
@@ -875,7 +874,7 @@ class AdminControlCharts implements IAdminControlCharts {
 
                 return xTooltip
             }
-            function yTooltip(y: number, tooltipBox: any) {
+            function yTooltip(y: number, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
                 //Position tooltip on top of the box
                 let yTooltip = chart.y.scale(y) - (tooltipBox.node().getBBox().height / 2);
 
@@ -897,9 +896,9 @@ class AdminControlCharts implements IAdminControlCharts {
 
         return chart;
     }
-    renderGroupStats(div: any, data: IAnalyticsChartsDataStats): any {
+    renderGroupStats(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsDataStats): d3.Selection<HTMLDivElement, unknown, HTMLElement, any> {
         div.select(".card-body").html("");
-        return div.select(".card-body")
+        return div.select<HTMLDivElement>(".card-body")
             .attr("class", "card-body statistics-text")
             .html(`<b>Q1: </b>${data.q1}<br>
                         <b>Median: </b>${data.median}<br>
@@ -929,7 +928,7 @@ class AdminControlCharts implements IAdminControlCharts {
         binContainer.exit().remove();
 
         //Update colours
-        binContainer.each((d: IAnalyticsChartsData, i: number, g: any) => {
+        binContainer.each((d, i, g) => {
             d3.select(g[i])
                 .selectAll("rect")
                 .style("stroke", d.colour)
@@ -940,10 +939,10 @@ class AdminControlCharts implements IAdminControlCharts {
         let binContainerEnter = binContainer.enter()
             .append("g")
             .attr("class", `${chart.id}-violin-container`)
-            .attr("transform", (d: IAnalyticsChartsData) => `translate(${chart.x.scale(d.group)}, 0)`);
+            .attr("transform", d => `translate(${chart.x.scale(d.group)}, 0)`);
 
         //Draw violins
-        binContainerEnter.each((d: IAnalyticsChartsData, i: number, g: any) => {
+        binContainerEnter.each((d, i, g) => {
             d3.select(g[i])
                 .selectAll(".violin-rect")
                 .data(chart.bin(d.value.map(d => d.point)))
@@ -951,10 +950,10 @@ class AdminControlCharts implements IAdminControlCharts {
                 .append("rect")
                 .attr("id", `${chart.id}-data`)
                 .attr("class", "violin-rect")
-                .attr("x", (c: any) => chart.bandwidth(-c.length))
-                .attr("y", (c: any) => chart.y.scale(c.x1))
-                .attr("height", (c: any) => chart.y.scale(c.x0) - chart.y.scale(c.x1))
-                .attr("width", (c: number[]) => chart.bandwidth(c.length) - chart.bandwidth(-c.length))
+                .attr("x", c => chart.bandwidth(-c.length))
+                .attr("y", c => chart.y.scale(c.x1))
+                .attr("height", c => chart.y.scale(c.x0) - chart.y.scale(c.x1))
+                .attr("width", c => chart.bandwidth(c.length) - chart.bandwidth(-c.length))
                 .style("stroke", d.colour)
                 .style("fill", d.colour);
         });
@@ -962,7 +961,7 @@ class AdminControlCharts implements IAdminControlCharts {
         //Transision bin containers
         binContainer.transition()
             .duration(750)
-            .attr("transform", (d: IAnalyticsChartsData) => `translate(${chart.x.scale(d.group)}, 0)`);
+            .attr("transform", d => `translate(${chart.x.scale(d.group)}, 0)`);
 
         //Merge existing with new bin containers
         binContainer.merge(binContainerEnter);
@@ -1019,8 +1018,8 @@ class AdminControlCharts implements IAdminControlCharts {
             .attr("id", `${chart.id}-timeline-contours`)
             .attr("class", "contour")
             .attr("d", d3.geoPath())
-            .attr("stroke", (d: d3.ContourMultiPolygon) => d3.interpolateRgb("#ffffff", data.colour)(d.value * 25))
-            .attr("fill", (d: d3.ContourMultiPolygon) => d3.interpolateRgb("#ffffff", data.colour)(d.value * 20));
+            .attr("stroke", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 25))
+            .attr("fill", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 20));
 
         //Enable zoom
         this.interactions.zoom.enableZoom(chart, zoomed);
@@ -1040,12 +1039,12 @@ class AdminControlCharts implements IAdminControlCharts {
                 .attr("id", `${chart.id}-timeline-contours`)
                 .attr("class", "contour")
                 .attr("d", d3.geoPath())
-                .attr("stroke", (d: d3.ContourMultiPolygon) => d3.interpolateRgb("#ffffff", data.colour)(d.value * 25))
-                .attr("fill", (d: d3.ContourMultiPolygon) => d3.interpolateRgb("#ffffff", data.colour)(d.value * 20));
+                .attr("stroke", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 25))
+                .attr("fill", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 20));
 
             zoomContours.attr("d", d3.geoPath())
-                .attr("stroke", (d: d3.ContourMultiPolygon) => d3.interpolateRgb("#ffffff", data.colour)(d.value * 25))
-                .attr("fill", (d: d3.ContourMultiPolygon) => d3.interpolateRgb("#ffffff", data.colour)(d.value * 20));
+                .attr("stroke", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 25))
+                .attr("fill", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 20));
 
             zoomContours.merge(zoomContoursEnter);
 
@@ -1074,8 +1073,8 @@ class AdminControlCharts implements IAdminControlCharts {
             .classed("line-circle", true)
             .attr("id", `${chart.id}-timeline-circles`)
             .attr("r", 5)
-            .attr("cx", (d: IReflectionAuthorEntry) => chart.x.scale(d.timestamp))
-            .attr("cy", (d: IReflectionAuthorEntry) => chart.y.scale(d.point))
+            .attr("cx", d => chart.x.scale(d.timestamp))
+            .attr("cy", d => chart.y.scale(d.point))
             .style("stroke", data.colour)
             .style("fill", data.colour);
 
@@ -1095,10 +1094,12 @@ class AdminControlCharts implements IAdminControlCharts {
                 return;
             }
             _this.interactions.tooltip.appendTooltipContainer(chart);
-            let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.timestamp.toDateString(), [new TooltipValues("User", d.pseudonym), new TooltipValues("State", d.point)]);
+            let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.timestamp.toDateString(), 
+                [new TooltipValues("User", d.pseudonym), 
+                 new TooltipValues("State", d.point)]);
             _this.interactions.tooltip.positionTooltipContainer(chart, xTooltip(d.timestamp, tooltipBox), yTooltip(d.point, tooltipBox));
 
-            function xTooltip(x: Date, tooltipBox: any) {
+            function xTooltip(x: Date, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
                 let xTooltip = chart.x.scale(x);
                 if (chart.width - chart.padding.yAxis < xTooltip + tooltipBox.node().getBBox().width) {
                     return xTooltip - tooltipBox.node().getBBox().width;
@@ -1106,7 +1107,7 @@ class AdminControlCharts implements IAdminControlCharts {
                 return xTooltip
             };
 
-            function yTooltip(y: number, tooltipBox: any) {
+            function yTooltip(y: number, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
                 var yTooltip = chart.y.scale(y) - tooltipBox.node().getBBox().height - 10;
                 if (yTooltip < 0) {
                     return yTooltip + tooltipBox.node().getBBox().height + 20;
@@ -1145,8 +1146,8 @@ class AdminControlCharts implements IAdminControlCharts {
             .classed("zoom-circle", true)
             .attr("id", `${chart.id}-zoom-bar-content`)
             .attr("r", 2)
-            .attr("cx", (d: IReflectionAuthorEntry) => zoomChart.x.scale(d.timestamp))
-            .attr("cy", (d: IReflectionAuthorEntry) => zoomChart.y.scale(d.point))
+            .attr("cx", d => zoomChart.x.scale(d.timestamp))
+            .attr("cy", d => zoomChart.y.scale(d.point))
             .style("stroke", data.colour)
             .style("fill", data.colour);
 
@@ -1162,8 +1163,8 @@ class AdminControlCharts implements IAdminControlCharts {
             .classed("zoom-content", true)
             .attr("id", `${chart.id}-zoom-content`)
             .attr("r", 2)
-            .attr("cx", (d: IReflectionAuthorEntry) => zoomChart.x.scale(d.timestamp))
-            .attr("cy", (d: IReflectionAuthorEntry) => zoomChart.y.scale(d.point));
+            .attr("cx", d => zoomChart.x.scale(d.timestamp))
+            .attr("cy", d => zoomChart.y.scale(d.point));
         zoomCircleContent.merge(zoomCircleContentEnter);
 
         //Enable zoom
@@ -1176,17 +1177,17 @@ class AdminControlCharts implements IAdminControlCharts {
                 .x(d => chart.x.scale(d.timestamp))
                 .y(d => chart.y.scale(d.point));
 
-            chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles`)
-                .attr("cx", (d: IReflectionAuthorEntry) => chart.x.scale(d.timestamp));
+            chart.elements.contentContainer.selectAll<SVGCircleElement, IReflectionAuthorEntry>(`#${chart.id}-timeline-circles`)
+                .attr("cx", d => chart.x.scale(d.timestamp));
 
-            chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`)
-                .attr("d", (d: IReflectionAuthorEntry[]) => newLine(d));
+            chart.elements.contentContainer.selectAll<SVGLineElement, IReflectionAuthorEntry[]>(`#${chart.id}-timeline-circles-line`)
+                .attr("d", d => newLine(d));
 
-            chart.elements.contentContainer.selectAll(".click-container")
-                .attr("transform", (d: IReflectionAuthorEntry) => `translate(${chart.x.scale(d.timestamp)}, ${chart.y.scale(d.point)})`)
+            chart.elements.contentContainer.selectAll<SVGRectElement, IReflectionAuthorEntry>(".click-container")
+                .attr("transform", d => `translate(${chart.x.scale(d.timestamp)}, ${chart.y.scale(d.point)})`)
 
-            chart.elements.zoomFocus.selectAll(".zoom-content")
-                .attr("cx", (d: IReflectionAuthorEntry) => zoomChart.x.scale(d.timestamp));
+            chart.elements.zoomFocus.selectAll<SVGCircleElement, IReflectionAuthorEntry>(".zoom-content")
+                .attr("cx", d => zoomChart.x.scale(d.timestamp));
 
             chart.x.axis.ticks(newChartRange[1] / 75);
             chart.elements.xAxis.call(chart.x.axis);
@@ -1212,7 +1213,7 @@ class AdminControlCharts implements IAdminControlCharts {
             }
         });
     };
-    renderUserStatistics(card: any, data: IAnalyticsChartsData, pseudonym?: string): void {
+    renderUserStatistics(card: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsData, pseudonym?: string): void {
         let userData = data.getUsersData();
         let groupMean = Math.round(d3.mean(data.value.map(d => d.point)));
         let cardRow = card.select(".card-body")
@@ -1226,10 +1227,10 @@ class AdminControlCharts implements IAdminControlCharts {
             .data(userData.value)
             .enter()
             .append("a")
-            .attr("class", (d: IReflectionAuthorEntry, i: number) => `list-group-item list-group-item-action ${pseudonym == undefined ? i == 0 ? "active" : "" : d.pseudonym == pseudonym ? "active" : ""}`)
+            .attr("class", (d, i) => `list-group-item list-group-item-action ${pseudonym == undefined ? i == 0 ? "active" : "" : d.pseudonym == pseudonym ? "active" : ""}`)
             .attr("data-toggle", "list")
-            .attr("href", (d: IReflectionAuthorEntry) => `#${userData.group}-${d.pseudonym}`)
-            .html((d: IReflectionAuthorEntry) => d.pseudonym);
+            .attr("href", d => `#${userData.group}-${d.pseudonym}`)
+            .html(d => d.pseudonym);
 
         let tabPane = cardRow.append("div")
             .attr("class", "col-md-9")
@@ -1239,38 +1240,38 @@ class AdminControlCharts implements IAdminControlCharts {
             .data(userData.value)
             .enter()
             .append("div")
-            .attr("class", (d: IReflectionAuthorEntry, i: number) => `tab-pane fade ${pseudonym == undefined ? i == 0 ? "show active" : "" : d.pseudonym == pseudonym ? "show active" : ""}`)
-            .attr("id", (d: IReflectionAuthorEntry) => `${userData.group}-${d.pseudonym}`)
-            .html((d: IReflectionAuthorEntry) => `<div class="row">
-                                                <div class="col-md-4 statistics-text">
-                                                    <b>Mean: </b>${d.point} (<span class="${(d.point - groupMean) < 0 ? "negative" : "positive"}">${(d.point - groupMean) < 0 ? "" : "+"}${d.point - groupMean}</span> compared to the group mean)<br>
-                                                    <b>Min: </b>${d3.min(d3.filter(data.value, x => x.pseudonym == d.pseudonym).map(r => r.point))}<br>
-                                                    <b>Min date: </b>${((d3.sort(d3.filter(data.value, x => x.pseudonym == d.pseudonym), (r: IReflectionAuthorEntry) => r.point)[0]).timestamp).toDateString()}<br>
-                                                    <b>Max: </b>${d3.max(d3.filter(data.value, x => x.pseudonym == d.pseudonym).map(r => r.point))}<br>
-                                                    <b>Max date: </b>${((d3.sort(d3.filter(data.value, x => x.pseudonym == d.pseudonym), (r: IReflectionAuthorEntry) => r.point)[d3.filter(data.value, x => x.pseudonym == d.pseudonym).length - 1]).timestamp).toDateString()}<br>
-                                                    <b>Total: </b>${d3.filter(data.value, x => x.pseudonym == d.pseudonym).length}<br>
-                                                    <b>Std Deviation: </b>${new AnalyticsChartsDataStats(data).roundDecimal(d3.deviation(d3.filter(data.value, x => x.pseudonym == d.pseudonym).map(r => r.point)))}<br>
-                                                    <b>Variance: </b>${new AnalyticsChartsDataStats(data).roundDecimal(d3.variance(d3.filter(data.value, x => x.pseudonym == d.pseudonym).map(r => r.point)))}<br>
-                                                    <b>Oldest reflection: </b>${(d3.min(d3.filter(data.value, x => x.pseudonym == d.pseudonym).map(r => r.timestamp))).toDateString()}<br>
-                                                    <b>Newest reflection: </b>${(d3.max(d3.filter(data.value, x => x.pseudonym == d.pseudonym).map(r => r.timestamp))).toDateString()}<br>
-                                                </div>
-                                            </div>`);
+            .attr("class", (d, i) => `tab-pane fade ${pseudonym == undefined ? i == 0 ? "show active" : "" : d.pseudonym == pseudonym ? "show active" : ""}`)
+            .attr("id", d => `${userData.group}-${d.pseudonym}`)
+            .html(d => `<div class="row">
+                            <div class="col-md-4 statistics-text">
+                                <b>Mean: </b>${d.point} (<span class="${(d.point - groupMean) < 0 ? "negative" : "positive"}">${(d.point - groupMean) < 0 ? "" : "+"}${d.point - groupMean}</span> compared to the group mean)<br>
+                                <b>Min: </b>${d3.min(d3.filter(data.value, x => x.pseudonym == d.pseudonym).map(r => r.point))}<br>
+                                <b>Min date: </b>${((d3.sort(d3.filter(data.value, x => x.pseudonym == d.pseudonym), (r: IReflectionAuthorEntry) => r.point)[0]).timestamp).toDateString()}<br>
+                                <b>Max: </b>${d3.max(d3.filter(data.value, x => x.pseudonym == d.pseudonym).map(r => r.point))}<br>
+                                <b>Max date: </b>${((d3.sort(d3.filter(data.value, x => x.pseudonym == d.pseudonym), (r: IReflectionAuthorEntry) => r.point)[d3.filter(data.value, x => x.pseudonym == d.pseudonym).length - 1]).timestamp).toDateString()}<br>
+                                <b>Total: </b>${d3.filter(data.value, x => x.pseudonym == d.pseudonym).length}<br>
+                                <b>Std Deviation: </b>${new AnalyticsChartsDataStats(data).roundDecimal(d3.deviation(d3.filter(data.value, x => x.pseudonym == d.pseudonym).map(r => r.point)))}<br>
+                                <b>Variance: </b>${new AnalyticsChartsDataStats(data).roundDecimal(d3.variance(d3.filter(data.value, x => x.pseudonym == d.pseudonym).map(r => r.point)))}<br>
+                                <b>Oldest reflection: </b>${(d3.min(d3.filter(data.value, x => x.pseudonym == d.pseudonym).map(r => r.timestamp))).toDateString()}<br>
+                                <b>Newest reflection: </b>${(d3.max(d3.filter(data.value, x => x.pseudonym == d.pseudonym).map(r => r.timestamp))).toDateString()}<br>
+                            </div>
+                        </div>`);
         tabPane.select(".row").append("div")
             .attr("class", "col-md-8")
             .selectAll("p")
-            .data((d: IReflectionAuthorEntry) => d3.sort(d3.filter(data.value, x => x.pseudonym == d.pseudonym), r => r.timestamp))
+            .data(d => d3.sort(d3.filter(data.value, x => x.pseudonym == d.pseudonym), r => r.timestamp))
             .enter()
             .append("p")
-            .html((d: IReflectionAuthorEntry) => `<b>${d.timestamp.toDateString()} - State: ${d.point}</b><br>${d.text}`);
+            .html(d => `<b>${d.timestamp.toDateString()} - State: ${d.point}</b><br>${d.text}`);
         cardRow.select(".scroll-list")
-            .style("height", `${cardRow.select(".tab-pane.fade.show.active").node().getBoundingClientRect().height}px`);
+            .style("height", `${cardRow.select<HTMLElement>(".tab-pane.fade.show.active").node().getBoundingClientRect().height}px`);
         cardRow.selectAll("a")
             .on("click", function () {
                 setTimeout(() => {
                     cardRow.select(".scroll-list")
                     .transition()
                     .duration(750)
-                    .style("height", `${cardRow.select(".tab-pane.fade.show.active").node().getBoundingClientRect().height}px`)
+                    .style("height", `${cardRow.select<HTMLElement>(".tab-pane.fade.show.active").node().getBoundingClientRect().height}px`)
                 }, 250);
             });
     };
@@ -1289,13 +1290,13 @@ interface IAdminControlTransitions {
 class AdminControlTransitions implements IAdminControlTransitions {
     axisSeries(chart: ChartSeries, data: IAnalyticsChartsData[]): void {
         chart.x.scale.domain(data.map(d => d.group));
-        d3.select<SVGAElement, unknown>(`#${chart.id} .x-axis`).transition()
+        d3.select<SVGGElement, unknown>(`#${chart.id} .x-axis`).transition()
             .duration(750)
             .call(chart.x.axis);
     };
     axisTime(chart: ChartTime, data: IAnalyticsChartsData): void {
         chart.x.scale.domain(d3.extent(data.value.map(d => d.timestamp)));
-        d3.select<SVGAElement, unknown>(`#${chart.id} .x-axis`).transition()
+        d3.select<SVGGElement, unknown>(`#${chart.id} .x-axis`).transition()
             .duration(750)
             .call(chart.x.axis);
     };
@@ -1304,28 +1305,28 @@ class AdminControlTransitions implements IAdminControlTransitions {
             .data(data)
             .transition()
             .duration(750)
-            .attr("width", (d: IAnalyticsChartsDataStats) => chart.x.scale.bandwidth())
-            .attr("height", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.q1) - chart.y.scale(d.q3))
-            .attr("y", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.q3))
-            .attr("x", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group));
+            .attr("width", chart.x.scale.bandwidth())
+            .attr("height", d => chart.y.scale(d.q1) - chart.y.scale(d.q3))
+            .attr("y", d => chart.y.scale(d.q3))
+            .attr("x", d => chart.x.scale(d.group));
 
         d3.selectAll(`#${chart.id} #${chart.id}-data-min-max`)
             .data(data)
             .transition()
             .duration(750)
-            .attr("x1", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
-            .attr("y1", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.min))
-            .attr("x2", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
-            .attr("y2", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.max));
+            .attr("x1", d => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
+            .attr("y1", d => chart.y.scale(d.min))
+            .attr("x2", d => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
+            .attr("y2", d => chart.y.scale(d.max));
 
         d3.selectAll(`#${chart.id} #${chart.id}-data-median`)
             .data(data)
             .transition()
             .duration(750)
-            .attr("x1", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group))
-            .attr("y1", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.median))
-            .attr("x2", (d: IAnalyticsChartsDataStats) => chart.x.scale(d.group) + chart.x.scale.bandwidth())
-            .attr("y2", (d: IAnalyticsChartsDataStats) => chart.y.scale(d.median));
+            .attr("x1", d => chart.x.scale(d.group))
+            .attr("y1", d => chart.y.scale(d.median))
+            .attr("x2", d => chart.x.scale(d.group) + chart.x.scale.bandwidth())
+            .attr("y2", d => chart.y.scale(d.median));
     };
     circles(chart: ChartTime, data: IAnalyticsChartsData): void {
         chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles`)
@@ -1333,8 +1334,8 @@ class AdminControlTransitions implements IAdminControlTransitions {
             .transition()
             .duration(750)
             .attr("r", 5)
-            .attr("cx", (d: IReflectionAuthorEntry) => chart.x.scale(d.timestamp))
-            .attr("cy", (d: IReflectionAuthorEntry) => chart.y.scale(d.point));
+            .attr("cx", d => chart.x.scale(d.timestamp))
+            .attr("cy", d => chart.y.scale(d.point));
     };
     circlesZoom(chart: ChartTime, chartZoom: ChartTimeZoom, data: IAnalyticsChartsData): void {
         chart.elements.zoomSVG.selectAll(`#${chart.id}-zoom-bar-content`)
@@ -1342,8 +1343,8 @@ class AdminControlTransitions implements IAdminControlTransitions {
             .transition()
             .duration(750)
             .attr("r", 2)
-            .attr("cx", (d: IReflectionAuthorEntry) => chartZoom.x.scale(d.timestamp))
-            .attr("cy", (d: IReflectionAuthorEntry) => chartZoom.y.scale(d.point));
+            .attr("cx", d => chartZoom.x.scale(d.timestamp))
+            .attr("cy", d => chartZoom.y.scale(d.point));
     };
     violin(chart: ViolinChartSeries): void {
         //Draw violins
@@ -1351,10 +1352,10 @@ class AdminControlTransitions implements IAdminControlTransitions {
             .data((d: IAnalyticsChartsData) => chart.bin(d.value.map(d => d.point)))
             .transition()
             .duration(750)
-            .attr("x", (d: any) => chart.bandwidth(-d.length))
-            .attr("y", (d: any) => chart.y.scale(d.x1))
-            .attr("height", (d: any) => chart.y.scale(d.x0) - chart.y.scale(d.x1))
-            .attr("width", (d: number[]) => chart.bandwidth(d.length) - chart.bandwidth(-d.length))
+            .attr("x", d => chart.bandwidth(-d.length))
+            .attr("y", d => chart.y.scale(d.x1))
+            .attr("height", d => chart.y.scale(d.x0) - chart.y.scale(d.x1))
+            .attr("width", d => chart.bandwidth(d.length) - chart.bandwidth(-d.length))
 
         //Draw threshold percentages
         chart.elements.appendThresholdPercentages(chart);
@@ -1365,8 +1366,8 @@ class AdminControlTransitions implements IAdminControlTransitions {
             .transition()
             .duration(750)
             .attr("d", d3.geoPath())
-            .attr("stroke", (d: d3.ContourMultiPolygon) => d3.interpolateBlues(d.value * 25))
-            .attr("fill", (d: d3.ContourMultiPolygon) => d3.interpolateBlues(d.value * 20));
+            .attr("stroke", d => d3.interpolateBlues(d.value * 25))
+            .attr("fill", d => d3.interpolateBlues(d.value * 20));
     };
 }
 
@@ -1401,7 +1402,7 @@ interface ITooltip {
     enableTooltip(chart: IChart, onMouseover: any, onMouseout: any): void;
     removeTooltip(chart: IChart): void
     appendTooltipContainer(chart: IChart): void;
-    appendTooltipText(chart: IChart, title: string, values: ITooltipValues[]): void;
+    appendTooltipText(chart: IChart, title: string, values: ITooltipValues[]): d3.Selection<SVGRectElement, unknown, HTMLElement, any>;
     positionTooltipContainer(chart: IChart, x: number, y: number): void;
     appendLine(chart: IChart, x1: number, y1: number, x2: number, y2: number, colour: string): void;
 }
@@ -1410,7 +1411,7 @@ interface ITooltip {
 class Tooltip implements ITooltip {
     enableTooltip(chart: IChart, onMouseover: any, onMouseout: any): void {
         chart.elements.content.on("mouseover", onMouseover)
-            .on("mouseout", onMouseout);
+        chart.elements.content.on("mouseout", onMouseout);
     };
     removeTooltip(chart: IChart): void {
         chart.elements.contentContainer.selectAll(".tooltip-container").remove();
@@ -1420,7 +1421,7 @@ class Tooltip implements ITooltip {
         chart.elements.contentContainer.append("g")
             .attr("class", "tooltip-container");
     };
-    appendTooltipText(chart: IChart, title: string, values: ITooltipValues[] = null): void {
+    appendTooltipText(chart: IChart, title: string, values: ITooltipValues[] = null): d3.Selection<SVGRectElement, unknown, HTMLElement, any> {
         let result = chart.elements.contentContainer.select<SVGRectElement>(".tooltip-container").append("rect")
             .attr("class", "tooltip-box");
         let text = chart.elements.contentContainer.select(".tooltip-container").append("text")
@@ -1438,7 +1439,7 @@ class Tooltip implements ITooltip {
                     .text(`${c.label}: ${c.value}`);
             });
         }
-        chart.elements.contentContainer.select(".tooltip-box").attr("width", text.node().getBBox().width + 20)
+        return result.attr("width", text.node().getBBox().width + 20)
             .attr("height", text.node().getBBox().height + 5);
     };
     positionTooltipContainer(chart: IChart, x: number, y: number): void {
@@ -1461,7 +1462,7 @@ class Tooltip implements ITooltip {
 // Interface for zoom interaction
 interface IZoom {
     enableZoom(chart: ChartTime, zoomed: any): void;
-    appendZoomBar(chart: ChartTime): any;
+    appendZoomBar(chart: ChartTime): d3.Selection<SVGGElement, unknown, HTMLElement, any>;
 }
 
 // Class for zoom interaction
@@ -1478,7 +1479,7 @@ class Zoom implements IZoom {
 
         chart.elements.contentContainer.select(".zoom-rect").call(zoom);
     };
-    appendZoomBar(chart: ChartTime): any {
+    appendZoomBar(chart: ChartTime): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
         return chart.elements.svg.append("g")
             .attr("class", "zoom-container")
             .attr("height", 30)
@@ -1506,7 +1507,7 @@ interface IAdminExperimentalCharts extends IAdminControlCharts {
     handleGroupsColours(chart: ChartSeries): void;
     handleGroupsSort(boxPlot: ChartSeries): void;
     getGroupCompareData(data: IAnalyticsChartsData[], id: string): IAnalyticsChartsData[];
-    renderGroupCompare(data: IAnalyticsChartsData[], id: string): any;
+    renderGroupCompare(data: IAnalyticsChartsData[], id: string): d3.Selection<HTMLDivElement, unknown, d3.BaseType, any>;
     handleGroupCompare(data: IAnalyticsChartsData[], compareData: IAnalyticsChartsData[]): void;
 }
 
@@ -1778,10 +1779,11 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         }
         return chart;
     };
-    renderGroupStats(div: any, data: IAnalyticsChartsDataStats) {
+    renderGroupStats(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsDataStats): d3.Selection<HTMLDivElement, unknown, HTMLElement, any> {
         super.renderGroupStats(div, data);
         let height = d3.select<HTMLDivElement, unknown>("#groups-chart .card").node().getBoundingClientRect().height;
         div.style("height", `${height}px`);
+        return div;
     }
     renderViolin(chart: ViolinChartSeries, data: IAnalyticsChartsData[]): ViolinChartSeries {
         let _this = this;
@@ -1819,7 +1821,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 .attr("y2", chart.y.scale(chart.y.scale.invert(e.y)));
             tSoaring = chart.y.scale.invert(e.y);
             chart.thresholdAxis.tickValues([tDistressed, chart.y.scale.invert(e.y)])
-                .tickFormat((d: number) => d == tDistressed ? "Distressed" : d == chart.y.scale.invert(e.y) ? "Soaring" : "");
+                .tickFormat(d => d == tDistressed ? "Distressed" : d == chart.y.scale.invert(e.y) ? "Soaring" : "");
             chart.elements.contentContainer.selectAll<SVGGElement, unknown>(".threshold-axis")
                 .call(chart.thresholdAxis);
             let positionX = chart.width - chart.padding.yAxis - chart.padding.right + 5;
@@ -1863,7 +1865,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
 
             tDistressed = chart.y.scale.invert(e.y);
             chart.thresholdAxis.tickValues([chart.y.scale.invert(e.y), tSoaring])
-                .tickFormat((d: number) => d == chart.y.scale.invert(e.y) ? "Distressed" : d == tSoaring ? "Soaring" : "");
+                .tickFormat(d => d == chart.y.scale.invert(e.y) ? "Distressed" : d == tSoaring ? "Soaring" : "");
 
             chart.elements.contentContainer.selectAll<SVGGElement, unknown>(".threshold-axis")
                 .call(chart.thresholdAxis);
@@ -1930,10 +1932,10 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 .y(d => chart.y.scale(d.point));
 
             chart.elements.contentContainer.append("path")
-                .datum(d3.sort(userData, (d: IReflectionAuthorEntry) => d.timestamp))
+                .datum(d3.sort(userData, d => d.timestamp))
                 .classed("line", true)
                 .attr("id", `${chart.id}-timeline-circles-line`)
-                .attr("d", (d: IReflectionAuthorEntry[]) => line(d))
+                .attr("d", d => line(d))
                 .style("stroke", data.colour);
 
             //Draw click containers
@@ -1964,7 +1966,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         });
         return this.allEntries.filter(d => compareData.map(x => x.group).includes(d.group) || d.group == currentGroupId);
     }
-    renderGroupCompare(): any {
+    renderGroupCompare(): d3.Selection<HTMLDivElement, unknown, d3.BaseType, any> {
         let currentGroupId = d3.select("#groups-statistics .card").attr("id");
         let compareData = this.allEntries.filter(d => d.selected && d.group != currentGroupId);
         let selectedGroupCompare = this.getGroupCompareData();
@@ -2008,10 +2010,10 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                     .y(d => _this.timeline.y.scale(d.point));
 
                 _this.timeline.elements.contentContainer.append("path")
-                    .datum(d3.sort(userData, (d: IReflectionAuthorEntry) => d.timestamp))
+                    .datum(d3.sort(userData, d => d.timestamp))
                     .classed("line", true)
                     .attr("id", `${_this.timeline.id}-timeline-circles-line`)
-                    .attr("d", (d: IReflectionAuthorEntry[]) => line(d))
+                    .attr("d", d => line(d))
                     .style("stroke", data.colour);
                 userData.forEach(c => _this.interactions.click.appendScatterText(_this.timeline, c, c.point.toString()));
                 card.select(".card-header")
@@ -2114,18 +2116,18 @@ class Click implements IClick {
             .attr("transform", c => `translate(${chart.x.scale(c.group) + chart.x.scale.bandwidth() / 2}, 0)`);
         clickContainer.merge(clicontainerEnter);
 
-        chart.elements.contentContainer.selectAll(".click-container").append("text")
-            .attr("class", (c: IAnalyticsChartsDataStats) => this.comparativeText(clickData.q3, c.q3, clickData.group, c.group)[0])
-            .attr("y", (c: IAnalyticsChartsDataStats) => chart.y.scale(c.q3) - 5)
-            .text((c: IAnalyticsChartsDataStats) => `q3: ${this.comparativeText(clickData.q3, c.q3, clickData.group, c.group)[1]}`);
-        chart.elements.contentContainer.selectAll(".click-container").append("text")
-            .attr("class", (c: IAnalyticsChartsDataStats) => this.comparativeText(clickData.median, c.median, clickData.group, c.group)[0])
-            .attr("y", (c: IAnalyticsChartsDataStats) => chart.y.scale(c.median) - 5)
-            .text((c: IAnalyticsChartsDataStats) => `Median: ${this.comparativeText(clickData.median, c.median, clickData.group, c.group)[1]}`);
-        chart.elements.contentContainer.selectAll(".click-container").append("text")
-            .attr("class", (c: IAnalyticsChartsDataStats) => this.comparativeText(clickData.q1, c.q1, clickData.group, c.group)[0])
-            .attr("y", (c: IAnalyticsChartsDataStats) => chart.y.scale(c.q1) - 5)
-            .text((c: IAnalyticsChartsDataStats) => `q1: ${this.comparativeText(clickData.q1, c.q1, clickData.group, c.group)[1]}`);
+        chart.elements.contentContainer.selectAll<SVGGElement, IAnalyticsChartsDataStats>(".click-container").append("text")
+            .attr("class", c => this.comparativeText(clickData.q3, c.q3, clickData.group, c.group)[0])
+            .attr("y", c => chart.y.scale(c.q3) - 5)
+            .text(c => `q3: ${this.comparativeText(clickData.q3, c.q3, clickData.group, c.group)[1]}`);
+        chart.elements.contentContainer.selectAll<SVGGElement, IAnalyticsChartsDataStats>(".click-container").append("text")
+            .attr("class", c => this.comparativeText(clickData.median, c.median, clickData.group, c.group)[0])
+            .attr("y", c => chart.y.scale(c.median) - 5)
+            .text(c => `Median: ${this.comparativeText(clickData.median, c.median, clickData.group, c.group)[1]}`);
+        chart.elements.contentContainer.selectAll<SVGGElement, IAnalyticsChartsDataStats>(".click-container").append("text")
+            .attr("class", c => this.comparativeText(clickData.q1, c.q1, clickData.group, c.group)[0])
+            .attr("y", c => chart.y.scale(c.q1) - 5)
+            .text(c => `q1: ${this.comparativeText(clickData.q1, c.q1, clickData.group, c.group)[1]}`);
     };
     comparativeText(clickValue: number, value: number, clickXValue: string | Date, xValue: string | Date): string[] {
         let textClass = "click-text";
@@ -2216,7 +2218,7 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
             .enter()
             .append("div")
             .attr("class", "card");
-        cardGroupStats.each((d: IAnalyticsChartsDataStats, i: number, g: any) => {
+        cardGroupStats.each((d, i, g) => {
             d3.select(g[i])
                 .append("div")
                 .attr("class", "card-header")
@@ -2277,20 +2279,20 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
             .append("li")
             .attr("class", "nav-item")
             .append("a")
-            .attr("class", (d: IAnalyticsChartsDataStats, i: number) => `nav-link ${i == 0 ? "active" : ""}`)
-            .attr("href", (d: IAnalyticsChartsDataStats) => `#timeline-${d.group}`)
-            .html((d: IAnalyticsChartsDataStats) => d.group);
+            .attr("class", (d, i) => `nav-link ${i == 0 ? "active" : ""}`)
+            .attr("href", d => `#timeline-${d.group}`)
+            .html(d => d.group);
         timelineCard.select(".card-body")
             .append("div")
             .attr("class", "row mt-3")
-            .html((d: IAnalyticsChartsDataStats) => `<div id="timeline-plot" class="btn-group btn-group-toggle mr-auto ml-auto" data-toggle="buttons">
-                                                        <label class="btn btn-light active">
-                                                            <input type="radio" name="plot" value="density" checked>Density Plot<br>
-                                                        </label>
-                                                        <label class="btn btn-light">
-                                                            <input type="radio" name="plot" value="scatter">Scatter Plot<br>
-                                                        </label>
-                                                    </div>`)
+            .html(() => `<div id="timeline-plot" class="btn-group btn-group-toggle mr-auto ml-auto" data-toggle="buttons">
+                            <label class="btn btn-light active">
+                                <input type="radio" name="plot" value="density" checked>Density Plot<br>
+                            </label>
+                            <label class="btn btn-light">
+                                <input type="radio" name="plot" value="scatter">Scatter Plot<br>
+                            </label>
+                        </div>`)
         timelineCard.append("div")
             .attr("class", "chart-container");
 
@@ -2347,7 +2349,7 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
             .enter()
             .append("div")
             .attr("class", "card");
-        usersCards.each((d: IAnalyticsChartsData, i: number, g: any) => {
+        usersCards.each((d, i, g) => {
             d3.select(g[i])
                 .append("div")
                 .attr("class", "card-header")
@@ -2372,7 +2374,7 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
                     usersCards.select(`${buttonId} .scroll-list`)
                     .transition()
                     .duration(750)
-                    .style("height", `${usersCards.select(`${buttonId} .tab-pane.fade.show.active`).node().getBoundingClientRect().height}px`)
+                    .style("height", `${usersCards.select<HTMLElement>(`${buttonId} .tab-pane.fade.show.active`).node().getBoundingClientRect().height}px`)
                 }, 250);
             });
         adminControlCharts.htmlContainers.renderNavbarScrollspy();
