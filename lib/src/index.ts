@@ -342,8 +342,7 @@ class ChartElements implements IChartElements {
         this.appendYAxisLabel(chart);
     }
     private appendSVG(chart: IChart): d3.Selection<SVGSVGElement, unknown, HTMLElement, any> {
-        let svg = d3.select(`#${chart.id}`)
-            .select(".chart-container")
+        let svg = d3.select(`#${chart.id} .chart-container`)
             .append("svg")
             .attr("id", `chart-${chart.id}`)
             .attr("preserveAspectRatio", "xMinYMin meet")
@@ -825,7 +824,7 @@ class AdminControlCharts implements IAdminControlCharts {
         let boxesEnter = boxes.enter()
             .append("rect")
             .attr("id", `${chart.id}-data`)
-            .classed("bar", true)
+            .attr("class", "bar")
             .attr("y", d => chart.y.scale(d.q3))
             .attr("x", d => chart.x.scale(d.group))
             .attr("width", chart.x.scale.bandwidth())
@@ -1070,7 +1069,7 @@ class AdminControlCharts implements IAdminControlCharts {
         //Append new circles
         let circlesEnter = circles.enter()
             .append("circle")
-            .classed("line-circle", true)
+            .attr("class", "line-circle")
             .attr("id", `${chart.id}-timeline-circles`)
             .attr("r", 5)
             .attr("cx", d => chart.x.scale(d.timestamp))
@@ -1143,7 +1142,7 @@ class AdminControlCharts implements IAdminControlCharts {
         //Append new zoom circles
         let zoomCircleEnter = zoomCircle.enter()
             .append("circle")
-            .classed("zoom-circle", true)
+            .attr("class", "zoom-circle")
             .attr("id", `${chart.id}-zoom-bar-content`)
             .attr("r", 2)
             .attr("cx", d => zoomChart.x.scale(d.timestamp))
@@ -1160,7 +1159,7 @@ class AdminControlCharts implements IAdminControlCharts {
         zoomCircleContent.exit().remove();
         let zoomCircleContentEnter = zoomCircleContent.enter()
             .append("circle")
-            .classed("zoom-content", true)
+            .attr("class", "zoom-content")
             .attr("id", `${chart.id}-zoom-content`)
             .attr("r", 2)
             .attr("cx", d => zoomChart.x.scale(d.timestamp))
@@ -1794,6 +1793,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
 
         //Add drag functions to the distressed threshold
         chart.elements.contentContainer.select(".threshold-line.distressed")
+            .classed("grab", true)
             .call(d3.drag()
                 .on("start", dragStartDistressed)
                 .on("drag", draggingDistressed)
@@ -1801,6 +1801,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
 
         //Add drag functions to the soaring threshold
         chart.elements.contentContainer.select(".threshold-line.soaring")
+            .classed("grab", true)
             .call(d3.drag()
                 .on("start", dragStartSoaring)
                 .on("drag", draggingSoaring)
@@ -1809,7 +1810,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         //Start drag soaring functions           
         function dragStartSoaring(e: Event, d: IAnalyticsChartsData) {
             chart.elements.contentContainer.selectAll(`.${chart.id}-violin-text-container`).remove();
-            d3.select(this).attr("class", d3.select(this).attr("class") + " grabbing");
+            d3.select(this).classed("grabbing", true);
             _this.htmlContainers.removeHelp(chart);
         }
         function draggingSoaring(e: MouseEvent, d: IAnalyticsChartsData) {
@@ -1845,14 +1846,14 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             }
             chart.setBin();
             _this.interactions.violin(chart);
-            d3.select(this).attr("class", d3.select(this).attr("class").replace(" grabbing", ""));
+            d3.select(this).classed("grabbing", false);
             _this.handleViolinHover(chart);
         }
 
         //Start drag distressed functions
         function dragStartDistressed(e: Event, d: IAnalyticsChartsData) {
             chart.elements.contentContainer.selectAll(`.${chart.id}-violin-text-container`).remove();
-            d3.select(this).attr("class", d3.select(this).attr("class") + " grabbing");
+            d3.select(this).classed("grabbing", true);
             _this.htmlContainers.removeHelp(chart);
         }
         function draggingDistressed(e: MouseEvent, d: IAnalyticsChartsData) {
@@ -1892,7 +1893,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             }
             chart.setBin();
             _this.interactions.violin(chart);
-            d3.select(this).attr("class", d3.select(this).attr("class").replace(" grabbing", ""));
+            d3.select(this).classed("grabbing", false);
             _this.handleViolinHover(chart);
         }
         return chart;
@@ -1933,7 +1934,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
 
             chart.elements.contentContainer.append("path")
                 .datum(d3.sort(userData, d => d.timestamp))
-                .classed("line", true)
+                .attr("class", "line")
                 .attr("id", `${chart.id}-timeline-circles-line`)
                 .attr("d", d => line(d))
                 .style("stroke", data.colour);
@@ -2011,7 +2012,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
 
                 _this.timeline.elements.contentContainer.append("path")
                     .datum(d3.sort(userData, d => d.timestamp))
-                    .classed("line", true)
+                    .attr("class", "line")
                     .attr("id", `${_this.timeline.id}-timeline-circles-line`)
                     .attr("d", d => line(d))
                     .style("stroke", data.colour);

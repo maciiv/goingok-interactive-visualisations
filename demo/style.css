@@ -191,6 +191,9 @@
 
 .threshold-line {
     stroke-width: 5;
+}
+
+.threshold-line.grab {
     cursor: grab;
 }
 
