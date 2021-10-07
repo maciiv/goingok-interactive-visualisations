@@ -767,77 +767,98 @@ class AdminControlCharts implements IAdminControlCharts {
         return allEntries;
     };
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries {
-        //Select existing minMax lines
-        let minMax = chart.elements.contentContainer.selectAll(`#${chart.id}-data-min-max`)
+        //MinMax lines processing
+        chart.elements.contentContainer.selectAll<SVGLineElement, IAnalyticsChartsDataStats>(`#${chart.id}-data-min-max`)
             .data(data)
-            .style("stroke", d => d.colour);
+            .join(
+                enter => enter.append("line")
+                            .attr("id", `${chart.id}-data-min-max`)
+                            .attr("class", "box-line")
+                            .attr("x1", d => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
+                            .attr("x2", d => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
+                            .attr("y1", d => chart.y.scale(d.min))
+                            .attr("y2", d => chart.y.scale(d.max))
+                            .style("stroke", d => d.colour)
+                            .call(enter => enter.transition().duration(750)
+                                    .attr("y2", d => chart.y.scale(d.max))),
+                update => update.style("stroke", d => d.colour)
+                            .call(update => update.transition()
+                                .duration(750)
+                                .attr("x1", d => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
+                                .attr("x2", d => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
+                                .attr("y1", d => chart.y.scale(d.min))
+                                .attr("y2", d => chart.y.scale(d.max))),
+                exit => exit.style("stroke", "#b3b3b3")
+                            .call(exit => exit.transition()
+                                .duration(250)
+                                .attr("y2", d => chart.y.scale(d.min))
+                                .remove())
+            );
 
-        //Remove old minMax lines
-        minMax.exit().remove();
-
-        //Append new minMax lines
-        let minMaxEnter = minMax.enter()
-            .append("line")
-            .attr("id", `${chart.id}-data-min-max`)
-            .attr("class", "box-line")
-            .attr("x1", d => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
-            .attr("x2", d => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
-            .attr("y1", d => chart.y.scale(d.min))
-            .attr("y2", d => chart.y.scale(d.max))
-            .style("stroke", d => d.colour);
-
-        //Merge existing and new minMax lines
-        minMax.merge(minMaxEnter);
-
-        //Select existing median lines
-        let median = chart.elements.contentContainer.selectAll(`#${chart.id}-data-median`)
+        //Median lines processing
+        chart.elements.contentContainer.selectAll<SVGLineElement, IAnalyticsChartsDataStats>(`#${chart.id}-data-median`)
             .data(data)
-            .style("stroke", d => d.colour);
+            .join(
+                enter => enter.append("line")
+                            .attr("id", `${chart.id}-data-median`)
+                            .attr("class", "box-line")
+                            .attr("x1", d => chart.x.scale(d.group))
+                            .attr("x2", d => chart.x.scale(d.group))
+                            .attr("y1", d => chart.y.scale(d.median))
+                            .attr("y2", d => chart.y.scale(d.median))
+                            .style("stroke", d => d.colour)
+                            .call(enter => enter.transition()
+                                .duration(750)
+                                .attr("x2", d => chart.x.scale(d.group) + chart.x.scale.bandwidth())),
+                update => update.style("stroke", d => d.colour)
+                            .call(update => update.transition()
+                                .duration(750)
+                                .attr("x1", d => chart.x.scale(d.group))
+                                .attr("x2", d => chart.x.scale(d.group) + chart.x.scale.bandwidth())
+                                .attr("y1", d => chart.y.scale(d.median))
+                                .attr("y2", d => chart.y.scale(d.median))),
+                exit => exit.style("stroke", "#b3b3b3")
+                            .call(exit => exit.transition()
+                                .duration(250)
+                                .attr("x2", function(){ return parseInt(this.getAttribute("x1")) })
+                                .remove())
+            );
 
-        //Remove old median lines
-        median.exit().remove();
-
-        //Append new median lines
-        let medianEnter = median.enter()
-            .append("line")
-            .attr("id", `${chart.id}-data-median`)
-            .attr("class", "box-line")
-            .attr("x1", d => chart.x.scale(d.group))
-            .attr("x2", d => chart.x.scale(d.group) + chart.x.scale.bandwidth())
-            .attr("y1", d => chart.y.scale(d.median))
-            .attr("y2", d => chart.y.scale(d.median))
-            .style("stroke", d => d.colour);
-
-        //Merge existing and new median lines
-        median.merge(medianEnter);
-
-        //Select existing boxes
-        let boxes = chart.elements.contentContainer.selectAll(`#${chart.id}-data`)
+        //Boxes processing
+        chart.elements.contentContainer.selectAll<SVGRectElement, IAnalyticsChartsDataStats>(`#${chart.id}-data`)
             .data(data)
-            .style("stroke", d => d.colour)
-            .style("fill", d => d.colour);
+            .join(
+                enter => enter.append("rect")
+                            .attr("id", `${chart.id}-data`)
+                            .attr("class", "bar")
+                            .attr("y", d => chart.y.scale(d.q1))
+                            .attr("x", d => chart.x.scale(d.group))
+                            .attr("width", chart.x.scale.bandwidth())
+                            .attr("height", 0)
+                            .style("stroke", d => d.colour)
+                            .style("fill", d => d.colour)
+                            .call(update => update.transition()
+                                .duration(750)
+                                .attr("height", d => chart.y.scale(d.q1) - chart.y.scale(d.q3))
+                                .attr("y", d => chart.y.scale(d.q3))),
+                update => update.style("stroke", d => d.colour)
+                            .style("fill", d => d.colour)
+                            .call(update => update.transition()
+                                .duration(750)
+                                .attr("y", d => chart.y.scale(d.q3))
+                                .attr("x", d => chart.x.scale(d.group))
+                                .attr("width", chart.x.scale.bandwidth())
+                                .attr("height", d => chart.y.scale(d.q1) - chart.y.scale(d.q3))),
+                exit => exit.style("fill", "#cccccc")
+                            .style("stroke", "#b3b3b3")
+                            .call(exit => exit.transition()
+                                .duration(250)
+                                .attr("y", d => chart.y.scale(d.q1))
+                                .attr("height", 0)
+                                .remove())
+            );      
 
-        //Remove old boxes
-        boxes.exit().remove();
-
-        //Append new boxes
-        let boxesEnter = boxes.enter()
-            .append("rect")
-            .attr("id", `${chart.id}-data`)
-            .attr("class", "bar")
-            .attr("y", d => chart.y.scale(d.q3))
-            .attr("x", d => chart.x.scale(d.group))
-            .attr("width", chart.x.scale.bandwidth())
-            .attr("height", d => chart.y.scale(d.q1) - chart.y.scale(d.q3))
-            .style("stroke", d => d.colour)
-            .style("fill", d => d.colour);
-
-        //Merge existing and new boxes
-        boxes.merge(boxesEnter);
-
-        //Transition boxes and lines
         let _this = this;
-        _this.interactions.bars(chart, data);
 
         //Set render elements content to boxes
         chart.elements.content = chart.elements.contentContainer.selectAll(`#${chart.id}-data`) ;
@@ -920,11 +941,39 @@ class AdminControlCharts implements IAdminControlCharts {
         chart.setBin();
 
         //Select existing bin containers
-        let binContainer = chart.elements.contentContainer.selectAll(`.${chart.id}-violin-container`)
-            .data(data);
+        let binContainer = chart.elements.contentContainer.selectAll<SVGGElement, IAnalyticsChartsData>(`.${chart.id}-violin-container`)
+            .data(data)
+            .join(
+                enter => enter.append("g")
+                            .attr("class", `${chart.id}-violin-container`)
+                            .attr("transform", d => `translate(${chart.x.scale(d.group)}, 0)`)
+                            .call(enter => enter.selectAll(".violin-rect")
+                                .data(d => chart.bin(d.value.map(d => d.point)))
+                                .enter()
+                                .append("rect")
+                                .attr("id", `${chart.id}-data`)
+                                .attr("class", "violin-rect")
+                                .attr("x", c => chart.bandwidth(-c.length))
+                                .attr("y", c => chart.y.scale(c.x0))
+                                .attr("height", 0)
+                                .attr("width", c => chart.bandwidth(c.length) - chart.bandwidth(-c.length)))
+                            .style("stroke", d => d.colour)
+                            .style("fill", d => d.colour),
+            );
 
         //Remove old bin containers
-        binContainer.exit().remove();
+        binContainer.exit<IAnalyticsChartsData>() 
+            .each((d, i, g) => {
+                d3.select(g[i])
+                    .selectAll<SVGRectElement, d3.Bin<number, number>>(".violin-rect")
+                    .transition()
+                    .duration(250)
+                    .attr("y", c => chart.y.scale(c.x0))
+                    .attr("height", 0)
+            }) 
+            .transition()
+            .duration(250)   
+            .remove();     
 
         //Update colours
         binContainer.each((d, i, g) => {
@@ -950,8 +999,8 @@ class AdminControlCharts implements IAdminControlCharts {
                 .attr("id", `${chart.id}-data`)
                 .attr("class", "violin-rect")
                 .attr("x", c => chart.bandwidth(-c.length))
-                .attr("y", c => chart.y.scale(c.x1))
-                .attr("height", c => chart.y.scale(c.x0) - chart.y.scale(c.x1))
+                .attr("y", c => chart.y.scale(c.x0))
+                .attr("height", 0)
                 .attr("width", c => chart.bandwidth(c.length) - chart.bandwidth(-c.length))
                 .style("stroke", d.colour)
                 .style("fill", d.colour);
@@ -960,13 +1009,14 @@ class AdminControlCharts implements IAdminControlCharts {
         //Transision bin containers
         binContainer.transition()
             .duration(750)
+            .delay(!binContainer.exit().empty() ? 250 : 0)
             .attr("transform", d => `translate(${chart.x.scale(d.group)}, 0)`);
 
         //Merge existing with new bin containers
         binContainer.merge(binContainerEnter);
 
         //Transition violins
-        this.interactions.violin(chart);
+        this.interactions.violin(chart, !binContainer.exit().empty());
 
         //Append tooltip container
         this.handleViolinHover(chart);
@@ -1279,7 +1329,6 @@ class AdminControlCharts implements IAdminControlCharts {
 interface IAdminControlTransitions {
     axisSeries(chart: ChartSeries, data: IAnalyticsChartsData[]): void;
     axisTime(chart: ChartTime, data: IAnalyticsChartsData): void;
-    bars(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): void;
     circles(chart: ChartTime, data: IAnalyticsChartsData): void;
     circlesZoom(chart: ChartTime, chartZoom: ChartTimeZoom, data: IAnalyticsChartsData): void;
     violin(chart: ViolinChartSeries): void;
@@ -1287,10 +1336,11 @@ interface IAdminControlTransitions {
 }
 
 class AdminControlTransitions implements IAdminControlTransitions {
-    axisSeries(chart: ChartSeries, data: IAnalyticsChartsData[]): void {
+    axisSeries(chart: ChartSeries, data: IAnalyticsChartsData[], delay?: boolean): void {
         chart.x.scale.domain(data.map(d => d.group));
         d3.select<SVGGElement, unknown>(`#${chart.id} .x-axis`).transition()
             .duration(750)
+            .delay(delay ? 250 : 0)
             .call(chart.x.axis);
     };
     axisTime(chart: ChartTime, data: IAnalyticsChartsData): void {
@@ -1298,34 +1348,6 @@ class AdminControlTransitions implements IAdminControlTransitions {
         d3.select<SVGGElement, unknown>(`#${chart.id} .x-axis`).transition()
             .duration(750)
             .call(chart.x.axis);
-    };
-    bars(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): void {
-        d3.selectAll(`#${chart.id} .content-container #${chart.id}-data`)
-            .data(data)
-            .transition()
-            .duration(750)
-            .attr("width", chart.x.scale.bandwidth())
-            .attr("height", d => chart.y.scale(d.q1) - chart.y.scale(d.q3))
-            .attr("y", d => chart.y.scale(d.q3))
-            .attr("x", d => chart.x.scale(d.group));
-
-        d3.selectAll(`#${chart.id} #${chart.id}-data-min-max`)
-            .data(data)
-            .transition()
-            .duration(750)
-            .attr("x1", d => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
-            .attr("y1", d => chart.y.scale(d.min))
-            .attr("x2", d => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
-            .attr("y2", d => chart.y.scale(d.max));
-
-        d3.selectAll(`#${chart.id} #${chart.id}-data-median`)
-            .data(data)
-            .transition()
-            .duration(750)
-            .attr("x1", d => chart.x.scale(d.group))
-            .attr("y1", d => chart.y.scale(d.median))
-            .attr("x2", d => chart.x.scale(d.group) + chart.x.scale.bandwidth())
-            .attr("y2", d => chart.y.scale(d.median));
     };
     circles(chart: ChartTime, data: IAnalyticsChartsData): void {
         chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles`)
@@ -1345,12 +1367,13 @@ class AdminControlTransitions implements IAdminControlTransitions {
             .attr("cx", d => chartZoom.x.scale(d.timestamp))
             .attr("cy", d => chartZoom.y.scale(d.point));
     };
-    violin(chart: ViolinChartSeries): void {
+    violin(chart: ViolinChartSeries, delay?: boolean): void {
         //Draw violins
         chart.elements.contentContainer.selectAll(`.${chart.id}-violin-container`).selectAll(".violin-rect")
             .data((d: IAnalyticsChartsData) => chart.bin(d.value.map(d => d.point)))
             .transition()
             .duration(750)
+            .delay(delay ? 250 : 0)
             .attr("x", d => chart.bandwidth(-d.length))
             .attr("y", d => chart.y.scale(d.x1))
             .attr("height", d => chart.y.scale(d.x0) - chart.y.scale(d.x1))
@@ -1983,13 +2006,14 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
     handleGroupCompare(): void {
         let _this = this;
         d3.selectAll("#group-compare input").on("change", (e: Event, d: IAnalyticsChartsData) => {
+            let target = e.target as HTMLInputElement;
             let selectedCompareData = _this.getGroupCompareData();
             let groupData = d3.filter(_this.allEntries, d => selectedCompareData.includes(d));
             let usersData = groupData.map(d => d.getUsersData());
             _this.violin.x.scale.domain(groupData.map(r => r.group));
             _this.usersViolin.x.scale.domain(groupData.map(r => r.group));
-            _this.interactions.axisSeries(_this.violin, groupData);
-            _this.interactions.axisSeries(_this.usersViolin, usersData);
+            _this.interactions.axisSeries(_this.violin, groupData, !target.checked);
+            _this.interactions.axisSeries(_this.usersViolin, usersData, !target.checked);
             _this.renderViolin(_this.violin, groupData);
             _this.renderViolin(_this.usersViolin, usersData);
             _this.htmlContainers.removeHelp(_this.violin);
