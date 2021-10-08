@@ -433,7 +433,6 @@ class ViolinChartElements extends ChartElements implements IViolinChartElements 
         this.appendThresholdAxis(chart);
         this.appendThresholdIndicators(chart, thresholds);
         this.appendThresholdLabel(chart);
-        this.appendThresholdLine(chart, thresholds);
     }
     private appendThresholdAxis(chart: IViolinChartSeries): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
         return this.contentContainer.append("g")
@@ -452,30 +451,38 @@ class ViolinChartElements extends ChartElements implements IViolinChartElements 
         return label;
     };
     private appendThresholdIndicators(chart: IViolinChartSeries, thresholds: number[]): void {
-        thresholds.forEach((c, i) => {
-            let indicator = this.contentContainer.append("g")
-                .attr("class", `threshold-indicator-container ${i == 0 ? "distressed" : "soaring"}`)
-                .attr("transform", `translate(${chart.width - chart.padding.yAxis - chart.padding.right + 5}, ${chart.y.scale(c) + 25})`);
-            let box = indicator.append("rect")
-                .attr("class", `threshold-indicator-box ${i == 0 ? "distressed" : "soaring"}`);
-            let text = indicator.append("text")
+        this.contentContainer.selectAll(".threshold-indicator-container")
+            .data(thresholds)
+            .enter()
+            .append("g")
+            .attr("class", "threshold-indicator-container")
+            .classed("distressed", d => d < 50 ? true : false)
+            .classed("soaring", d => d > 50 ? true : false)
+            .attr("transform", d => `translate(${chart.width - chart.padding.yAxis - chart.padding.right + 5}, ${chart.y.scale(d) + 25})`)
+            .call(g => g.append("rect")
+                .attr("class", "threshold-indicator-box")
+                .classed("distressed", d => d < 50 ? true : false)
+                .classed("soaring", d => d > 50 ? true : false))
+            .call(g => g.append("text")
                 .attr("class", "threshold-indicator-text")
                 .attr("x", 5)
-                .text(c);
-            box.attr("width", text.node().getBBox().width + 10)
-                .attr("height", text.node().getBBox().height + 5)
-                .attr("y", -text.node().getBBox().height);
-        });
-    };
-    private appendThresholdLine(chart: IViolinChartSeries, thresholds: number[]): void {
-        thresholds.forEach((c, i) => {
-            this.contentContainer.append("line")
-                .attr("class", `threshold-line ${i == 0 ? "distressed" : "soaring"}`)
-                .attr("x1", 0)
-                .attr("x2", chart.width - chart.padding.yAxis - chart.padding.right)
-                .attr("y1", chart.y.scale(c))
-                .attr("y2", chart.y.scale(c));
-        });
+                .text(d => d))
+            .call(g => g.selectAll("rect")
+                .attr("width", g.select<SVGTextElement>("text").node().getBBox().width + 10)
+                .attr("height", g.select<SVGTextElement>("text").node().getBBox().height + 5)
+                .attr("y", -g.select<SVGTextElement>("text").node().getBBox().height));
+        
+        this.contentContainer.selectAll(".threshold-line")
+            .data(thresholds)
+            .enter()
+            .append("line")
+            .attr("class", "threshold-line")
+            .classed("distressed", d => d < 50 ? true : false)
+            .classed("soaring", d => d > 50 ? true : false)
+            .attr("x1", 0)
+            .attr("x2", chart.width - chart.padding.yAxis - chart.padding.right)
+            .attr("y1", d => chart.y.scale(d))
+            .attr("y2", d => chart.y.scale(d));
     };
     appendThresholdPercentages(chart: IViolinChartSeries): void {
         let _this = this;
@@ -941,83 +948,47 @@ class AdminControlCharts implements IAdminControlCharts {
         chart.setBin();
 
         //Select existing bin containers
-        let binContainer = chart.elements.contentContainer.selectAll<SVGGElement, IAnalyticsChartsData>(`.${chart.id}-violin-container`)
+        chart.elements.contentContainer.selectAll<SVGGElement, IAnalyticsChartsData>(`.${chart.id}-violin-container`)
             .data(data)
             .join(
                 enter => enter.append("g")
-                            .attr("class", `${chart.id}-violin-container`)
-                            .attr("transform", d => `translate(${chart.x.scale(d.group)}, 0)`)
-                            .call(enter => enter.selectAll(".violin-rect")
-                                .data(d => chart.bin(d.value.map(d => d.point)))
-                                .enter()
-                                .append("rect")
-                                .attr("id", `${chart.id}-data`)
-                                .attr("class", "violin-rect")
-                                .attr("x", c => chart.bandwidth(-c.length))
-                                .attr("y", c => chart.y.scale(c.x0))
-                                .attr("height", 0)
-                                .attr("width", c => chart.bandwidth(c.length) - chart.bandwidth(-c.length)))
-                            .style("stroke", d => d.colour)
-                            .style("fill", d => d.colour),
+                    .attr("class", `${chart.id}-violin-container`)
+                    .attr("transform", d => `translate(${chart.x.scale(d.group)}, 0)`)
+                    .call(enter => enter.selectAll(".violin-rect")
+                        .data(d => chart.bin(d.value.map(d => d.point)).map(c => { return { binData: c, colour: d.colour } }))
+                        .enter()
+                        .append("rect")
+                        .attr("id", `${chart.id}-data`)
+                        .attr("class", "violin-rect")
+                        .attr("x", c => chart.bandwidth(-c.binData.length))
+                        .attr("y", c => chart.y.scale(c.binData.x0))
+                        .attr("height", 0)
+                        .attr("width", c => chart.bandwidth(c.binData.length) - chart.bandwidth(-c.binData.length))
+                        .style("stroke", c => c.colour)
+                        .style("fill", c => c.colour)
+                        .transition()
+                        .duration(750)
+                        .attr("y", c => chart.y.scale(c.binData.x1))
+                        .attr("height", c => chart.y.scale(c.binData.x0) - chart.y.scale(c.binData.x1))),
+                update => update
+                    .call(update => this.interactions.violin(chart, update))
+                    .call(update => update.transition()
+                        .duration(750)
+                        .attr("transform", d => `translate(${chart.x.scale(d.group)}, 0)`)),
+                exit => exit
+                    .call(exit => exit.selectAll<SVGRectElement, { binData: d3.Bin<number, number>, colour: string }>(".violin-rect")
+                        .style("fill", "#cccccc")
+                        .style("stroke", "#b3b3b3")
+                        .transition()
+                        .duration(250)
+                        .attr("y", c => chart.y.scale(c.binData.x0))
+                        .attr("height", 0)) 
+                    .call(exit => exit.transition()
+                        .duration(250)   
+                        .remove())
             );
 
-        //Remove old bin containers
-        binContainer.exit<IAnalyticsChartsData>() 
-            .each((d, i, g) => {
-                d3.select(g[i])
-                    .selectAll<SVGRectElement, d3.Bin<number, number>>(".violin-rect")
-                    .transition()
-                    .duration(250)
-                    .attr("y", c => chart.y.scale(c.x0))
-                    .attr("height", 0)
-            }) 
-            .transition()
-            .duration(250)   
-            .remove();     
-
-        //Update colours
-        binContainer.each((d, i, g) => {
-            d3.select(g[i])
-                .selectAll("rect")
-                .style("stroke", d.colour)
-                .style("fill", d.colour);
-        })
-
-        //Append new bin containers
-        let binContainerEnter = binContainer.enter()
-            .append("g")
-            .attr("class", `${chart.id}-violin-container`)
-            .attr("transform", d => `translate(${chart.x.scale(d.group)}, 0)`);
-
-        //Draw violins
-        binContainerEnter.each((d, i, g) => {
-            d3.select(g[i])
-                .selectAll(".violin-rect")
-                .data(chart.bin(d.value.map(d => d.point)))
-                .enter()
-                .append("rect")
-                .attr("id", `${chart.id}-data`)
-                .attr("class", "violin-rect")
-                .attr("x", c => chart.bandwidth(-c.length))
-                .attr("y", c => chart.y.scale(c.x0))
-                .attr("height", 0)
-                .attr("width", c => chart.bandwidth(c.length) - chart.bandwidth(-c.length))
-                .style("stroke", d.colour)
-                .style("fill", d.colour);
-        });
-
-        //Transision bin containers
-        binContainer.transition()
-            .duration(750)
-            .delay(!binContainer.exit().empty() ? 250 : 0)
-            .attr("transform", d => `translate(${chart.x.scale(d.group)}, 0)`);
-
-        //Merge existing with new bin containers
-        binContainer.merge(binContainerEnter);
-
-        //Transition violins
-        this.interactions.violin(chart, !binContainer.exit().empty());
-
+        chart.elements.appendThresholdPercentages(chart);
         //Append tooltip container
         this.handleViolinHover(chart);
         return chart;
@@ -1329,18 +1300,17 @@ class AdminControlCharts implements IAdminControlCharts {
 interface IAdminControlTransitions {
     axisSeries(chart: ChartSeries, data: IAnalyticsChartsData[]): void;
     axisTime(chart: ChartTime, data: IAnalyticsChartsData): void;
+    violin(chart: ViolinChartSeries, update: d3.Selection<SVGGElement, IAnalyticsChartsData, SVGGElement, unknown>): void;
     circles(chart: ChartTime, data: IAnalyticsChartsData): void;
     circlesZoom(chart: ChartTime, chartZoom: ChartTimeZoom, data: IAnalyticsChartsData): void;
-    violin(chart: ViolinChartSeries): void;
     density(chart: ChartTime, data: d3.ContourMultiPolygon[]): void;
 }
 
 class AdminControlTransitions implements IAdminControlTransitions {
-    axisSeries(chart: ChartSeries, data: IAnalyticsChartsData[], delay?: boolean): void {
+    axisSeries(chart: ChartSeries, data: IAnalyticsChartsData[]): void {
         chart.x.scale.domain(data.map(d => d.group));
         d3.select<SVGGElement, unknown>(`#${chart.id} .x-axis`).transition()
             .duration(750)
-            .delay(delay ? 250 : 0)
             .call(chart.x.axis);
     };
     axisTime(chart: ChartTime, data: IAnalyticsChartsData): void {
@@ -1348,6 +1318,21 @@ class AdminControlTransitions implements IAdminControlTransitions {
         d3.select<SVGGElement, unknown>(`#${chart.id} .x-axis`).transition()
             .duration(750)
             .call(chart.x.axis);
+    };
+    violin(chart: ViolinChartSeries, update: d3.Selection<SVGGElement, IAnalyticsChartsData, SVGGElement, unknown>): void {        
+        update.selectAll(".violin-rect")
+            .data(d => chart.bin(d.value.map(d => d.point)).map(c => { return { binData: c, colour: d.colour } }))
+            .join(
+                enter => enter,
+                update => update.style("stroke", d => d.colour)
+                    .style("fill", d => d.colour)
+                    .call(update => update.transition()
+                        .duration(750)
+                        .attr("x", d => chart.bandwidth(-d.binData.length))
+                        .attr("y", d => chart.y.scale(d.binData.x1))
+                        .attr("height", d => chart.y.scale(d.binData.x0) - chart.y.scale(d.binData.x1))
+                        .attr("width", d => chart.bandwidth(d.binData.length) - chart.bandwidth(-d.binData.length))),
+                exit => exit)
     };
     circles(chart: ChartTime, data: IAnalyticsChartsData): void {
         chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles`)
@@ -1366,21 +1351,6 @@ class AdminControlTransitions implements IAdminControlTransitions {
             .attr("r", 2)
             .attr("cx", d => chartZoom.x.scale(d.timestamp))
             .attr("cy", d => chartZoom.y.scale(d.point));
-    };
-    violin(chart: ViolinChartSeries, delay?: boolean): void {
-        //Draw violins
-        chart.elements.contentContainer.selectAll(`.${chart.id}-violin-container`).selectAll(".violin-rect")
-            .data((d: IAnalyticsChartsData) => chart.bin(d.value.map(d => d.point)))
-            .transition()
-            .duration(750)
-            .delay(delay ? 250 : 0)
-            .attr("x", d => chart.bandwidth(-d.length))
-            .attr("y", d => chart.y.scale(d.x1))
-            .attr("height", d => chart.y.scale(d.x0) - chart.y.scale(d.x1))
-            .attr("width", d => chart.bandwidth(d.length) - chart.bandwidth(-d.length))
-
-        //Draw threshold percentages
-        chart.elements.appendThresholdPercentages(chart);
     };
     density(chart: ChartTime, data: d3.ContourMultiPolygon[]): void {
         chart.elements.contentContainer.selectAll(`${chart.id}-timeline-contours`)
@@ -1818,7 +1788,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         chart.elements.contentContainer.select(".threshold-line.distressed")
             .classed("grab", true)
             .call(d3.drag()
-                .on("start", dragStartDistressed)
+                .on("start", dragStart)
                 .on("drag", draggingDistressed)
                 .on("end", dragEndDistressed));
 
@@ -1826,12 +1796,12 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         chart.elements.contentContainer.select(".threshold-line.soaring")
             .classed("grab", true)
             .call(d3.drag()
-                .on("start", dragStartSoaring)
+                .on("start", dragStart)
                 .on("drag", draggingSoaring)
                 .on("end", dragEndSoaring));
 
         //Start drag soaring functions           
-        function dragStartSoaring(e: Event, d: IAnalyticsChartsData) {
+        function dragStart() {
             chart.elements.contentContainer.selectAll(`.${chart.id}-violin-text-container`).remove();
             d3.select(this).classed("grabbing", true);
             _this.htmlContainers.removeHelp(chart);
@@ -1840,45 +1810,28 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             if (chart.y.scale.invert(e.y) < 51 || chart.y.scale.invert(e.y) > 99) {
                 return;
             }
-            d3.select(this)
-                .attr("y1", chart.y.scale(chart.y.scale.invert(e.y)))
-                .attr("y2", chart.y.scale(chart.y.scale.invert(e.y)));
-            tSoaring = chart.y.scale.invert(e.y);
-            chart.thresholdAxis.tickValues([tDistressed, chart.y.scale.invert(e.y)])
-                .tickFormat(d => d == tDistressed ? "Distressed" : d == chart.y.scale.invert(e.y) ? "Soaring" : "");
-            chart.elements.contentContainer.selectAll<SVGGElement, unknown>(".threshold-axis")
-                .call(chart.thresholdAxis);
-            let positionX = chart.width - chart.padding.yAxis - chart.padding.right + 5;
-            let positionY = chart.y.scale(tSoaring) + 25;
-            let indicator = chart.elements.contentContainer.select<SVGGElement>(".threshold-indicator-container.soaring");
-            if (positionY + indicator.node().getBBox().height > chart.y.scale(tDistressed)) {
-                positionY = chart.y.scale(tSoaring) - 15;
-            }
-            indicator.attr("transform", `translate(${positionX}, ${positionY})`);
-            indicator.select("text")
-                .text(Math.round(tSoaring));
-
+            d3.select<SVGLineElement, number>(this)
+                .datum(chart.y.scale.invert(e.y))
+                .attr("y1", d => chart.y.scale(d))
+                .attr("y2", d => chart.y.scale(d))
+                .call(line => chart.thresholdAxis
+                    .tickValues([tDistressed, line.datum()])
+                    .tickFormat(d => d == tDistressed ? "Distressed" : d == line.datum() ? "Soaring" : ""))
+                .call(line =>  chart.elements.contentContainer.selectAll<SVGGElement, unknown>(".threshold-axis")
+                    .call(chart.thresholdAxis))
+                .call(line => chart.elements.contentContainer.select<SVGGElement>(".threshold-indicator-container.soaring")
+                    .attr("transform", `translate(${chart.width - chart.padding.yAxis - chart.padding.right + 5}, ${line.datum() > 85 ? chart.y.scale(line.datum()) + 25 : chart.y.scale(line.datum()) - 15})`)
+                    .select("text")
+                    .text(Math.round(line.datum())));
         }
         function dragEndSoaring(e: MouseEvent, d: IAnalyticsChartsData) {
-            let newT = chart.y.scale.invert(e.y);
-            if (newT < 51) {
-                newT = 51;
-            }
-            if (newT > 99) {
-                newT = 99;
-            }
             chart.setBin();
-            _this.interactions.violin(chart);
+            _this.interactions.violin(chart, chart.elements.contentContainer.selectAll(`.${chart.id}-violin-container`));
             d3.select(this).classed("grabbing", false);
             _this.handleViolinHover(chart);
         }
 
         //Start drag distressed functions
-        function dragStartDistressed(e: Event, d: IAnalyticsChartsData) {
-            chart.elements.contentContainer.selectAll(`.${chart.id}-violin-text-container`).remove();
-            d3.select(this).classed("grabbing", true);
-            _this.htmlContainers.removeHelp(chart);
-        }
         function draggingDistressed(e: MouseEvent, d: IAnalyticsChartsData) {
             if (chart.y.scale.invert(e.y) < 1 || chart.y.scale.invert(e.y) > 49) {
                 return;
@@ -1915,7 +1868,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 newT = 49;
             }
             chart.setBin();
-            _this.interactions.violin(chart);
+            _this.interactions.violin(chart, chart.elements.contentContainer.selectAll(`#${chart.id}-violin-container`));
             d3.select(this).classed("grabbing", false);
             _this.handleViolinHover(chart);
         }
@@ -2006,14 +1959,13 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
     handleGroupCompare(): void {
         let _this = this;
         d3.selectAll("#group-compare input").on("change", (e: Event, d: IAnalyticsChartsData) => {
-            let target = e.target as HTMLInputElement;
             let selectedCompareData = _this.getGroupCompareData();
             let groupData = d3.filter(_this.allEntries, d => selectedCompareData.includes(d));
             let usersData = groupData.map(d => d.getUsersData());
             _this.violin.x.scale.domain(groupData.map(r => r.group));
             _this.usersViolin.x.scale.domain(groupData.map(r => r.group));
-            _this.interactions.axisSeries(_this.violin, groupData, !target.checked);
-            _this.interactions.axisSeries(_this.usersViolin, usersData, !target.checked);
+            _this.interactions.axisSeries(_this.violin, groupData);
+            _this.interactions.axisSeries(_this.usersViolin, usersData);
             _this.renderViolin(_this.violin, groupData);
             _this.renderViolin(_this.usersViolin, usersData);
             _this.htmlContainers.removeHelp(_this.violin);
