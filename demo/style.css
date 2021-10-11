@@ -87,7 +87,7 @@
     color: #ff3300;
 }
 
-.bar, .line-circle, .violin-rect, .zoom-circle, .legend-color {
+.bar, .line-circle, .histogram-rect, .zoom-circle, .legend-color {
     fill: #3399CC;
     fill-opacity: 0.2;
     stroke-width: 1;
@@ -108,7 +108,7 @@
     stroke-width: 1;
 }
 
-.bar:hover, .arc:hover, .violin-rect:hover, .line-circle:hover {
+.bar:hover, .arc:hover, .histogram-rect:hover, .line-circle:hover {
     fill-opacity: 0.4;
     r: 10;
 }
@@ -132,7 +132,7 @@
     opacity: 0;
 }
 
-.tooltip-box, .click-box, .violin-text-box {
+.tooltip-box, .click-box, .histogram-text-box {
     stroke-width: 1;
     stroke: #333;
     fill: #333;
@@ -141,13 +141,13 @@
     rx: 5;
 }
 
-.tooltip-text, .click-text, .violin-text {
+.tooltip-text, .click-text, .histogram-text {
     fill: #ffffff;
     font-size: 0.75rem;
     font-weight: normal;
 }
 
-.violin-text {
+.histogram-text {
     fill: #ffffff;
     font-size: 0.75rem;
     font-weight: normal;
