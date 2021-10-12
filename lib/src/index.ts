@@ -944,12 +944,12 @@ class AdminControlCharts implements IAdminControlCharts {
                         .duration(750)
                         .attr("transform", d => `translate(${chart.x.scale(d.group)}, 0)`)),
                 exit => exit
-                    .call(exit => exit.selectAll<SVGRectElement, { binData: d3.Bin<number, number>, colour: string }>(".histogram-rect")
+                    .call(exit => exit.selectAll<SVGRectElement, IHistogramData>(".histogram-rect")
                         .style("fill", "#cccccc")
                         .style("stroke", "#b3b3b3")
                         .transition()
                         .duration(250)
-                        .attr("y", c => chart.y.scale(c.binData.x0))
+                        .attr("y", c => chart.y.scale(c.bin.x0))
                         .attr("height", 0)) 
                     .call(exit => exit.transition()
                         .duration(250)   
@@ -1472,7 +1472,8 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 let data = updateData(boxPlot);
                 updateGroupChart(boxPlot, data);
                 if (boxPlot.click) {
-                    _this.interactions.click.appendGroupsText(boxPlot, data, data[data.map(d => d.group).indexOf(d3.select("#groups-statistics .card").attr("id"))]);
+                    let clickData = boxPlot.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IAnalyticsChartsDataStats;
+                    _this.interactions.click.appendGroupsText(boxPlot, data, clickData);
                     _this.getGroupCompareData();
                     _this.renderGroupCompare();
                     _this.handleGroupCompare();
@@ -1481,17 +1482,13 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 _this.allEntries.find(d => d.group == target.value).selected = false;
                 let data = updateData(boxPlot);
                 updateGroupChart(boxPlot, data);
-                boxPlot.elements.contentContainer.selectAll(`#${boxPlot.id} .content-container .click-container`)
-                    .data(data)
-                    .exit()
-                    .remove();
                 if (boxPlot.click) {
                     if (target.value == d3.select("#groups-statistics .card").attr("id")) {
                         _this.interactions.click.removeClick(boxPlot);
-                        _this.interactions.click.removeClickClass(boxPlot, "bar");
                         _this.htmlContainers.remove();
                     } else {
-                        _this.interactions.click.appendGroupsText(boxPlot, data, data[data.map(d => d.group).indexOf(d3.select("#groups-statistics .card").attr("id"))]);
+                        let clickData = boxPlot.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IAnalyticsChartsDataStats;
+                        _this.interactions.click.appendGroupsText(boxPlot, data, clickData);
                         let histogramData = _this.getGroupCompareData();
                         _this.renderGroupCompare();
                         _this.histogram.x.scale.domain(histogramData.map(r => r.group));
@@ -1555,15 +1552,24 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             let data = entries.map(d => new AnalyticsChartsDataStats(d));
             boxPlot.x.scale.domain(data.map(r => r.group));
             _this.interactions.axisSeries(boxPlot, data);
+            let clickData = boxPlot.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IAnalyticsChartsDataStats;
             _this.renderGroupChart(boxPlot, data);
-            if (boxPlot.click) {
-                _this.interactions.click.appendGroupsText(boxPlot, data, data.find(d => d.group == d3.select("#groups-statistics .card").attr("id")))
+            if (boxPlot.click) {              
+                _this.interactions.click.appendGroupsText(boxPlot, data, clickData);
                 let histogramData = _this.getGroupCompareData();
                 _this.interactions.axisSeries(_this.histogram, histogramData);
+                let histogramClickData = _this.histogram.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IHistogramData;
                 _this.renderHistogram(_this.histogram, histogramData);
                 let usersData = histogramData.map(d => d.getUsersData());
                 _this.interactions.axisSeries(_this.usersHistogram, usersData);
+                let usersHistogramClickData = _this.histogram.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IHistogramData;
                 _this.renderHistogram(_this.usersHistogram, usersData);
+                if (_this.histogram.click) {
+                    _this.interactions.click.appendThresholdPercentages(_this.histogram, histogramData, histogramClickData);
+                }
+                if (_this.usersHistogram.click) {                   
+                    _this.interactions.click.appendThresholdPercentages(_this.usersHistogram, usersData, usersHistogramClickData);
+                }
                 _this.handleGroupCompare();
             }
             _this.htmlContainers.removeHelp(boxPlot);
@@ -1576,7 +1582,6 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         _this.interactions.click.enableClick(chart, onClick);
         chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
             _this.interactions.click.removeClick(chart);
-            _this.interactions.click.removeClickClass(chart, "bar");
             _this.htmlContainers.remove();
         });
         _this.htmlContainers.boxPlot.select(".card-header button")
@@ -1589,14 +1594,12 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 _this.htmlContainers.helpPopover(_this.htmlContainers.boxPlot.select("#sort-by"), `${chart.id}-help-button`, "click me!");
             });
         function onClick(e: Event, d: IAnalyticsChartsDataStats) {
-            if (d3.select(this).attr("class") == "bar clicked") {
+            if (d3.select(this).attr("class").includes("clicked")) {
                 _this.interactions.click.removeClick(chart);
-                d3.select(this).attr("class", "bar");
                 _this.htmlContainers.remove();
                 return;
             }
             _this.interactions.click.removeClick(chart);
-            _this.interactions.click.removeClickClass(chart, "bar");
             _this.htmlContainers.remove();
             chart.click = true;
             _this.interactions.click.appendGroupsText(chart, data, d);
@@ -1749,17 +1752,20 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.interactions.histogram(chart, chart.elements.contentContainer.selectAll(`.${chart.id}-histogram-container`));
             d3.select(this).classed("grabbing", false);
             _this.handleHistogramHover(chart);
+            if (chart.click) {
+                let clickData = chart.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IHistogramData;
+                _this.interactions.click.appendThresholdPercentages(chart, data, clickData);
+            }          
         }
 
         _this.interactions.click.enableClick(chart, onClick);
         function onClick(e: Event, d: HistogramData) {
             if (d3.select(this).attr("class").includes("clicked")) {
                 _this.interactions.click.removeClick(chart);
-                d3.select(this).classed("clicked", false);
                 return;
             }
             _this.interactions.click.removeClick(chart);
-            _this.interactions.click.removeClickClass(chart, "histogram-rect");
+            chart.click = true;
             _this.interactions.click.appendThresholdPercentages(chart, data, d);
         }
 
@@ -1772,16 +1778,14 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         _this.interactions.click.enableClick(chart, onClick);
         chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
             _this.interactions.click.removeClick(chart);
-            _this.interactions.click.removeClickClass(chart, "line-circle");
             chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`).remove();
             _this.htmlContainers.removeUsers();
         });
         chart.elements.contentContainer.select(`#${chart.id}-timeline-circles-line`)
             .style("stroke", data.colour);
         function onClick(e: Event, d: IReflectionAuthorEntry) {
-            if (d3.select(this).attr("class") == "line-circle clicked") {
+            if (d3.select(this).attr("class").includes("clicked")) {
                 _this.interactions.click.removeClick(chart);
-                chart.elements.content.attr("class", "line-circle");
                 chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`).remove();
                 d3.select("#analytics-navbar").select(`#${_this.htmlContainers.userStatistics.attr("id")}-li`).remove();
                 _this.htmlContainers.removeUsers();
@@ -1850,6 +1854,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
     handleGroupCompare(): void {
         let _this = this;
         d3.selectAll("#group-compare input").on("change", (e: Event, d: IAnalyticsChartsData) => {
+            let target = e.target as HTMLInputElement;
             let selectedCompareData = _this.getGroupCompareData();
             let groupData = d3.filter(_this.allEntries, d => selectedCompareData.includes(d));
             let usersData = groupData.map(d => d.getUsersData());
@@ -1857,10 +1862,26 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.usersHistogram.x.scale.domain(groupData.map(r => r.group));
             _this.interactions.axisSeries(_this.histogram, groupData);
             _this.interactions.axisSeries(_this.usersHistogram, usersData);
-            _this.renderHistogram(_this.histogram, groupData);
+            _this.renderHistogram(_this.histogram, groupData);            
             _this.renderHistogram(_this.usersHistogram, usersData);
             _this.htmlContainers.removeHelp(_this.histogram);
             _this.htmlContainers.removeHelp(_this.usersHistogram);
+            if (_this.histogram.click) {
+                let clickData = _this.histogram.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IHistogramData;
+                if (!target.checked && clickData.group == target.value) {
+                    _this.interactions.click.removeClick(_this.histogram);
+                } else  {
+                    _this.interactions.click.appendThresholdPercentages(_this.histogram, groupData, clickData);
+                }
+            }
+            if (_this.usersHistogram.click) {
+                let clickData = _this.histogram.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IHistogramData;
+                if (!target.checked && clickData.group == target.value) {
+                    _this.interactions.click.removeClick(_this.usersHistogram);
+                } else {
+                    _this.interactions.click.appendThresholdPercentages(_this.usersHistogram, usersData, clickData);
+                }
+            }
         });
     };
     renderUserStatistics(card: any, data: IAnalyticsChartsData, pseudonym?: string): void {
@@ -1926,7 +1947,8 @@ class Click implements IClick {
         chart.click = false;
         chart.elements.contentContainer.selectAll(".click-text").remove();
         chart.elements.contentContainer.selectAll(".click-line").remove();
-        chart.elements.contentContainer.selectAll(".click-container").remove();
+        chart.elements.contentContainer.selectAll(".click-container").remove()
+        chart.elements.content.classed("clicked", false);
     };
     removeClickClass(chart: IChart, css: string): void {
         d3.selectAll(`#${chart.id} .content-container .${css}`)
@@ -2007,6 +2029,12 @@ class Click implements IClick {
             );
     };
     appendThresholdPercentages(chart: HistogramChartSeries, data: IAnalyticsChartsData[], clickData: IHistogramData): void {
+        let thresholds = chart.elements.getThresholdsValues(chart);
+        let tDistressed = thresholds[0];
+        let tSoaring = thresholds[1];
+
+        chart.elements.content.classed("clicked", (d: IHistogramData) => d.group == clickData.group && clickData.bin.length - d.bin.length == 0);
+
         chart.elements.contentContainer.selectAll<SVGGElement, unknown>(".click-container")
             .data(data)
             .join(
@@ -2018,8 +2046,8 @@ class Click implements IClick {
                         .enter()
                         .append("text")
                         .attr("class", c => this.comparativeText(clickData.bin.length, c.bin.length, clickData.group, c.group)[0])
-                        .attr("y", c => chart.y.scale(c.bin.x0))
-                        .text(c => `${this.comparativeText(clickData.bin.length, c.bin.length, clickData.group, c.group)[1]}`)),
+                        .attr("y", c => c.bin.x0 == 0 ? chart.y.scale(0 + tDistressed / 2) : c.bin.x1 == 100 ? chart.y.scale(tSoaring + (100 - tSoaring) / 2) : chart.y.scale(50))
+                        .text(c => `${this.comparativeText(clickData.bin.length, c.bin.length, clickData.group, c.group)[1]} (${Math.abs(clickData.percentage - c.percentage)}%)`)),
                 update => update.call(update => update.transition()
                     .duration(750)
                     .attr("transform", c => `translate(${chart.x.scale(c.group) + chart.x.scale.bandwidth() / 2}, 0)`))
@@ -2030,8 +2058,8 @@ class Click implements IClick {
                             update => update.call(update => update.transition()
                                 .duration(750)
                                 .attr("class", c => this.comparativeText(clickData.bin.length, c.bin.length, clickData.group, c.group)[0])
-                                .attr("y", c => chart.y.scale(c.bin.x1) - chart.y.scale(c.bin.x0) - 5)
-                                .text(c => `${this.comparativeText(clickData.bin.length, c.bin.length, clickData.group, c.group)[1]}`)),
+                                .attr("y", c => c.bin.x0 == 0 ? chart.y.scale(0 + tDistressed / 2) : c.bin.x1 == 100 ? chart.y.scale(tSoaring + (100 - tSoaring) / 2) : chart.y.scale(50))
+                                .text(c => `${this.comparativeText(clickData.bin.length, c.bin.length, clickData.group, c.group)[1]} (${Math.abs(clickData.percentage - c.percentage)}%)`)),
                             exit => exit
                         )),
                 exit => exit.remove()
@@ -2053,7 +2081,7 @@ class Click implements IClick {
         }
 
         if (clickXValue != null && xValue != null) {
-            return [textClass, `${textSymbol}${clickXValue == xValue ? clickValue : (Math.abs(clickValue - value))}`];
+            return [textClass, `${textSymbol}${clickXValue == xValue && clickValue - value == 0 ? clickValue : (Math.abs(clickValue - value))}`];
         } else {
             return [textClass, `${textSymbol}${(Math.abs(clickValue - value))}`];
         }
