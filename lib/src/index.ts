@@ -71,6 +71,20 @@ class AnalyticsChartsData implements IAnalyticsChartsData {
     }
 }
 
+interface IDataStats {
+    stat: string;
+    value: number | string | Date
+}
+
+class DataStats implements IDataStats {
+    stat: string;
+    value: number | string | Date
+    constructor(stat: string, value: number | string | Date){
+        this.stat = stat,
+        this.value = value
+    }
+}
+
 interface IAnalyticsChartsDataStats extends IAnalyticsChartsData {
     mean: number;
     median: number;
@@ -86,6 +100,7 @@ interface IAnalyticsChartsDataStats extends IAnalyticsChartsData {
     userMostReflective: number;
     userLessReflective: number;
     totalUsers: number;
+    stats: IDataStats[];
     roundDecimal(value: number): string;
 }
 
@@ -107,9 +122,11 @@ class AnalyticsChartsDataStats extends AnalyticsChartsData implements IAnalytics
     userMostReflective: number;
     userLessReflective: number;
     totalUsers: number;
+    stats: IDataStats[];
     constructor(entries: IAnalyticsChartsData) {
         super(entries.group, entries.value, entries.creteDate, entries.colour, entries.selected);
         let uniqueUsers = Array.from(d3.rollup(entries.value, d => d.length, d => d.pseudonym), ([key, value]) => ({ key, value }));
+        this.stats.push(new DataStats("mean",  Math.round(d3.mean(entries.value.map(r => r.point)))))
         this.mean = Math.round(d3.mean(entries.value.map(r => r.point))),
             this.median = d3.median(entries.value.map(r => r.point)),
             this.q1 = d3.quantile(entries.value.map(r => r.point), 0.25),
