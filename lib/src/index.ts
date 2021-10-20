@@ -1552,10 +1552,15 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             let data = entries.map(d => new AnalyticsChartsDataStats(d));
             boxPlot.x.scale.domain(data.map(r => r.group));
             _this.interactions.axisSeries(boxPlot, data);
-            let clickData = boxPlot.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IAnalyticsChartsDataStats;
+            function getClickData(){
+                if (! boxPlot.elements.contentContainer.select<SVGRectElement>(".clicked").empty) {
+                    return boxPlot.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IAnalyticsChartsDataStats;
+                } 
+                return;
+            }
             _this.renderGroupChart(boxPlot, data);
             if (boxPlot.click) {              
-                _this.interactions.click.appendGroupsText(boxPlot, data, clickData);
+                _this.interactions.click.appendGroupsText(boxPlot, data, getClickData());
                 let histogramData = _this.getGroupCompareData();
                 _this.interactions.axisSeries(_this.histogram, histogramData);
                 let histogramClickData = _this.histogram.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IHistogramData;
