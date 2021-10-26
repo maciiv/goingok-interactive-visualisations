@@ -71,64 +71,63 @@ class AnalyticsChartsData implements IAnalyticsChartsData {
     }
 }
 
+interface IDataStats {
+    stat: string;
+    displayName: string;
+    value: number | string;
+}
+
+class DataStats implements IDataStats {
+    stat: string;
+    displayName: string;
+    value: number | string;
+    constructor(stat: string, displayName: string, value: number | string){
+        this.stat = stat,
+        this.displayName = displayName,
+        this.value = value
+    }
+}
+
 interface IAnalyticsChartsDataStats extends IAnalyticsChartsData {
-    mean: number;
-    median: number;
-    q1: number;
-    q3: number;
-    max: number;
-    min: number;
-    variance: string;
-    deviation: string;
-    oldestReflection: Date;
-    newestReflection: Date;
-    avgReflectionsPerUser: string;
-    userMostReflective: number;
-    userLessReflective: number;
-    totalUsers: number;
+    stats: IDataStats[];
     roundDecimal(value: number): string;
+    getStat(stat: string): IDataStats;
 }
 
 class AnalyticsChartsDataStats extends AnalyticsChartsData implements IAnalyticsChartsDataStats {
-    group: string;
-    value: IReflectionAuthorEntry[];
-    selected: boolean;
-    mean: number;
-    median: number;
-    q1: number;
-    q3: number;
-    max: number;
-    min: number;
-    variance: string;
-    deviation: string;
-    oldestReflection: Date;
-    newestReflection: Date;
-    avgReflectionsPerUser: string;
-    userMostReflective: number;
-    userLessReflective: number;
-    totalUsers: number;
+    stats: IDataStats[];
     constructor(entries: IAnalyticsChartsData) {
         super(entries.group, entries.value, entries.creteDate, entries.colour, entries.selected);
         let uniqueUsers = Array.from(d3.rollup(entries.value, d => d.length, d => d.pseudonym), ([key, value]) => ({ key, value }));
-        this.mean = Math.round(d3.mean(entries.value.map(r => r.point))),
-            this.median = d3.median(entries.value.map(r => r.point)),
-            this.q1 = d3.quantile(entries.value.map(r => r.point), 0.25),
-            this.q3 = d3.quantile(entries.value.map(r => r.point), 0.75),
-            this.max = d3.max(entries.value.map(r => r.point)),
-            this.min = d3.min(entries.value.map(r => r.point)),
-            this.variance = this.roundDecimal(d3.variance(entries.value.map(r => r.point))),
-            this.deviation = this.roundDecimal(d3.deviation(entries.value.map(r => r.point))),
-            this.oldestReflection = d3.min(entries.value.map(r => new Date(r.timestamp))),
-            this.newestReflection = d3.max(entries.value.map(r => new Date(r.timestamp))),
-            this.avgReflectionsPerUser = this.roundDecimal(d3.mean(uniqueUsers.map(r => r.value))),
-            this.userMostReflective = d3.max(uniqueUsers.map(r => r.value)),
-            this.userLessReflective = d3.min(uniqueUsers.map(r => r.value)),
-            this.totalUsers = uniqueUsers.length
+        this.stats = [];
+        this.stats.push(new DataStats("mean", "Mean", Math.round(d3.mean(entries.value.map(r => r.point)))));
+        this.stats.push(new DataStats("median", "Median", Math.round(d3.median(entries.value.map(r => r.point)))))
+        this.stats.push(new DataStats("q1", "Q1", Math.round(d3.quantile(entries.value.map(r => r.point), 0.25))))
+        this.stats.push(new DataStats("q3", "Q3", Math.round(d3.quantile(entries.value.map(r => r.point), 0.75))))
+        this.stats.push(new DataStats("max", "Max", d3.max(entries.value.map(r => r.point))))
+        this.stats.push(new DataStats("min", "Min", d3.min(entries.value.map(r => r.point))))
+        this.stats.push(new DataStats("variance", "Variance", this.roundDecimal(d3.variance(entries.value.map(r => r.point)))))
+        this.stats.push(new DataStats("deviation", "Std Deviation", this.roundDecimal(d3.deviation(entries.value.map(r => r.point)))))
+        this.stats.push(new DataStats("oldRef", "Oldest reflection", d3.min(entries.value.map(r => new Date(r.timestamp))).toDateString()))
+        this.stats.push(new DataStats("newRef", "Newest reflection", d3.max(entries.value.map(r => new Date(r.timestamp))).toDateString()))
+        this.stats.push(new DataStats("totalRef", "Total reflections", d3.max(entries.value.map(r => new Date(r.timestamp))).toDateString()))
+        this.stats.push(new DataStats("avgRef", "Reflections per user", this.roundDecimal(d3.mean(uniqueUsers.map(r => r.value)))))
+        this.stats.push(new DataStats("userHRef", "Max reflections per user", d3.max(uniqueUsers.map(r => r.value))))
+        this.stats.push(new DataStats("userLRef", "Min reflections per user", d3.min(uniqueUsers.map(r => r.value))))
+        this.stats.push(new DataStats("totalUsers", "Total users", uniqueUsers.length))
     };
     roundDecimal(value: number): string {
         let p = d3.precisionFixed(0.1);
         let f = d3.format("." + p + "f");
         return f(value);
+    };
+    getStat(stat: string): IDataStats {
+        var exists = this.stats.find(d => d.stat == stat);
+        if (exists != undefined) {
+            return exists;
+        } else {
+            return new DataStats("na", "Not found", 0);
+        }
     }
 }
 
@@ -541,6 +540,22 @@ class HistogramData implements IHistogramData {
     }
 }
 
+// Interface click text data
+interface IClickTextData {
+    clickData: {stat: IDataStats | number, group: string};
+    data: {stat: IDataStats | number, group: string};
+}
+
+// Class click text data
+class ClickTextData implements IClickTextData {
+    clickData: {stat: IDataStats | number, group: string};
+    data: {stat: IDataStats | number, group: string};
+    constructor(clickStat: IDataStats | number, dataStat: IDataStats | number, clickGroup: string, dataGroup: string) {
+        this.clickData = {stat: clickStat, group: clickGroup},
+        this.data = {stat: dataStat, group: dataGroup}
+    }
+}
+
 // Basic interface for Html containers
 interface IHtmlContainers {
     boxPlot: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>,
@@ -607,17 +622,13 @@ class HtmlContainers implements IHtmlContainers {
             .attr("class", css);
     };
     appendCard(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, header: string, id?: string, help: boolean = false): d3.Selection<HTMLDivElement, unknown, HTMLElement, any> {
-        let card = div.append("div")
+        return div.append("div")
             .attr("class", "card")
-        card.append("div")
-            .attr("class", "card-header")
-            .html(!help ? header : header + `<button type="button" class="btn btn-light btn-sm float-right"><i class="fas fa-question-circle"></i></button>`);
-        card.append("div")
-            .attr("class", "card-body chart-container");
-        if (id != null) {
-            card.attr("id", id);
-        }
-        return card;
+            .attr("id", id != null ? id : "no-id")
+            .call(div => div.append("div")
+                .attr("class", "card-header")
+                .html(!help ? header : header + `<button type="button" class="btn btn-light btn-sm float-right"><i class="fas fa-question-circle"></i></button>`))
+            .call(div => div.append("div").attr("class", "card-body chart-container"))
     };
     helpPopover(button: any, id: string, content?: string): boolean {
         if (d3.select(`#${id}`).empty()) {
@@ -754,22 +765,22 @@ class AdminControlCharts implements IAdminControlCharts {
                             .attr("class", "box-line")
                             .attr("x1", d => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
                             .attr("x2", d => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
-                            .attr("y1", d => chart.y.scale(d.min))
-                            .attr("y2", d => chart.y.scale(d.max))
+                            .attr("y1", d => chart.y.scale(d.getStat("min").value as number))
+                            .attr("y2", d => chart.y.scale(d.getStat("max").value as number))
                             .style("stroke", d => d.colour)
                             .call(enter => enter.transition().duration(750)
-                                    .attr("y2", d => chart.y.scale(d.max))),
+                                    .attr("y2", d => chart.y.scale(d.getStat("max").value as number))),
                 update => update.style("stroke", d => d.colour)
                             .call(update => update.transition()
                                 .duration(750)
                                 .attr("x1", d => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
                                 .attr("x2", d => chart.x.scale(d.group) + (chart.x.scale.bandwidth() / 2))
-                                .attr("y1", d => chart.y.scale(d.min))
-                                .attr("y2", d => chart.y.scale(d.max))),
+                                .attr("y1", d => chart.y.scale(d.getStat("min").value as number))
+                                .attr("y2", d => chart.y.scale(d.getStat("max").value as number))),
                 exit => exit.style("stroke", "#b3b3b3")
                             .call(exit => exit.transition()
                                 .duration(250)
-                                .attr("y2", d => chart.y.scale(d.min))
+                                .attr("y2", d => chart.y.scale(d.getStat("min").value as number))
                                 .remove())
             );
 
@@ -782,8 +793,8 @@ class AdminControlCharts implements IAdminControlCharts {
                             .attr("class", "box-line")
                             .attr("x1", d => chart.x.scale(d.group))
                             .attr("x2", d => chart.x.scale(d.group))
-                            .attr("y1", d => chart.y.scale(d.median))
-                            .attr("y2", d => chart.y.scale(d.median))
+                            .attr("y1", d => chart.y.scale(d.getStat("median").value as number))
+                            .attr("y2", d => chart.y.scale(d.getStat("median").value as number))
                             .style("stroke", d => d.colour)
                             .call(enter => enter.transition()
                                 .duration(750)
@@ -793,8 +804,8 @@ class AdminControlCharts implements IAdminControlCharts {
                                 .duration(750)
                                 .attr("x1", d => chart.x.scale(d.group))
                                 .attr("x2", d => chart.x.scale(d.group) + chart.x.scale.bandwidth())
-                                .attr("y1", d => chart.y.scale(d.median))
-                                .attr("y2", d => chart.y.scale(d.median))),
+                                .attr("y1", d => chart.y.scale(d.getStat("median").value as number))
+                                .attr("y2", d => chart.y.scale(d.getStat("median").value as number))),
                 exit => exit.style("stroke", "#b3b3b3")
                             .call(exit => exit.transition()
                                 .duration(250)
@@ -809,7 +820,7 @@ class AdminControlCharts implements IAdminControlCharts {
                 enter => enter.append("rect")
                             .attr("id", `${chart.id}-data`)
                             .attr("class", "bar")
-                            .attr("y", d => chart.y.scale(d.q1))
+                            .attr("y", d => chart.y.scale(d.getStat("q1").value as number))
                             .attr("x", d => chart.x.scale(d.group))
                             .attr("width", chart.x.scale.bandwidth())
                             .attr("height", 0)
@@ -817,21 +828,21 @@ class AdminControlCharts implements IAdminControlCharts {
                             .style("fill", d => d.colour)
                             .call(update => update.transition()
                                 .duration(750)
-                                .attr("height", d => chart.y.scale(d.q1) - chart.y.scale(d.q3))
-                                .attr("y", d => chart.y.scale(d.q3))),
+                                .attr("height", d => chart.y.scale(d.getStat("q1").value as number) - chart.y.scale(d.getStat("q3").value as number))
+                                .attr("y", d => chart.y.scale(d.getStat("q3").value as number))),
                 update => update.style("stroke", d => d.colour)
                             .style("fill", d => d.colour)
                             .call(update => update.transition()
                                 .duration(750)
-                                .attr("y", d => chart.y.scale(d.q3))
+                                .attr("y", d => chart.y.scale(d.getStat("q3").value as number))
                                 .attr("x", d => chart.x.scale(d.group))
                                 .attr("width", chart.x.scale.bandwidth())
-                                .attr("height", d => chart.y.scale(d.q1) - chart.y.scale(d.q3))),
+                                .attr("height", d => chart.y.scale(d.getStat("q1").value as number) - chart.y.scale(d.getStat("q3").value as number))),
                 exit => exit.style("fill", "#cccccc")
                             .style("stroke", "#b3b3b3")
                             .call(exit => exit.transition()
                                 .duration(250)
-                                .attr("y", d => chart.y.scale(d.q1))
+                                .attr("y", d => chart.y.scale(d.getStat("q1").value as number))
                                 .attr("height", 0)
                                 .remove())
             );      
@@ -848,16 +859,10 @@ class AdminControlCharts implements IAdminControlCharts {
             _this.interactions.tooltip.appendTooltipContainer(chart);
 
             //Append tooltip box with text
-            let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.group,
-                [new TooltipValues("q1", d.q1),
-                new TooltipValues("q3", d.q3),
-                new TooltipValues("Median", d.median),
-                new TooltipValues("Mean", d.mean),
-                new TooltipValues("Max", d.max),
-                new TooltipValues("Min", d.min)]);
+            let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.group, d.stats.filter((c, i) => i < 6).map(c => new TooltipValues(c.stat, c.value as number)));
 
             //Position tooltip container
-            _this.interactions.tooltip.positionTooltipContainer(chart, xTooltip(d.group, tooltipBox), yTooltip(d.q3, tooltipBox));
+            _this.interactions.tooltip.positionTooltipContainer(chart, xTooltip(d.group, tooltipBox), yTooltip(d.getStat("q3").value as number, tooltipBox));
             function xTooltip(x: string, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
                 //Position tooltip right of the box
                 let xTooltip = chart.x.scale(x) + chart.x.scale.bandwidth();
@@ -895,21 +900,12 @@ class AdminControlCharts implements IAdminControlCharts {
         div.select(".card-body").html("");
         return div.select<HTMLDivElement>(".card-body")
             .attr("class", "card-body statistics-text")
-            .html(`<b>Q1: </b>${data.q1}<br>
-                        <b>Median: </b>${data.median}<br>
-                        <b>Q3: </b>${data.q3}<br>
-                        <b>Mean: </b>${data.mean}<br>
-                        <b>Total Reflections: </b>${data.value.length}<br>
-                        <b>Variance: </b>${data.variance}<br>
-                        <b>Std Deviation: </b>${data.deviation}<br>
-                        <b>Max: </b>${data.max}<br>
-                        <b>Min: </b>${data.min}<br>
-                        <b>Reflections per user: </b>${data.avgReflectionsPerUser}<br>
-                        <b>Max reflections per user: </b>${data.userMostReflective}<br>
-                        <b>Min reflections per user: </b>${data.userLessReflective}<br>
-                        <b>Total Users: </b>${data.totalUsers}<br>
-                        <b>Oldest reflection:</b> ${data.oldestReflection.toDateString()}<br>
-                        <b>Newest reflection:</b> ${data.newestReflection.toDateString()}<br>`);
+            .selectAll("p")
+            .data(data.stats)
+            .enter()
+            .append("p")
+            .attr("class", "my-0")
+            .html(d => `<b>${d.displayName}: </b>${d.value}`);
     };
     renderHistogram(chart: HistogramChartSeries, data: IAnalyticsChartsData[]): HistogramChartSeries {
         chart.setBandwidth(data);
@@ -1552,22 +1548,23 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             let data = entries.map(d => new AnalyticsChartsDataStats(d));
             boxPlot.x.scale.domain(data.map(r => r.group));
             _this.interactions.axisSeries(boxPlot, data);
-            function getClickData(){
-                if (! boxPlot.elements.contentContainer.select<SVGRectElement>(".clicked").empty) {
-                    return boxPlot.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IAnalyticsChartsDataStats;
+            function getClickData(contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>){
+                if (!contentContainer.select<SVGRectElement>(".clicked").empty()) {
+                    return contentContainer.select<SVGRectElement>(".clicked").datum();
                 } 
                 return;
             }
+            let groupClickData = getClickData(boxPlot.elements.contentContainer) as IAnalyticsChartsDataStats;
             _this.renderGroupChart(boxPlot, data);
             if (boxPlot.click) {              
-                _this.interactions.click.appendGroupsText(boxPlot, data, getClickData());
+                _this.interactions.click.appendGroupsText(boxPlot, data, groupClickData);
                 let histogramData = _this.getGroupCompareData();
                 _this.interactions.axisSeries(_this.histogram, histogramData);
-                let histogramClickData = _this.histogram.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IHistogramData;
+                let histogramClickData = getClickData(_this.histogram.elements.contentContainer) as IHistogramData;
                 _this.renderHistogram(_this.histogram, histogramData);
                 let usersData = histogramData.map(d => d.getUsersData());
                 _this.interactions.axisSeries(_this.usersHistogram, usersData);
-                let usersHistogramClickData = _this.histogram.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IHistogramData;
+                let usersHistogramClickData = getClickData(_this.usersHistogram.elements.contentContainer) as IHistogramData;
                 _this.renderHistogram(_this.usersHistogram, usersData);
                 if (_this.histogram.click) {
                     _this.interactions.click.appendThresholdPercentages(_this.histogram, histogramData, histogramClickData);
@@ -1630,7 +1627,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 .on("click", function (e: Event) {
                     let showHelp = _this.htmlContainers.helpPopover(d3.select(this), `${_this.histogram.id}-help`);
                     _this.histogram.elements.contentContainer.selectAll(`#${_this.histogram.id}-data`).attr("filter", showHelp ? "url(#f-help)" : null);
-                    _this.htmlContainers.helpPopover(_this.histogram.elements.contentContainer.select(`#${_this.histogram.id}-data`), `${_this.histogram.id}-help-data`, "hover me!");
+                    _this.htmlContainers.helpPopover(_this.histogram.elements.contentContainer.select(`#${_this.histogram.id}-data`), `${_this.histogram.id}-help-data`, "hover or click me!");
                     let showDragHelp = _this.htmlContainers.helpPopover(_this.histogram.elements.contentContainer.select(".threshold-line.soaring"), `${_this.histogram.id}-help-drag`, "drag me!");
                     if (showDragHelp) {
                         d3.select(`#${_this.histogram.id}-help-drag`).style("top", parseInt(d3.select(`#${_this.histogram.id}-help-drag`).style("top")) - 19 + "px");
@@ -1647,7 +1644,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 .on("click", function (e: Event) {
                     let showHelp = _this.htmlContainers.helpPopover(d3.select(this), `${_this.usersHistogram.id}-help`);
                     _this.usersHistogram.elements.contentContainer.selectAll(`#${_this.usersHistogram.id}-data`).attr("filter", showHelp ? "url(#f-help)" : null);
-                    _this.htmlContainers.helpPopover(_this.usersHistogram.elements.contentContainer.select(`#${_this.usersHistogram.id}-data`), `${_this.usersHistogram.id}-help-data`, "hover me!");
+                    _this.htmlContainers.helpPopover(_this.usersHistogram.elements.contentContainer.select(`#${_this.usersHistogram.id}-data`), `${_this.usersHistogram.id}-help-data`, "hover or click me!");
                     let showDragHelp = _this.htmlContainers.helpPopover(_this.usersHistogram.elements.contentContainer.select(".threshold-line.soaring"), `${_this.usersHistogram.id}-help-drag`, "drag me!");
                     if (showDragHelp) {
                         d3.select(`#${_this.usersHistogram.id}-help-drag`).style("top", parseInt(d3.select(`#${_this.usersHistogram.id}-help-drag`).style("top")) - 19 + "px");
@@ -1709,6 +1706,10 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         let _this = this;
         chart = super.renderHistogram(chart, data);
 
+        chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
+            _this.interactions.click.removeClick(chart);
+        });
+
         //Add drag functions to the distressed threshold
         chart.elements.contentContainer.selectAll(".threshold-line")
             .classed("grab", true)
@@ -1720,6 +1721,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         //Start dragging functions           
         function dragStart() {
             chart.elements.contentContainer.selectAll(`.${chart.id}-histogram-text-container`).remove();
+            d3.select(this).classed("grab", false);
             d3.select(this).classed("grabbing", true);
             _this.htmlContainers.removeHelp(chart);
         }
@@ -1756,6 +1758,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             chart.setBin();
             _this.interactions.histogram(chart, chart.elements.contentContainer.selectAll(`.${chart.id}-histogram-container`));
             d3.select(this).classed("grabbing", false);
+            d3.select(this).classed("grab", true);
             _this.handleHistogramHover(chart);
             if (chart.click) {
                 let clickData = chart.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IHistogramData;
@@ -1936,7 +1939,6 @@ class AdminExperimentalInteractions extends AdminControlInteractions implements 
 interface IClick {
     enableClick(chart: IChart, onClick: any): void;
     removeClick(chart: IChart): void;
-    removeClickClass(chart: IChart, css: string): void;
     appendScatterText(chart: IChart, d: IReflectionAuthorEntry, title: string, values: ITooltipValues[]): void;
     positionClickContainer(chart: ChartTime, box: any, text: any, d: IReflectionAuthorEntry): string;
     appendGroupsText(chart: ChartSeries, data: IAnalyticsChartsDataStats[], clickData: IAnalyticsChartsDataStats): void;
@@ -1954,10 +1956,6 @@ class Click implements IClick {
         chart.elements.contentContainer.selectAll(".click-line").remove();
         chart.elements.contentContainer.selectAll(".click-container").remove()
         chart.elements.content.classed("clicked", false);
-    };
-    removeClickClass(chart: IChart, css: string): void {
-        d3.selectAll(`#${chart.id} .content-container .${css}`)
-            .attr("class", css)
     };
     appendScatterText(chart: ChartTime, d: IReflectionAuthorEntry, title: string, values: ITooltipValues[] = null): void {
         let container = chart.elements.contentContainer.append("g")
@@ -2006,28 +2004,24 @@ class Click implements IClick {
                     .attr("class", "click-container")
                     .attr("transform", c => `translate(${chart.x.scale(c.group) + chart.x.scale.bandwidth() / 2}, 0)`)
                     .call(enter => enter.selectAll("text")
-                        .data(c => [{title: "q3", clickData: clickData.q3, data: c.q3, clickGroup: clickData.group, dataGroup: c.group}, 
-                            {title: "Median", clickData: clickData.median, data: c.median, clickGroup: clickData.group, dataGroup: c.group}, 
-                            {title: "q1", clickData: clickData.q1, data: c.q1, clickGroup: clickData.group, dataGroup: c.group}])
+                        .data(c => c.stats.filter(d => d.stat == "q3" || d.stat == "median" || d.stat == "q1").map(d => new ClickTextData(clickData.stats.find(a => a.stat == d.stat), d, clickData.group, c.group)))
                         .enter()
                         .append("text")
-                        .attr("class", c => this.comparativeText(c.clickData, c.data, c.clickGroup, c.dataGroup)[0])
-                        .attr("y", c => chart.y.scale(c.data) - 5)
-                        .text(c => `${c.title}: ${this.comparativeText(c.clickData, c.data, c.clickGroup, c.dataGroup)[1]}`)),
+                        .attr("class", c => this.comparativeText(c)[0])
+                        .attr("y", c => chart.y.scale((c.data.stat as IDataStats).value as number) - 5)
+                        .text(c => `${(c.data.stat as IDataStats).displayName}: ${this.comparativeText(c)[1]}`)),
                 update => update.call(update => update.transition()
                     .duration(750)
                     .attr("transform", c => `translate(${chart.x.scale(c.group) + chart.x.scale.bandwidth() / 2}, 0)`))
                     .call(update => update.selectAll("text")
-                        .data(c => [{title: "q3", clickData: clickData.q3, data: c.q3, clickGroup: clickData.group, dataGroup: c.group}, 
-                            {title: "Median", clickData: clickData.median, data: c.median, clickGroup: clickData.group, dataGroup: c.group}, 
-                            {title: "q1", clickData: clickData.q1, data: c.q1, clickGroup: clickData.group, dataGroup: c.group}])
+                    .data(c => c.stats.filter(d => d.stat == "q3" || d.stat == "median" || d.stat == "q1").map(d => new ClickTextData(clickData.stats.find(a => a.stat == d.stat), d, clickData.group, c.group)))
                         .join(
                             enter => enter,
                             update => update.call(update => update.transition()
                                 .duration(750)
-                                .attr("class", c => this.comparativeText(c.clickData, c.data, c.clickGroup, c.dataGroup)[0])
-                                .attr("y", c => chart.y.scale(c.data) - 5)
-                                .text(c => `${c.title}: ${this.comparativeText(c.clickData, c.data, c.clickGroup, c.dataGroup)[1]}`)),
+                                .attr("class", c => this.comparativeText(c)[0])
+                                .attr("y", c => chart.y.scale((c.data.stat as IDataStats).value as number) - 5)
+                                .text(c => `${(c.data.stat as IDataStats).displayName}: ${this.comparativeText(c)[1]}`)),
                             exit => exit
                         )),
                 exit => exit.remove()
@@ -2050,9 +2044,9 @@ class Click implements IClick {
                         .data(d => chart.bin(d.value.map(d => d.point)).map(c => { return new HistogramData(d.group, d.colour, c, Math.round(c.length / d.value.length * 100)) }))
                         .enter()
                         .append("text")
-                        .attr("class", c => this.comparativeText(clickData.bin.length, c.bin.length, clickData.group, c.group)[0])
+                        .attr("class", c => this.comparativeText(new ClickTextData(clickData.bin.length, c.bin.length, clickData.group, c.group))[0])
                         .attr("y", c => c.bin.x0 == 0 ? chart.y.scale(0 + tDistressed / 2) : c.bin.x1 == 100 ? chart.y.scale(tSoaring + (100 - tSoaring) / 2) : chart.y.scale(50))
-                        .text(c => `${this.comparativeText(clickData.bin.length, c.bin.length, clickData.group, c.group)[1]} (${Math.abs(clickData.percentage - c.percentage)}%)`)),
+                        .text(c => `${this.comparativeText(new ClickTextData(clickData.bin.length, c.bin.length, clickData.group, c.group))[1]} (${Math.abs(clickData.percentage - c.percentage)}%)`)),
                 update => update.call(update => update.transition()
                     .duration(750)
                     .attr("transform", c => `translate(${chart.x.scale(c.group) + chart.x.scale.bandwidth() / 2}, 0)`))
@@ -2062,22 +2056,29 @@ class Click implements IClick {
                             enter => enter,
                             update => update.call(update => update.transition()
                                 .duration(750)
-                                .attr("class", c => this.comparativeText(clickData.bin.length, c.bin.length, clickData.group, c.group)[0])
+                                .attr("class", c => this.comparativeText(new ClickTextData(clickData.bin.length, c.bin.length, clickData.group, c.group))[0])
                                 .attr("y", c => c.bin.x0 == 0 ? chart.y.scale(0 + tDistressed / 2) : c.bin.x1 == 100 ? chart.y.scale(tSoaring + (100 - tSoaring) / 2) : chart.y.scale(50))
-                                .text(c => `${this.comparativeText(clickData.bin.length, c.bin.length, clickData.group, c.group)[1]} (${Math.abs(clickData.percentage - c.percentage)}%)`)),
+                                .text(c => `${this.comparativeText(new ClickTextData(clickData.bin.length, c.bin.length, clickData.group, c.group))[1]} (${Math.abs(clickData.percentage - c.percentage)}%)`)),
                             exit => exit
                         )),
                 exit => exit.remove()
             );       
     };
-    private comparativeText(clickValue: number, value: number, clickXValue?: string | Date, xValue?: string | Date): string[] {
+    private comparativeText(textData: IClickTextData): string[] {
         let textClass = "click-text";
         let textSymbol = "";
-        if (clickValue - value < 0) {
+        let textValue;
+        if (typeof(textData.clickData.stat) != "number" && typeof(textData.data.stat) != "number") {
+            textValue = (textData.clickData.stat.value as number) - (textData.data.stat.value as number)
+        } else {
+            textValue = (textData.clickData.stat as number) - (textData.data.stat as number)
+        }
+
+        if (textValue < 0) {
             textClass = textClass + " positive";
             textSymbol = "+";
         }
-        else if (clickValue - value > 0) {
+        else if (textValue > 0) {
             textClass = textClass + " negative";
             textSymbol = "-";
         }
@@ -2085,10 +2086,11 @@ class Click implements IClick {
             textClass = textClass + " black"
         }
 
-        if (clickXValue != null && xValue != null) {
-            return [textClass, `${textSymbol}${clickXValue == xValue && clickValue - value == 0 ? clickValue : (Math.abs(clickValue - value))}`];
+        if (textData.clickData.group != null && textData.data.group != null) {
+            return [textClass, `${textSymbol}${textData.clickData.group == textData.data.group 
+                && textValue == 0 ? typeof(textData.clickData.stat) != "number" ? textData.clickData.stat.value : textData.clickData.stat : (Math.abs(textValue))}`];
         } else {
-            return [textClass, `${textSymbol}${(Math.abs(clickValue - value))}`];
+            return [textClass, `${textSymbol}${(Math.abs(textValue))}`];
         }
     }
 }
@@ -2159,29 +2161,25 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
 
         //Append group general statistics
         adminControlCharts.htmlContainers.statistics = adminControlCharts.htmlContainers.appendDiv("groups-statistics", "col-md-3");
-        let cardGroupStats = adminControlCharts.htmlContainers.statistics.selectAll("div")
+        adminControlCharts.htmlContainers.statistics.selectAll("div")
             .data(data)
             .enter()
             .append("div")
-            .attr("class", "card");
-        cardGroupStats.each((d, i, g) => {
-            d3.select(g[i])
-                .append("div")
+            .attr("class", "card")
+            .call(div => div.append("div")
                 .attr("class", "card-header")
                 .append("button")
                 .attr("class", "btn btn-link")
-                .attr("data-target", `#stats-${d.group}`)
+                .attr("data-target", d => `#stats-${d.group}`)
                 .attr("data-toggle", "collapse")
-                .html(`${d.group} statistics`);
-            d3.select(g[i])
-                .append("div")
-                .attr("id", `stats-${d.group}`)
-                .attr("class", `collapse ${i == 0 ? "show" : ""}`)
+                .html(d => `${d.group} statistics`))
+            .call(div => div.append("div")
+                .attr("id", d => `stats-${d.group}`)
+                .attr("class", (d, i) => `collapse ${i == 0 ? "show" : ""}`)
                 .attr("data-parent", "#groups-statistics")
                 .append("div")
-                .attr("class", "card-body");
-            adminControlCharts.renderGroupStats(d3.select(g[i]), d);
-        });
+                .attr("class", "card-body"))
+            .call(div => adminControlCharts.renderGroupStats(div, div.datum()));
 
         //Draw groups histogram container  
         adminControlCharts.htmlContainers.histogram = adminControlCharts.htmlContainers.appendDiv("group-histogram-chart", "col-md-6 mt-3");
