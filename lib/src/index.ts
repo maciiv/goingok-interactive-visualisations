@@ -2007,9 +2007,12 @@ class Click implements IClick {
                         .data(c => c.stats.filter(d => d.stat == "q3" || d.stat == "median" || d.stat == "q1").map(d => new ClickTextData(clickData.stats.find(a => a.stat == d.stat), d, clickData.group, c.group)))
                         .enter()
                         .append("text")
-                        .attr("class", c => this.comparativeText(c)[0])
+                        .attr("class", "click-text black")                       
                         .attr("y", c => chart.y.scale((c.data.stat as IDataStats).value as number) - 5)
-                        .text(c => `${(c.data.stat as IDataStats).displayName}: ${this.comparativeText(c)[1]}`)),
+                        .text(c => `${(c.data.stat as IDataStats).displayName}: ${(c.data.stat as IDataStats).value} `)
+                        .append("tspan")
+                        .attr("class", c => this.comparativeText(c)[0])
+                        .text(c => `(${this.comparativeText(c)[1]})`)),
                 update => update.call(update => update.transition()
                     .duration(750)
                     .attr("transform", c => `translate(${chart.x.scale(c.group) + chart.x.scale.bandwidth() / 2}, 0)`))
@@ -2017,11 +2020,14 @@ class Click implements IClick {
                     .data(c => c.stats.filter(d => d.stat == "q3" || d.stat == "median" || d.stat == "q1").map(d => new ClickTextData(clickData.stats.find(a => a.stat == d.stat), d, clickData.group, c.group)))
                         .join(
                             enter => enter,
-                            update => update.call(update => update.transition()
-                                .duration(750)
-                                .attr("class", c => this.comparativeText(c)[0])
-                                .attr("y", c => chart.y.scale((c.data.stat as IDataStats).value as number) - 5)
-                                .text(c => `${(c.data.stat as IDataStats).displayName}: ${this.comparativeText(c)[1]}`)),
+                            update => update.call(text => text.selectAll<SVGTSpanElement, ClickTextData>("tspan")
+                                    .attr("class", c => this.comparativeText(c)[0])
+                                    .text(c => `(${this.comparativeText(c)[1]})`))
+                                .call(update => update.transition()
+                                    .duration(750)
+                                    .attr("class", "click-text black")
+                                    .attr("y", c => chart.y.scale((c.data.stat as IDataStats).value as number) - 5)
+                                    .text(c => `${(c.data.stat as IDataStats).displayName}: ${(c.data.stat as IDataStats).value} `)),
                             exit => exit
                         )),
                 exit => exit.remove()
