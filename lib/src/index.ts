@@ -606,8 +606,11 @@ class HtmlContainers implements IHtmlContainers {
             .attr("id", id != null ? id : "no-id")
             .call(div => div.append("div")
                 .attr("class", "card-header")
-                .html(!help ? header : header + `<button type="button" class="btn btn-light btn-sm float-right"><i class="fas fa-question-circle"></i></button>`))
-            .call(div => div.append("div").attr("class", "card-body chart-container"))
+                .html(!help ? `<b>${header}</b>` : `<b>${header}</b><button type="button" class="btn btn-light btn-sm float-right"><i class="fas fa-question-circle"></i></button>`))
+            .call(div => div.append("div")
+                .attr("class", "card-body")
+                .call(div => div.append("div")
+                    .attr("class", "chart-container")))           
     };
     helpPopover(button: any, id: string, content: string): boolean {
         if (d3.select(`#${id}`).empty()) {
@@ -622,9 +625,13 @@ class HtmlContainers implements IHtmlContainers {
                 .attr("class", "popover-body")
                 .html(content);
             popover.style("left", `${button.node().getBoundingClientRect().left - popover.node().getBoundingClientRect().width}px`);
+            button.select("i")
+                .attr("class", "fas fa-window-close")
             return true;
         } else {
             d3.select(`#${id}`).remove();
+            button.select("i")
+                .attr("class", "fas fa-question-circle")
             return false;
         }
     };
@@ -634,14 +641,6 @@ class HtmlContainers implements IHtmlContainers {
         d3.select(`#${chart.id}-help-data`).remove();
         d3.select(`#${chart.id}-help-drag`).remove();
         d3.select(`#${chart.id}-help-zoom`).remove();
-        if(!d3.select(`#${chart.id} #sort-by`).empty()) {
-            d3.select(`#${chart.id} #sort-by`).style("box-shadow", null);
-        }
-        if(!d3.select(`#${chart.id} #timeline-plot`).empty()) {
-            d3.select(`#${chart.id} #timeline-plot`).style("box-shadow", null);
-        }
-        chart.elements.contentContainer.selectAll("rect").attr("filter", null);
-        chart.elements.contentContainer.selectAll("circle").attr("filter", null);
     };
     renderNavbarScrollspy(): void {
         d3.select("body")
@@ -2123,7 +2122,7 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
 
         //Append groups chart container
         adminControlCharts.htmlContainers.boxPlot = adminControlCharts.htmlContainers.appendDiv("groups-chart", "col-md-9");
-        adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.boxPlot, "Reflections box plot", undefined, true);
+        let boxplotCard = adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.boxPlot, "All groups' reflections box plot", undefined, true);
 
         //Create groups chart with current data
         let groupChart = new ChartSeries("groups-chart", data.map(d => d.group));
@@ -2132,7 +2131,7 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
         //Handle groups chart help
         adminControlCharts.htmlContainers.boxPlot.select(".card-header button")
             .on("click", function (e: Event) {
-                let showHelp = adminControlCharts.htmlContainers.helpPopover(d3.select(this), `${groupChart.id}-help`, "<b>Box plot</b><br>A box plot is used to show the data distribution<br><i>Q3:</i> The median of the upper half of the data set<br><i>Median:</i> The middle value of a dataset<br><i>Q1:</i> The median of the lower half of the dataset");
+                adminControlCharts.htmlContainers.helpPopover(d3.select(this), `${groupChart.id}-help`, "<b>Box plot</b><br>A box plot is used to show the data distribution<br><i>Q3:</i> The median of the upper half of the data set<br><i>Median:</i> The middle value of a dataset<br><i>Q1:</i> The median of the lower half of the dataset");
                 adminControlCharts.htmlContainers.helpPopover(groupChart.elements.contentContainer.select(`#${groupChart.id}-data`), `${groupChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
             });
 
@@ -2160,20 +2159,20 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
 
         //Draw groups histogram container  
         adminControlCharts.htmlContainers.histogram = adminControlCharts.htmlContainers.appendDiv("group-histogram-chart", "col-md-6 mt-3");
-        adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.histogram, `Reflections histogram`, undefined, true);
+        adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.histogram, `All groups' reflections histogram`, undefined, true);
         let histogramChart = new HistogramChartSeries("group-histogram-chart", data.map(d => d.group));
         adminControlCharts.renderHistogram(histogramChart, data);
 
         //Handle histogram chart help
         adminControlCharts.htmlContainers.histogram.select(".card-header button")
             .on("click", function (e: Event) {
-                let showHelp = adminControlCharts.htmlContainers.helpPopover(d3.select(this), `${histogramChart.id}-help`, "<b>Histogram</b><br>A histogram group data points into user-specific ranges. The data points in this histogram are <i>reflections</i>");
+                adminControlCharts.htmlContainers.helpPopover(d3.select(this), `${histogramChart.id}-help`, "<b>Histogram</b><br>A histogram group data points into user-specific ranges. The data points in this histogram are <i>reflections</i>");
                 adminControlCharts.htmlContainers.helpPopover(histogramChart.elements.contentContainer.select(`#${histogramChart.id}-data`), `${histogramChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
             });
 
         //Draw users histogram container
         adminControlCharts.htmlContainers.userHistogram = adminControlCharts.htmlContainers.appendDiv("group-histogram-users-chart", "col-md-6 mt-3");
-        adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.userHistogram, `Users histogram`, undefined, true);
+        adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.userHistogram, `All users' reflections by group histogram`, undefined, true);
         let usersData = data.map(d => d.getUsersData());
         let histogramUsersChart = new HistogramChartSeries("group-histogram-users-chart", data.map(d => d.group));
         adminControlCharts.renderHistogram(histogramUsersChart, usersData);
@@ -2187,7 +2186,7 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
 
         //Draw timeline 
         adminControlCharts.htmlContainers.timeline = adminControlCharts.htmlContainers.appendDiv("group-timeline", "col-md-12 mt-3");
-        let timelineCard = adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.timeline, `Reflections vs Time`, undefined, true);
+        let timelineCard = adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.timeline, `Reflections' group vs time`, undefined, true);
         timelineCard.select(".card-body")
             .attr("class", "card-body")
             .append("ul")
@@ -2211,9 +2210,7 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
                             <label class="btn btn-light">
                                 <input type="radio" name="plot" value="scatter">Scatter Plot<br>
                             </label>
-                        </div>`)
-        timelineCard.append("div")
-            .attr("class", "chart-container");
+                        </div>`);
 
         let timelineChart = new ChartTime("group-timeline", d3.extent(data[0].value.map(d => d.timestamp)));
         adminControlCharts.renderTimelineDensity(timelineChart, data[0]);
