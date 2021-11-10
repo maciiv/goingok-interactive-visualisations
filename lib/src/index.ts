@@ -240,7 +240,7 @@ class HistogramChartSeries extends ChartSeries implements IHistogramChartSeries 
     setBandwidth(data: IAnalyticsChartsData[]): void {
         this.bandwidth = d3.scaleLinear()
             .range([0, this.x.scale.bandwidth()])
-            .domain([-d3.max(data.map(r => r.value.length)), d3.max(data.map(r => r.value.length))]);
+            .domain([-100, 100]);
     };
     setBin(): void {
         this.bin = d3.bin().domain([0, 100]).thresholds([0, this.elements.getThresholdsValues(this)[0], this.elements.getThresholdsValues(this)[1]]);
@@ -902,10 +902,10 @@ class AdminControlCharts implements IAdminControlCharts {
                         .append("rect")
                         .attr("id", `${chart.id}-data`)
                         .attr("class", "histogram-rect")
-                        .attr("x", c => chart.bandwidth(-c.bin.length))
+                        .attr("x", c => chart.bandwidth(-c.percentage))
                         .attr("y", c => chart.y.scale(c.bin.x0))
                         .attr("height", 0)
-                        .attr("width", c => chart.bandwidth(c.bin.length) - chart.bandwidth(-c.bin.length))
+                        .attr("width", c => chart.bandwidth(c.percentage) - chart.bandwidth(-c.percentage))
                         .style("stroke", c => c.colour)
                         .style("fill", c => c.colour)
                         .transition()
@@ -1249,10 +1249,10 @@ class AdminControlTransitions implements IAdminControlTransitions {
                     .style("fill", d => d.colour)
                     .call(update => update.transition()
                         .duration(750)
-                        .attr("x", d => chart.bandwidth(-d.bin.length))
+                        .attr("x", d => chart.bandwidth(-d.percentage))
                         .attr("y", d => chart.y.scale(d.bin.x1))
                         .attr("height", d => chart.y.scale(d.bin.x0) - chart.y.scale(d.bin.x1))
-                        .attr("width", d => chart.bandwidth(d.bin.length) - chart.bandwidth(-d.bin.length))),
+                        .attr("width", d => chart.bandwidth(d.percentage) - chart.bandwidth(-d.percentage))),
                 exit => exit)
     };
 }
@@ -1588,8 +1588,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
 
             //Draw compare
             _this.htmlContainers.compare = _this.htmlContainers.appendDiv("group-compare", "col-md-2 mt-3");
-            let compareCard = _this.htmlContainers.appendCard(_this.htmlContainers.compare, `Compare ${d.group} with:`);
-            compareCard.select(".card-body").attr("class", "card-body");
+            _this.htmlContainers.appendCard(_this.htmlContainers.compare, `Compare ${d.group} with:`);
             let histogramData = _this.getGroupCompareData();
             _this.renderGroupCompare();
 
@@ -1811,6 +1810,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
     getGroupCompareData(): IAnalyticsChartsData[] {
         let currentGroupId = d3.select("#groups-statistics .card").attr("id");
         let compareData = [] as IAnalyticsChartsData[];
+        d3.select("#group-compare .chart-container").remove();
         d3.select("#group-compare .card-body").selectAll("div").each((d: IAnalyticsChartsData, i, g) => {
             d3.select(g[i]).select("input").property("checked") == false ? "" : compareData.push(d);
         });
@@ -2189,7 +2189,7 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
         let timelineCard = adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.timeline, `Reflections' group vs time`, undefined, true);
         timelineCard.select(".card-body")
             .attr("class", "card-body")
-            .append("ul")
+            .insert("ul", ".chart-container")
             .attr("class", "nav nav-tabs")
             .selectAll("li")
             .data(data)
@@ -2201,16 +2201,27 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
             .attr("href", d => `#timeline-${d.group}`)
             .html(d => d.group);
         timelineCard.select(".card-body")
-            .append("div")
+            .insert("div", ".chart-container")
             .attr("class", "row mt-3")
-            .html(() => `<div id="timeline-plot" class="btn-group btn-group-toggle mr-auto ml-auto" data-toggle="buttons">
-                            <label class="btn btn-light active">
-                                <input type="radio" name="plot" value="density" checked>Density Plot<br>
-                            </label>
-                            <label class="btn btn-light">
-                                <input type="radio" name="plot" value="scatter">Scatter Plot<br>
-                            </label>
-                        </div>`);
+            .append("div")
+            .attr("id", "timeline-plot")
+            .attr("class", "btn-group btn-group-toggle mr-auto ml-auto")
+            .attr("data-toggle", "buttons")
+            .call(div => div.append("label")
+                .attr("class", "btn btn-light active")
+                .append("input")
+                .attr("type", "radio")
+                .attr("name", "plot")
+                .attr("value", "density")
+                .property("checked", true)
+                .html("Density Plot"))
+            .call(div => div.append("label")
+                .attr("class", "btn btn-light")
+                .append("input")
+                .attr("type", "radio")
+                .attr("name", "plot")
+                .attr("value", "scatter")
+                .html("Scatter Plot"));
 
         let timelineChart = new ChartTime("group-timeline", d3.extent(data[0].value.map(d => d.timestamp)));
         adminControlCharts.renderTimelineDensity(timelineChart, data[0]);
