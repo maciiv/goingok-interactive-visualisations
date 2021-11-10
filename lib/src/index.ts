@@ -1158,6 +1158,7 @@ class AdminControlCharts implements IAdminControlCharts {
         });
     };
     renderUserStatistics(card: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsData, pseudonym?: string): void {
+        card.select(".chart-container").remove();
         let userData = data.getUsersData();
         let groupMean = Math.round(d3.mean(data.value.map(d => d.point)));
         let cardRow = card.select(".card-body")
@@ -1628,7 +1629,6 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.htmlContainers.timeline = _this.htmlContainers.appendDiv("group-timeline", "col-md-12 mt-3");
             let timelineCard = _this.htmlContainers.appendCard(_this.htmlContainers.timeline, `Reflections vs Time (${d.group})`, undefined, true);
             timelineCard.select(".card-body")
-                .attr("class", "card-body")
                 .html(`<div class="row">
                     <div id="timeline-plot" class="btn-group btn-group-toggle mr-auto ml-auto" data-toggle="buttons">
                         <label class="btn btn-light active">
@@ -2203,25 +2203,14 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
         timelineCard.select(".card-body")
             .insert("div", ".chart-container")
             .attr("class", "row mt-3")
-            .append("div")
-            .attr("id", "timeline-plot")
-            .attr("class", "btn-group btn-group-toggle mr-auto ml-auto")
-            .attr("data-toggle", "buttons")
-            .call(div => div.append("label")
-                .attr("class", "btn btn-light active")
-                .append("input")
-                .attr("type", "radio")
-                .attr("name", "plot")
-                .attr("value", "density")
-                .property("checked", true)
-                .html("Density Plot"))
-            .call(div => div.append("label")
-                .attr("class", "btn btn-light")
-                .append("input")
-                .attr("type", "radio")
-                .attr("name", "plot")
-                .attr("value", "scatter")
-                .html("Scatter Plot"));
+            .html(`<div id="timeline-plot" class="btn-group btn-group-toggle mr-auto ml-auto" data-toggle="buttons">
+                        <label class="btn btn-light active">
+                            <input type="radio" name="plot" value="density" checked>Density Plot<br>
+                        </label>
+                        <label class="btn btn-light">
+                            <input type="radio" name="plot" value="scatter">Scatter Plot<br>
+                        </label>
+                    </div>`);
 
         let timelineChart = new ChartTime("group-timeline", d3.extent(data[0].value.map(d => d.timestamp)));
         adminControlCharts.renderTimelineDensity(timelineChart, data[0]);
