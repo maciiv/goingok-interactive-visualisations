@@ -983,9 +983,11 @@ class AdminControlCharts implements IAdminControlCharts {
                     .attr("d", d3.geoPath())               
                     .attr("stroke", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 25))
                     .attr("fill", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 20)),
-                update => update .attr("d", d3.geoPath())               
-                    .attr("stroke", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 25))
-                    .attr("fill", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 20)),
+                update => update.attr("stroke", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 25))
+                    .attr("fill", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 20))
+                    .call(update => update.transition()
+                    .duration(750)
+                    .attr("d", d3.geoPath())),
                 exit => exit.remove()
             );
         }
