@@ -110,7 +110,7 @@ class AnalyticsChartsDataStats extends AnalyticsChartsData implements IAnalytics
         this.stats.push(new DataStats("deviation", "Std Deviation", this.roundDecimal(d3.deviation(entries.value.map(r => r.point)))))
         this.stats.push(new DataStats("oldRef", "Oldest reflection", d3.min(entries.value.map(r => new Date(r.timestamp))).toDateString()))
         this.stats.push(new DataStats("newRef", "Newest reflection", d3.max(entries.value.map(r => new Date(r.timestamp))).toDateString()))
-        this.stats.push(new DataStats("totalRef", "Total reflections", d3.max(entries.value.map(r => new Date(r.timestamp))).toDateString()))
+        this.stats.push(new DataStats("totalRef", "Total reflections", entries.value.length))
         this.stats.push(new DataStats("avgRef", "Reflections per user", this.roundDecimal(d3.mean(uniqueUsers.map(r => r.value)))))
         this.stats.push(new DataStats("userHRef", "Max reflections per user", d3.max(uniqueUsers.map(r => r.value))))
         this.stats.push(new DataStats("userLRef", "Min reflections per user", d3.min(uniqueUsers.map(r => r.value))))
