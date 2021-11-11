@@ -171,7 +171,7 @@ class ChartSeries implements IChart {
         this.width = containerDimensions.width;
         this.height = containerDimensions.height;
         this.padding = new ChartPadding();
-        this.y = new ChartLinearAxis("State", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left");
+        this.y = new ChartLinearAxis("Reflection Point", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left");
         this.x = new ChartSeriesAxis("Group Code", domain, [0, this.width - this.padding.yAxis - this.padding.right]);
         this.click = false;
         this.elements = new ChartElements(this);
@@ -196,7 +196,7 @@ class ChartTime implements IChart {
         this.height = containerDimensions.height;
         this.padding = new ChartPadding(75, 75, 5);
         this.htmlContainers = new HtmlContainers();
-        this.y = new ChartLinearAxis("State", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left");
+        this.y = new ChartLinearAxis("Reflection Point", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left");
         this.x = new ChartTimeAxis("Time", domain, [0, this.width - this.padding.yAxis]);
         this.click = false;
         this.elements = new ChartElements(this);
@@ -983,11 +983,9 @@ class AdminControlCharts implements IAdminControlCharts {
                     .attr("d", d3.geoPath())               
                     .attr("stroke", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 25))
                     .attr("fill", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 20)),
-                update => update.attr("stroke", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 25))
-                    .attr("fill", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 20))
-                    .call(update => update.transition()
-                    .duration(750)
-                    .attr("d", d3.geoPath())),
+                update => update.attr("d", d3.geoPath())
+                    .attr("stroke", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 25))
+                    .attr("fill", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 20)),
                 exit => exit.remove()
             );
         }
@@ -1043,7 +1041,7 @@ class AdminControlCharts implements IAdminControlCharts {
             _this.interactions.tooltip.appendTooltipContainer(chart);
             let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.timestamp.toDateString(), 
                 [new TooltipValues("User", d.pseudonym), 
-                 new TooltipValues("State", d.point)]);
+                 new TooltipValues("Point", d.point)]);
             _this.interactions.tooltip.positionTooltipContainer(chart, xTooltip(d.timestamp, tooltipBox), yTooltip(d.point, tooltipBox));
 
             function xTooltip(x: Date, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
@@ -1209,7 +1207,7 @@ class AdminControlCharts implements IAdminControlCharts {
             .data(d => d3.sort(d3.filter(data.value, x => x.pseudonym == d.pseudonym), r => r.timestamp))
             .enter()
             .append("p")
-            .html(d => `<b>${d.timestamp.toDateString()} - State: ${d.point}</b><br>${d.text}`);
+            .html(d => `<b>${d.timestamp.toDateString()} - Reflection Point: ${d.point}</b><br>${d.text}`);
         cardRow.select(".scroll-list")
             .style("height", `${cardRow.select<HTMLElement>(".tab-pane.fade.show.active").node().getBoundingClientRect().height}px`);
         cardRow.selectAll("a")
@@ -1602,7 +1600,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.histogram = _this.renderHistogram(_this.histogram, histogramData);
             _this.htmlContainers.histogram.select(".card-header button")
                 .on("click", function (e: Event) {
-                    _this.htmlContainers.helpPopover(d3.select(this), `${_this.histogram.id}-help`, "<b>Histogram</b><br>A histogram group data points into user-specific ranges. The data points in this histogram are <i>reflections state</i>");
+                    _this.htmlContainers.helpPopover(d3.select(this), `${_this.histogram.id}-help`, "<b>Histogram</b><br>A histogram group data points into user-specific ranges. The data points in this histogram are <i>reflections points</i>");
                     _this.htmlContainers.helpPopover(_this.histogram.elements.contentContainer.select(`#${_this.histogram.id}-data`), `${_this.histogram.id}-help-data`, "<u><i>hover</i></u> me for information on demand<br><u><i>click</i></u> me to compare");
                     let showDragHelp = _this.htmlContainers.helpPopover(_this.histogram.elements.contentContainer.select(".threshold-line.soaring"), `${_this.histogram.id}-help-drag`, "<u><i>drag</i></u> me to change the thresholds");
                     if (showDragHelp) {
@@ -1618,7 +1616,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.usersHistogram = _this.renderHistogram(_this.usersHistogram, usersData);
             _this.htmlContainers.userHistogram.select(".card-header button")
                 .on("click", function (e: Event) {
-                    _this.htmlContainers.helpPopover(d3.select(this), `${_this.usersHistogram.id}-help`, "<b>Histogram</b><br>A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average state</i>");
+                    _this.htmlContainers.helpPopover(d3.select(this), `${_this.usersHistogram.id}-help`, "<b>Histogram</b><br>A histogram group data points into user-specific ranges. The data points in this histogram are <i>reflection points grouped by user</i>");
                     _this.htmlContainers.helpPopover(_this.usersHistogram.elements.contentContainer.select(`#${_this.usersHistogram.id}-data`), `${_this.usersHistogram.id}-help-data`, "<u><i>hover</i></u> me for information on demand<br><u><i>click</i></u> me to compare");
                     let showDragHelp = _this.htmlContainers.helpPopover(_this.usersHistogram.elements.contentContainer.select(".threshold-line.soaring"), `${_this.usersHistogram.id}-help-drag`, "<u><i>drag</i></u> me to change the thresholds");
                     if (showDragHelp) {
@@ -2182,7 +2180,7 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
         //Handle users histogram chart help
         adminControlCharts.htmlContainers.userHistogram.select(".card-header button")
             .on("click", function (e: Event) {
-                let showHelp = adminControlCharts.htmlContainers.helpPopover(d3.select(this), `${histogramUsersChart.id}-help`, "<b>Histogram</b><br>A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average state</i>");
+                adminControlCharts.htmlContainers.helpPopover(d3.select(this), `${histogramUsersChart.id}-help`, "<b>Histogram</b><br>A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i>");
                 adminControlCharts.htmlContainers.helpPopover(histogramUsersChart.elements.contentContainer.select(`#${histogramUsersChart.id}-data`), `${histogramUsersChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
             });
 
