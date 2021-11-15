@@ -74,14 +74,14 @@ class AnalyticsChartsData implements IAnalyticsChartsData {
 interface IDataStats {
     stat: string;
     displayName: string;
-    value: number | string;
+    value: number | Date;
 }
 
 class DataStats implements IDataStats {
     stat: string;
     displayName: string;
-    value: number | string;
-    constructor(stat: string, displayName: string, value: number | string){
+    value: number | Date;
+    constructor(stat: string, displayName: string, value: number | Date){
         this.stat = stat,
         this.displayName = displayName,
         this.value = value
@@ -103,17 +103,12 @@ class AnalyticsChartsDataStats extends AnalyticsChartsData implements IAnalytics
         this.stats.push(new DataStats("mean", "Mean", Math.round(d3.mean(entries.value.map(r => r.point)))));
         this.stats.push(new DataStats("median", "Median", Math.round(d3.median(entries.value.map(r => r.point)))))
         this.stats.push(new DataStats("q1", "Q1", Math.round(d3.quantile(entries.value.map(r => r.point), 0.25))))
-        this.stats.push(new DataStats("q3", "Q3", Math.round(d3.quantile(entries.value.map(r => r.point), 0.75))))
+        this.stats.push(new DataStats("q3", "Q3", Math.round(d3.quantile(entries.value.map(r => r.point), 0.75))))  
         this.stats.push(new DataStats("max", "Max", d3.max(entries.value.map(r => r.point))))
-        this.stats.push(new DataStats("min", "Min", d3.min(entries.value.map(r => r.point))))
-        this.stats.push(new DataStats("variance", "Variance", this.roundDecimal(d3.variance(entries.value.map(r => r.point)))))
-        this.stats.push(new DataStats("deviation", "Std Deviation", this.roundDecimal(d3.deviation(entries.value.map(r => r.point)))))
-        this.stats.push(new DataStats("oldRef", "Oldest reflection", d3.min(entries.value.map(r => new Date(r.timestamp))).toDateString()))
-        this.stats.push(new DataStats("newRef", "Newest reflection", d3.max(entries.value.map(r => new Date(r.timestamp))).toDateString()))
+        this.stats.push(new DataStats("min", "Min", d3.min(entries.value.map(r => r.point))))   
+        this.stats.push(new DataStats("oldRef", "Oldest reflection", d3.min(entries.value.map(r => new Date(r.timestamp)))))
+        this.stats.push(new DataStats("newRef", "Newest reflection", d3.max(entries.value.map(r => new Date(r.timestamp)))))
         this.stats.push(new DataStats("totalRef", "Total reflections", entries.value.length))
-        this.stats.push(new DataStats("avgRef", "Reflections per user", this.roundDecimal(d3.mean(uniqueUsers.map(r => r.value)))))
-        this.stats.push(new DataStats("userHRef", "Max reflections per user", d3.max(uniqueUsers.map(r => r.value))))
-        this.stats.push(new DataStats("userLRef", "Min reflections per user", d3.min(uniqueUsers.map(r => r.value))))
         this.stats.push(new DataStats("totalUsers", "Total users", uniqueUsers.length))
     };
     roundDecimal(value: number): string {
@@ -544,6 +539,7 @@ interface IHtmlContainers {
     userHistogram: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>,
     compare: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>
     userStatistics: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
+    userReflectionText: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
     remove(): void;
     removeUsers(): void;
     appendDiv(id: string, css: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
@@ -564,6 +560,7 @@ class HtmlContainers implements IHtmlContainers {
     userHistogram: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
     compare: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
     userStatistics: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
+    userReflectionText: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
     remove() {
         if (this.statistics != undefined) {
             this.statistics.remove();
@@ -593,6 +590,10 @@ class HtmlContainers implements IHtmlContainers {
             this.removeNavbarScrollspyItem(this.userStatistics.attr("id"));
             this.userStatistics.remove();
             this.userStatistics = undefined;
+        }
+        if (this.userReflectionText != undefined) {
+            this.userReflectionText.remove();
+            this.userReflectionText = undefined;
         }
     };
     appendDiv(id: string, css: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any> {
@@ -701,7 +702,8 @@ interface IAdminControlCharts {
     renderTimelineScatter(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData): ChartTime;
     renderTimelineButtons(card: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>): void;
     handleTimelineButtons(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData): void;
-    renderUserStatistics(card: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsData, pseudonym?: string): void;
+    renderUserStatistics(data: IAnalyticsChartsData, pseudonym?: string): void;
+    renderUserReflections(card: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsData, pseudonym?: string): void;
 }
 
 class AdminControlCharts implements IAdminControlCharts {
@@ -741,6 +743,10 @@ class AdminControlCharts implements IAdminControlCharts {
         return allEntries;
     };
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries {
+        d3.select(`#${chart.id} .card-subtitle`)
+            .html(`The reflections of the group code ${data[d3.minIndex(data.map(c => c.stats.find(d => d.stat == "q1").value as number))].group} tends to be distressed, while
+                the reflections of the group code ${data[d3.maxIndex(data.map(c => c.stats.find(d => d.stat == "q3").value as number))].group} tends to be soaring`)
+
         //MinMax lines processing
         chart.elements.contentContainer.selectAll<SVGLineElement, IAnalyticsChartsDataStats>(`#${chart.id}-data-min-max`)
             .data(data)
@@ -844,7 +850,7 @@ class AdminControlCharts implements IAdminControlCharts {
             _this.interactions.tooltip.appendTooltipContainer(chart);
 
             //Append tooltip box with text
-            let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.group, d.stats.filter((c, i) => i < 4).map(c => new TooltipValues(c.stat, c.value as number)));
+            let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.group, d.stats.filter((c, i) => i < 4).map(c => new TooltipValues(c.displayName, c.value as number)));
 
             //Position tooltip container
             _this.interactions.tooltip.positionTooltipContainer(chart, xTooltip(d.group, tooltipBox), yTooltip(d.getStat("q3").value as number, tooltipBox));
@@ -895,6 +901,11 @@ class AdminControlCharts implements IAdminControlCharts {
     renderHistogram(chart: HistogramChartSeries, data: IAnalyticsChartsData[]): HistogramChartSeries {
         chart.setBandwidth(data);
         chart.setBin();
+
+        let binData = data.map(d => chart.bin(d.value.map(d => d.point)).map(c => { return new HistogramData(d.group, d.colour, c, Math.round(c.length / d.value.length * 100)) }));
+        d3.select(`#${chart.id} .card-subtitle`)
+            .html(`The group code ${binData[d3.maxIndex(binData.map(d => d3.max(d.filter(d => d.bin.x0 == 0).map(d => d.percentage))))][0].group} has the highest percentage in the distressed bin, while
+                the group code ${binData[d3.maxIndex(binData.map(d => d3.max(d.filter(d => d.bin.x1 == 100).map(d => d.percentage))))][0].group} has the highest percentage in the soaring bin`);
 
         //Process histogram
         chart.elements.contentContainer.selectAll<SVGGElement, IAnalyticsChartsData>(`.${chart.id}-histogram-container`)
@@ -1178,7 +1189,21 @@ class AdminControlCharts implements IAdminControlCharts {
             }
         });
     };
-    renderUserStatistics(card: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsData, pseudonym?: string): void {
+    renderUserStatistics(data: IAnalyticsChartsData, pseudonym?: string): void {
+        let userData = data.getUsersData();
+        let groupMean = Math.round(d3.mean(data.value.map(d => d.point)));
+        d3.select("#user-statistics").append("div")
+            .attr("class", "tab-content")
+            .selectAll("div")
+            .data(userData.value)
+            .enter()
+            .append("div")
+            .attr("class", (d, i) => `tab-pane fade ${i == 0 ? "show active" : ""}`)
+            .append("span")
+            .attr("class", "badge badge-pill badge-light")
+            .html(d => `${d.pseudonym} - ${d.point} (${(d.point - groupMean) < 0 ? "" : "+"}${d.point - groupMean}${Math.abs(d.point - groupMean)})`)
+    };
+    renderUserReflections(card: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsData, pseudonym?: string): void {
         card.select(".chart-container").remove();
         let userData = data.getUsersData();
         let groupMean = Math.round(d3.mean(data.value.map(d => d.point)));
@@ -1785,7 +1810,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             //Draw user statistics container
             _this.htmlContainers.userStatistics = _this.htmlContainers.appendDiv("user-statistics", "col-md-12 mt-3");
             let userStatisticsCard = _this.htmlContainers.appendCard(_this.htmlContainers.userStatistics, `${d.pseudonym}'s statistics`);
-            _this.renderUserStatistics(userStatisticsCard, data, d.pseudonym);
+            _this.renderUserReflections(userStatisticsCard, data, d.pseudonym);
 
             _this.htmlContainers.removeHelp(chart);
             //Scroll
@@ -1854,8 +1879,8 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             }
         });
     };
-    renderUserStatistics(card: any, data: IAnalyticsChartsData, pseudonym?: string): void {
-        super.renderUserStatistics(card, data, pseudonym);
+    renderUserReflections(card: any, data: IAnalyticsChartsData, pseudonym?: string): void {
+        super.renderUserReflections(card, data, pseudonym);
         let _this = this;
         card.selectAll("a")
             .on("click", (e: Event, d: IReflectionAuthorEntry) => {
@@ -2113,8 +2138,8 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
         let data = allEntries.map(d => new AnalyticsChartsDataStats(d));
 
         //Append groups chart container
-        adminControlCharts.htmlContainers.boxPlot = adminControlCharts.htmlContainers.appendDiv("groups-chart", "col-md-9");
-        let boxplotCard = adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.boxPlot, "All groups' reflections box plot", undefined, true);
+        adminControlCharts.htmlContainers.boxPlot = adminControlCharts.htmlContainers.appendDiv("groups-chart", "col-md-6");
+        adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.boxPlot, "All reflections by group - Box plot", undefined, true);
 
         //Create groups chart with current data
         let groupChart = new ChartSeries("groups-chart", data.map(d => d.group));
@@ -2127,31 +2152,9 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
                 adminControlCharts.htmlContainers.helpPopover(groupChart.elements.contentContainer.select(`#${groupChart.id}-data`), `${groupChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
             });
 
-        //Append group general statistics
-        adminControlCharts.htmlContainers.statistics = adminControlCharts.htmlContainers.appendDiv("groups-statistics", "col-md-3");
-        adminControlCharts.htmlContainers.statistics.selectAll("div")
-            .data(data)
-            .enter()
-            .append("div")
-            .attr("class", "card")
-            .call(div => div.append("div")
-                .attr("class", "card-header")
-                .append("button")
-                .attr("class", "btn btn-link")
-                .attr("data-target", d => `#stats-${d.group}`)
-                .attr("data-toggle", "collapse")
-                .html(d => `${d.group} statistics`))
-            .call(div => div.append("div")
-                .attr("id", d => `stats-${d.group}`)
-                .attr("class", (d, i) => `collapse ${i == 0 ? "show" : ""}`)
-                .attr("data-parent", "#groups-statistics")
-                .append("div")
-                .attr("class", "card-body"))
-            .call(div => adminControlCharts.renderGroupStats(div, div.datum()));
-
         //Draw groups histogram container  
-        adminControlCharts.htmlContainers.histogram = adminControlCharts.htmlContainers.appendDiv("group-histogram-chart", "col-md-6 mt-3");
-        adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.histogram, `All groups' reflections histogram`, undefined, true);
+        adminControlCharts.htmlContainers.histogram = adminControlCharts.htmlContainers.appendDiv("group-histogram-chart", "col-md-6");
+        adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.histogram, `All reflections by group - Histogram`, undefined, true);
         let histogramChart = new HistogramChartSeries("group-histogram-chart", data.map(d => d.group));
         adminControlCharts.renderHistogram(histogramChart, data);
 
@@ -2162,23 +2165,9 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
                 adminControlCharts.htmlContainers.helpPopover(histogramChart.elements.contentContainer.select(`#${histogramChart.id}-data`), `${histogramChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
             });
 
-        //Draw users histogram container
-        adminControlCharts.htmlContainers.userHistogram = adminControlCharts.htmlContainers.appendDiv("group-histogram-users-chart", "col-md-6 mt-3");
-        adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.userHistogram, `All users' reflections by group histogram`, undefined, true);
-        let usersData = data.map(d => d.getUsersData());
-        let histogramUsersChart = new HistogramChartSeries("group-histogram-users-chart", data.map(d => d.group));
-        adminControlCharts.renderHistogram(histogramUsersChart, usersData);
-
-        //Handle users histogram chart help
-        adminControlCharts.htmlContainers.userHistogram.select(".card-title button")
-            .on("click", function (e: Event) {
-                adminControlCharts.htmlContainers.helpPopover(d3.select(this), `${histogramUsersChart.id}-help`, "<b>Histogram</b><br>A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i>");
-                adminControlCharts.htmlContainers.helpPopover(histogramUsersChart.elements.contentContainer.select(`#${histogramUsersChart.id}-data`), `${histogramUsersChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
-            });
-
         //Draw timeline 
         adminControlCharts.htmlContainers.timeline = adminControlCharts.htmlContainers.appendDiv("group-timeline", "col-md-12 mt-3");
-        let timelineCard = adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.timeline, `Reflections' group vs time`, undefined, true);
+        let timelineCard = adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.timeline, `Reflections by group vs time`, undefined, true);
         timelineCard.insert("ul", ".chart-container")
             .attr("class", "nav nav-tabs")
             .selectAll("li")
@@ -2191,6 +2180,10 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
             .attr("href", d => `#timeline-${d.group}`)
             .html(d => d.group);
 
+            console.log(data)
+        timelineCard.select(".card-subtitle")
+            .html(`The oldest reflection was on ${(d3.min(data.map(d => d.getStat("oldRef").value)) as Date).toDateString()} in the group code ${data[d3.minIndex(data.map(d => d.getStat("oldRef").value))].group}, while
+                the newest reflection was on ${(d3.max(data.map(d => d.getStat("newRef").value)) as Date).toDateString()} in the group code ${data[d3.maxIndex(data.map(d => d.getStat("newRef").value))].group}`)
         let timelineChart = new ChartTime("group-timeline", d3.extent(data[0].value.map(d => d.timestamp)));
         adminControlCharts.renderTimelineDensity(timelineChart, data[0]);
         let timelineZoomChart = new ChartTimeZoom(timelineChart, d3.extent(data[0].value.map(d => d.timestamp)));
@@ -2234,10 +2227,41 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
                     }
                 }
             });
+        
+        //Draw users histogram container
+        adminControlCharts.htmlContainers.userHistogram = adminControlCharts.htmlContainers.appendDiv("group-histogram-users-chart", "col-md-6 mt-3");
+        adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.userHistogram, `All reflections by users and group - Histogram`, undefined, true);
+        let usersData = data.map(d => d.getUsersData());
+        let histogramUsersChart = new HistogramChartSeries("group-histogram-users-chart", data.map(d => d.group));
+        adminControlCharts.renderHistogram(histogramUsersChart, usersData);
 
-        //Draw users data
-        adminControlCharts.htmlContainers.userStatistics = adminControlCharts.htmlContainers.appendDiv("user-statistics", "col-md-12 mt-3");
-        let usersCards = adminControlCharts.htmlContainers.userStatistics.selectAll("div")
+        //Handle users histogram chart help
+        adminControlCharts.htmlContainers.userHistogram.select(".card-title button")
+            .on("click", function (e: Event) {
+                adminControlCharts.htmlContainers.helpPopover(d3.select(this), `${histogramUsersChart.id}-help`, "<b>Histogram</b><br>A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i>");
+                adminControlCharts.htmlContainers.helpPopover(histogramUsersChart.elements.contentContainer.select(`#${histogramUsersChart.id}-data`), `${histogramUsersChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
+            });
+
+        //Draw user statistics
+        adminControlCharts.htmlContainers.userStatistics = adminControlCharts.htmlContainers.appendDiv("user-statistics", "col-md-6 mt-3");
+        let userStatistics = adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.userStatistics, `Users average reflection point compared to its group`, "user-statistics", true);
+        userStatistics.select(".chart-container").remove();
+        userStatistics.append("ul")
+            .attr("class", "nav nav-tabs")
+            .selectAll("li")
+            .data(usersData)
+            .enter()
+            .append("li")
+            .attr("class", "nav-item")
+            .append("a")
+            .attr("class", (d, i) => `nav-link ${i == 0 ? "active" : ""}`)
+            .attr("href", d => `#user-statistics-${d.group}`)
+            .html(d => d.group);
+        adminControlCharts.renderUserStatistics(usersData[0])
+
+        //Draw users reflections data
+        adminControlCharts.htmlContainers.userReflectionText = adminControlCharts.htmlContainers.appendDiv("user-reflections", "col-md-12 mt-3");
+        let usersCards = adminControlCharts.htmlContainers.userReflectionText.selectAll("div")
             .data(data)
             .enter()
             .append("div")
@@ -2255,10 +2279,10 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
                 .append("div")
                 .attr("id", `users-${d.group}`)
                 .attr("class", `collapse ${i == 0 ? "show" : ""}`)
-                .attr("data-parent", "#user-statistics")
+                .attr("data-parent", "#user-reflections")
                 .append("div")
                 .attr("class", "card-body");
-            adminControlCharts.renderUserStatistics(d3.select(g[i]), d);
+            adminControlCharts.renderUserReflections(d3.select(g[i]), d);
         });
         usersCards.selectAll("button")
             .on("click", function () {
