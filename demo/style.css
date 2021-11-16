@@ -87,6 +87,12 @@
     color: #ff3300;
 }
 
+.users-tab-pane {
+    height: 30vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
 .bar, .line-circle, .histogram-rect, .zoom-circle, .legend-color {
     fill: #3399CC;
     fill-opacity: 0.2;
