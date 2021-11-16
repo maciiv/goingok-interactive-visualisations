@@ -1585,25 +1585,37 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         _this.interactions.click.enableClick(chart, onClick);
         chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
             _this.interactions.click.removeClick(chart);
+            restoreCharts();
         });
         function onClick(e: Event, d: IAnalyticsChartsDataStats) {
             if (d3.select(this).attr("class").includes("clicked")) {
                 _this.interactions.click.removeClick(chart);
-                _this.histogram.x.scale.domain(data.map(d => d.group));
-                _this.renderHistogram(_this.histogram, data);
-                _this.interactions.axisSeries(_this.histogram, data);
+                restoreCharts();
                 return;
             }
             _this.interactions.click.removeClick(chart);
             chart.click = true;
             _this.interactions.click.appendGroupsText(chart, data, d);
 
-            _this.histogram.x.scale.domain(d.group);
-            _this.renderHistogram(_this.histogram, [d]);
-            _this.interactions.axisSeries(_this.histogram, [d]);
+            _this.usersHistogram.x.scale.domain(data.filter(c => c.group == d.group).map(d => d.group));
+            let usersData = d.getUsersData();
+            _this.renderHistogram(_this.usersHistogram, [usersData]);
+            _this.interactions.axisSeries(_this.usersHistogram, [usersData]);
 
+            _this.histogram.x.scale.domain(data.filter(c => c.group == d.group).map(d => d.group));
+            _this.renderHistogram(_this.histogram, [d]);
+            _this.interactions.axisSeries(_this.histogram, [d]);            
 
             _this.htmlContainers.removeHelp(chart);
+        }
+        function restoreCharts() {
+            _this.histogram.x.scale.domain(data.map(d => d.group));
+            _this.renderHistogram(_this.histogram, data);
+            let usersData = data.map(d => d.getUsersData());
+            _this.usersHistogram.x.scale.domain(data.map(d => d.group));
+            _this.renderHistogram(_this.usersHistogram, usersData);
+            _this.interactions.axisSeries(_this.histogram, data);
+            _this.interactions.axisSeries(_this.usersHistogram, usersData);
         }
         return chart;
     };
