@@ -717,7 +717,7 @@ interface IAdminControlCharts {
     renderTimelineDensity(chart: ChartTime, data: IAnalyticsChartsData): ChartTime;
     renderTimelineScatter(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData): ChartTime;
     renderTimelineButtons(card: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>): void;
-    handleTimelineButtons(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData): void;
+    handleTimelineButtons(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData, func?: Function): void;
     renderUserStatistics(card: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsData, thresholds: number[], pseudonym?: string): void;
 }
 
@@ -1186,14 +1186,11 @@ class AdminControlCharts implements IAdminControlCharts {
             .attr("class", "btn btn-light")
             .html(`<input type="radio" name="plot" value="scatter">Scatter Plot<br>`));
     }
-    handleTimelineButtons(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData): void {
+    handleTimelineButtons(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData, func?: Function): void {
         let _this = this
-        d3.select(`#${chart.id} #timeline-plot`).on("click", (e: any) => {
+        d3.select(`#${chart.id} #timeline-plot`).on("click", func != undefined ? (e: any) => func(e) : (e: any) => {
             var selectedOption = e.target.control.value;
             if (selectedOption == "density") {
-                if (!chart.elements.contentContainer.select(`#${chart.id}-timeline-circles-line`).empty()) {
-                    _this.htmlContainers.removeUsers();
-                }
                 _this.renderTimelineDensity(chart, data);
             }
             if (selectedOption == "scatter") {
@@ -1205,27 +1202,19 @@ class AdminControlCharts implements IAdminControlCharts {
         });
     };
     renderUserStatistics(card: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsData, thresholds: number[], pseudonym?: string): void {
+        let _this = this;
         let userData = data.getUsersData();
         let groupMean = Math.round(d3.mean(data.value.map(d => d.point)));
 
         d3.select("#user-statistics .card-subtitle")
-            .html(`The user ${userData.value[d3.minIndex(userData.value.map(d => d.point))].pseudonym} is the most distressed, while
-                the user ${userData.value[d3.maxIndex(userData.value.map(d => d.point))].pseudonym} in the most soaring`)
-
-        function getBinName(data: IReflectionAuthorEntry): string {
-            let distressed = thresholds[0];
-            let soaring = thresholds[1];
-            if (data.point <= distressed) {
-                return "Distressed";
-            } else if (data.point >= soaring) {
-                return "Soaring"
-            } else {
-                return "GoingOK"
-            }
-        }
+            .html(pseudonym == undefined ? `The user ${userData.value[d3.minIndex(userData.value.map(d => d.point))].pseudonym} is the most distressed, while
+                the user ${userData.value[d3.maxIndex(userData.value.map(d => d.point))].pseudonym} in the most soaring` :
+                `The user ${pseudonym} has a total of ${data.value.filter(d => d.pseudonym == pseudonym).length} reflections between
+                ${d3.min(data.value.filter(d => d.pseudonym == pseudonym).map(d => d.timestamp)).toDateString()} and
+                ${d3.max(data.value.filter(d => d.pseudonym == pseudonym).map(d => d.timestamp)).toDateString()}`)
 
         card.selectAll("div")
-            .data(userData.value)
+            .data(pseudonym == undefined ? userData.value : userData.value.filter(d => d.pseudonym == pseudonym))
             .enter()
             .append("div")
             .attr("class", "row statistics-text")
@@ -1237,7 +1226,7 @@ class AdminControlCharts implements IAdminControlCharts {
                     .html(d => `${d.pseudonym} (<span class="${(d.point - groupMean) < 0 ? "negative" : "positive"}">${(d.point - groupMean) < 0 ? "" : "+"}${d.point - groupMean}</span>)`))
                 .call(div => div.append("span")
                     .attr("class", "text-muted")
-                    .html(d => `<b>${getBinName(d)}</b>`)))
+                    .html(d => `<b>${_this.getUserStaitsticBinName(d, thresholds)}</b>`)))
             .call(div => div.append("div")
                 .attr("class", "col-md-8 mt-1 user-chart"))
             .call(div => div.append("div")
@@ -1285,6 +1274,17 @@ class AdminControlCharts implements IAdminControlCharts {
                 .text(data.point);
         }
     };
+    protected getUserStaitsticBinName(data: IReflectionAuthorEntry, thresholds: number[]): string {
+        let distressed = thresholds[0];
+        let soaring = thresholds[1];
+        if (data.point <= distressed) {
+            return "Distressed";
+        } else if (data.point >= soaring) {
+            return "Soaring"
+        } else {
+            return "GoingOK"
+        }
+    }
 }
 
 interface IAdminControlTransitions {
@@ -1493,18 +1493,12 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 _this.allEntries.find(d => d.group == target.value).selected = false;
             }
             let data = updateData(boxPlot);
+            let clickData = _this.getClickData(boxPlot.elements.contentContainer) as IAnalyticsChartsDataStats;
             updateGroupChart(boxPlot, data);
             if (boxPlot.click) {
-                let clickData = boxPlot.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IAnalyticsChartsDataStats;
                 _this.interactions.click.appendGroupsText(boxPlot, data, clickData);
             } else {
-                _this.histogram.x.scale.domain(data.map(r => r.group));
-                _this.usersHistogram.x.scale.domain(data.map(r => r.group));
-                _this.renderHistogram(_this.histogram, data);
-                let usersData = data.map(d => d.getUsersData());
-                _this.renderHistogram(_this.usersHistogram, usersData);
-                _this.interactions.axisSeries(_this.histogram, data);
-                _this.interactions.axisSeries(_this.usersHistogram, usersData);
+                this.updateHistograms(data, data.map(d => d.getUsersData()), data.map(d => d.group));
             }
             _this.htmlContainers.removeHelp(boxPlot);
         });
@@ -1518,11 +1512,9 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             let entries = d3.filter(_this.allEntries, d => d.selected);
             let data = entries.map(d => new AnalyticsChartsDataStats(d));
             _this.renderGroupChart(boxPlot, data);
-            _this.renderHistogram(_this.histogram, data);
-            _this.renderHistogram(_this.usersHistogram, data);
             if (boxPlot.click) {
-                let currentClickGroup = d3.select("#groups-statistics .card").attr("id");
-                if (currentClickGroup == groupId) {
+                let clickData = _this.getClickData(boxPlot.elements.contentContainer) as IAnalyticsChartsDataStats;
+                if (clickData.group == groupId) {
                     if (_this.timeline.elements.contentContainer.selectAll(`#${_this.timeline.id}-timeline-contours`).empty()) {
                         _this.renderTimelineScatter(_this.timeline, _this.timelineZoom, _this.allEntries.find(d => d.group == groupId));
                     } else {
@@ -1530,7 +1522,10 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                         _this.renderTimelineDensity(_this.timeline, _this.allEntries.find(d => d.group == groupId));
                     }
                     _this.handleTimelineButtons(_this.timeline, _this.timelineZoom, _this.allEntries.find(d => d.group == groupId));
+                    _this.updateHistograms([clickData], [clickData.getUsersData()]);
                 }
+            } else {
+                _this.updateHistograms(data, data.map(d => d.getUsersData()));
             }
         });
     };
@@ -1552,32 +1547,44 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             let data = entries.map(d => new AnalyticsChartsDataStats(d));
             boxPlot.x.scale.domain(data.map(r => r.group));
             _this.interactions.axisSeries(boxPlot, data);
-            function getClickData(contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>){
-                if (!contentContainer.select<SVGRectElement>(".clicked").empty()) {
-                    return contentContainer.select<SVGRectElement>(".clicked").datum();
-                } 
-                return;
-            }
-            let groupClickData = getClickData(boxPlot.elements.contentContainer) as IAnalyticsChartsDataStats;
+            let groupClickData = _this.getClickData(boxPlot.elements.contentContainer) as IAnalyticsChartsDataStats;
             _this.renderGroupChart(boxPlot, data);
             if (boxPlot.click) {              
-                _this.interactions.click.appendGroupsText(boxPlot, data, groupClickData);
-                _this.interactions.axisSeries(_this.histogram, data);
-                let histogramClickData = getClickData(_this.histogram.elements.contentContainer) as IHistogramData;
-                _this.renderHistogram(_this.histogram, data);
-                let usersData = data.map(d => d.getUsersData());
-                _this.interactions.axisSeries(_this.usersHistogram, usersData);
-                let usersHistogramClickData = getClickData(_this.usersHistogram.elements.contentContainer) as IHistogramData;
-                _this.renderHistogram(_this.usersHistogram, usersData);
-                if (_this.histogram.click) {
-                    _this.interactions.click.appendThresholdPercentages(_this.histogram, data, histogramClickData);
-                }
-                if (_this.usersHistogram.click) {                   
-                    _this.interactions.click.appendThresholdPercentages(_this.usersHistogram, usersData, usersHistogramClickData);
-                }
+                _this.interactions.click.appendGroupsText(boxPlot, data, groupClickData);               
+            } else {
+                _this.updateHistograms(data, data.map(d => d.getUsersData()), data.map(r => r.group));
             }
             _this.htmlContainers.removeHelp(boxPlot);
         });
+    };
+    private getClickData(contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>): unknown {
+        if (!contentContainer.select<SVGRectElement>(".clicked").empty()) {
+            return contentContainer.select<SVGRectElement>(".clicked").datum();
+        } 
+        return;
+    };
+    private updateHistograms(data: IAnalyticsChartsData[], usersData: IAnalyticsChartsData[], scale?: string[]): void {
+        if (scale != undefined) {
+            this.histogram.x.scale.domain(scale);
+            this.usersHistogram.x.scale.domain(scale);
+        }
+        this.renderHistogram(this.histogram, data);
+        this.renderHistogram(this.usersHistogram, usersData);
+        this.interactions.axisSeries(this.histogram, data);
+        this.interactions.axisSeries(this.usersHistogram, usersData);
+        if (this.histogram.click) {
+            this.interactions.click.appendThresholdPercentages(this.histogram, data, this.getClickData(this.histogram.elements.contentContainer) as IHistogramData);
+        }
+        if (this.usersHistogram.click) {                   
+            this.interactions.click.appendThresholdPercentages(this.usersHistogram, usersData, this.getClickData(this.usersHistogram.elements.contentContainer) as IHistogramData);
+        }
+    };
+    private removeUserStatistics() {
+        d3.select("#user-statistics .card-title")
+            .html("Users compared to their group");
+        d3.select("#user-statistics .card-subtitle")
+            .html("Select a reflection from the scatter plot to view specific users"); 
+        d3.select("#user-statistics .users-tab-pane").remove();
     };
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries {
         chart = super.renderGroupChart(chart, data);
@@ -1585,38 +1592,21 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         _this.interactions.click.enableClick(chart, onClick);
         chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
             _this.interactions.click.removeClick(chart);
-            restoreCharts();
+            _this.updateHistograms(data, data.map(d => d.getUsersData()), data.map(d => d.group));
         });
         function onClick(e: Event, d: IAnalyticsChartsDataStats) {
             if (d3.select(this).attr("class").includes("clicked")) {
                 _this.interactions.click.removeClick(chart);
-                restoreCharts();
+                _this.updateHistograms(data, data.map(d => d.getUsersData()), data.map(d => d.group));
                 return;
             }
             _this.interactions.click.removeClick(chart);
             chart.click = true;
             _this.interactions.click.appendGroupsText(chart, data, d);
-
-            _this.usersHistogram.x.scale.domain(data.filter(c => c.group == d.group).map(d => d.group));
-            let usersData = d.getUsersData();
-            _this.renderHistogram(_this.usersHistogram, [usersData]);
-            _this.interactions.axisSeries(_this.usersHistogram, [usersData]);
-
-            _this.histogram.x.scale.domain(data.filter(c => c.group == d.group).map(d => d.group));
-            _this.renderHistogram(_this.histogram, [d]);
-            _this.interactions.axisSeries(_this.histogram, [d]);            
-
+            _this.updateHistograms([d], [d.getUsersData()], data.filter(c => c.group == d.group).map(d => d.group));           
             _this.htmlContainers.removeHelp(chart);
         }
-        function restoreCharts() {
-            _this.histogram.x.scale.domain(data.map(d => d.group));
-            _this.renderHistogram(_this.histogram, data);
-            let usersData = data.map(d => d.getUsersData());
-            _this.usersHistogram.x.scale.domain(data.map(d => d.group));
-            _this.renderHistogram(_this.usersHistogram, usersData);
-            _this.interactions.axisSeries(_this.histogram, data);
-            _this.interactions.axisSeries(_this.usersHistogram, usersData);
-        }
+
         return chart;
     };
     renderHistogram(chart: HistogramChartSeries, data: IAnalyticsChartsData[]): HistogramChartSeries {
@@ -1680,7 +1670,13 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             if (chart.click) {
                 let clickData = chart.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IHistogramData;
                 _this.interactions.click.appendThresholdPercentages(chart, data, clickData);
-            }          
+            }  
+            if (chart.id == "group-histogram-users-chart" && !_this.timeline.elements.contentContainer.selectAll(".clicked").empty()) {
+                let userData = _this.timeline.elements.contentContainer.selectAll<SVGCircleElement, IReflectionAuthorEntry>(".clicked").datum();
+                let binName = _this.getUserStaitsticBinName(data.map(d => d.value.find(d => d.pseudonym == userData.pseudonym))[0], chart.elements.getThresholdsValues(chart));
+                d3.select(`#user-statistics #${userData.pseudonym} .text-muted`)
+                    .html(`<b>${binName}</b>`);
+            }
         }
 
         _this.interactions.click.enableClick(chart, onClick);
@@ -1704,7 +1700,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
             _this.interactions.click.removeClick(chart);
             chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`).remove();
-            _this.htmlContainers.removeUsers();
+            _this.removeUserStatistics();
         });
         chart.elements.contentContainer.select(`#${chart.id}-timeline-circles-line`)
             .style("stroke", data.colour);
@@ -1713,14 +1709,14 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 _this.interactions.click.removeClick(chart);
                 chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`).remove();
                 d3.select("#analytics-navbar").select(`#${_this.htmlContainers.userStatistics.attr("id")}-li`).remove();
-                _this.htmlContainers.removeUsers();
+                _this.removeUserStatistics();
                 return;
             }
 
             _this.interactions.click.removeClick(chart);
             chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`).remove();
             //Remove users html containers
-            _this.htmlContainers.removeUsers();
+            _this.removeUserStatistics();
             chart.elements.content.attr("class", (data: IReflectionAuthorEntry) => `line-circle ${data.pseudonym == d.pseudonym ? "clicked" : ""}`);
             let userData = data.value.filter(c => c.pseudonym == d.pseudonym);
 
@@ -1740,8 +1736,13 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
 
             //Draw user statistics container
             _this.htmlContainers.userStatistics = _this.htmlContainers.appendDiv("user-statistics", "col-md-12 mt-3");
-            let userStatisticsCard = _this.htmlContainers.appendCard(_this.htmlContainers.userStatistics, `${d.pseudonym}'s statistics`);
-            _this.renderUserStatistics(userStatisticsCard, data, _this.usersHistogram.elements.getThresholdsValues(_this.usersHistogram), d.pseudonym);
+            d3.select("#user-statistics .card-title")
+                .html(`User ${d.pseudonym} compared to their group`)
+            let userCard = d3.select("#user-statistics .card-body")
+                .append("div")
+                .attr("class", "users-tab-pane")
+                .attr("id", `user-statistics-${d.pseudonym}`);
+            _this.renderUserStatistics(userCard, data, _this.usersHistogram.elements.getThresholdsValues(_this.usersHistogram), d.pseudonym);
 
             _this.htmlContainers.removeHelp(chart);
             //Scroll
@@ -1755,37 +1756,26 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         this.interactions.click.removeClick(chart);
         return chart;
     };
-    renderUserStatistics(card: any, data: IAnalyticsChartsData, thresholds: number[], pseudonym?: string): void {
-        super.renderUserStatistics(card, data, this.usersHistogram.elements.getThresholdsValues(this.usersHistogram),pseudonym);
+    handleTimelineButtons(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData): void {
         let _this = this;
-        card.selectAll("a")
-            .on("click", (e: Event, d: IReflectionAuthorEntry) => {
-                _this.interactions.click.removeClick(_this.timeline);
-                _this.timeline.elements.content.attr("class", "line-circle");
-                _this.timeline.elements.contentContainer.selectAll(`#${_this.timeline.id}-timeline-circles-line`).remove();
-                _this.timeline.elements.content.attr("class", (data: IReflectionAuthorEntry) => `line-circle ${data.pseudonym == d.pseudonym ? "clicked" : ""}`);
-                let userData = data.value.filter(c => c.pseudonym == d.pseudonym);
-                let line = d3.line<IReflectionAuthorEntry>()
-                    .x(d => _this.timeline.x.scale(d.timestamp))
-                    .y(d => _this.timeline.y.scale(d.point));
+        super.handleTimelineButtons(chart, zoomChart, data, newFunc);
 
-                _this.timeline.elements.contentContainer.append("path")
-                    .datum(d3.sort(userData, d => d.timestamp))
-                    .attr("class", "line")
-                    .attr("id", `${_this.timeline.id}-timeline-circles-line`)
-                    .attr("d", d => line(d))
-                    .style("stroke", data.colour);
-                userData.forEach(c => _this.interactions.click.appendScatterText(_this.timeline, c, c.point.toString()));
-                card.select(".card-header")
-                    .html(`${d.pseudonym} statistics`);
-                setTimeout(() => {
-                    card.select(".scroll-list")
-                    .transition()
-                    .duration(750)
-                    .style("height", `${card.select(".tab-pane.fade.show.active").node().getBoundingClientRect().height}px`)
-                }, 250);
-            })
-    };
+        function newFunc(e: any) {
+            var selectedOption = e.target.control.value;
+            if (selectedOption == "density") {
+                if (!chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`).empty()) {
+                    _this.removeUserStatistics();
+                }
+                _this.renderTimelineDensity(chart, data);
+            }
+            if (selectedOption == "scatter") {
+                _this.renderTimelineScatter(chart, zoomChart, data);
+            }
+            if (!d3.select(`#${chart.id}-help`).empty()) {
+                _this.htmlContainers.removeHelp(chart);
+            }
+        }
+    }
 }
 
 interface IAdminExperimentalInteractions extends IAdminControlInteractions {
@@ -2201,7 +2191,7 @@ export function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalyticsCharts
 
         //Draw groups histogram container  
         adminExperimentalCharts.htmlContainers.histogram = adminExperimentalCharts.htmlContainers.appendDiv("group-histogram-chart", "col-md-6");
-        adminExperimentalCharts.htmlContainers.appendCard(adminExperimentalCharts.htmlContainers.histogram, `Reflections by group - Histogram`, undefined, true);
+        adminExperimentalCharts.htmlContainers.appendCard(adminExperimentalCharts.htmlContainers.histogram, `Selected groups reflections - Histogram`, undefined, true);
         adminExperimentalCharts.histogram = new HistogramChartSeries("group-histogram-chart", data.map(d => d.group));
         adminExperimentalCharts.renderHistogram(adminExperimentalCharts.histogram, data);
 
@@ -2217,7 +2207,7 @@ export function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalyticsCharts
 
         //Draw users histogram container
         adminExperimentalCharts.htmlContainers.userHistogram = adminExperimentalCharts.htmlContainers.appendDiv("group-histogram-users-chart", "col-md-6 mt-3");
-        adminExperimentalCharts.htmlContainers.appendCard(adminExperimentalCharts.htmlContainers.userHistogram, `All reflections by users and group - Histogram`, undefined, true);
+        adminExperimentalCharts.htmlContainers.appendCard(adminExperimentalCharts.htmlContainers.userHistogram, `Selected groups reflections by users - Histogram`, undefined, true);
         let usersData = data.map(d => d.getUsersData());
         adminExperimentalCharts.usersHistogram = new HistogramChartSeries("group-histogram-users-chart", data.map(d => d.group));
         adminExperimentalCharts.renderHistogram(adminExperimentalCharts.usersHistogram, usersData);
@@ -2226,6 +2216,8 @@ export function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalyticsCharts
         adminExperimentalCharts.htmlContainers.userStatistics = adminExperimentalCharts.htmlContainers.appendDiv("user-statistics", "col-md-6 mt-3");
         let userStatistics = adminExperimentalCharts.htmlContainers.appendCard(adminExperimentalCharts.htmlContainers.userStatistics, `Users compared to their group`, "user-statistics", false);
         userStatistics.select(".chart-container").remove();
+        userStatistics.select(".card-subtitle")
+            .html("Select a reflection from the scatter plot to view specific users"); 
 
         adminExperimentalCharts.htmlContainers.renderNavbarScrollspy();
 
