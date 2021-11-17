@@ -517,6 +517,22 @@ class ChartPadding implements IChartPadding {
     }
 }
 
+// Interface for timeline data
+interface ITimelineData {
+    colour: string;
+    data: d3.ContourMultiPolygon;
+}
+
+// Class for timeline data
+class TimelineData implements ITimelineData {
+    colour: string;
+    data: d3.ContourMultiPolygon;
+    constructor(data: d3.ContourMultiPolygon, colour: string) {
+        this.data = data;
+        this.colour = colour;
+    }
+}
+
 // Interface for bin hover data
 interface IHistogramData {
     group: string;
@@ -714,7 +730,7 @@ interface IAdminControlCharts {
     renderGroupStats(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsDataStats): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
     renderHistogram(chart: HistogramChartSeries, data: IAnalyticsChartsData[]): HistogramChartSeries;
     handleHistogramHover(chart: HistogramChartSeries, bandwidth: d3.ScaleLinear<number, number, never>): void;
-    renderTimelineDensity(chart: ChartTime, data: IAnalyticsChartsData): ChartTime;
+    renderTimelineDensity(chart: ChartTime, data: IAnalyticsChartsData[]): ChartTime;
     renderTimelineScatter(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData): ChartTime;
     renderTimelineButtons(card: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>): void;
     handleTimelineButtons(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData, func?: Function): void;
@@ -984,7 +1000,7 @@ class AdminControlCharts implements IAdminControlCharts {
             _this.interactions.tooltip.removeTooltip(chart);
         }
     }
-    renderTimelineDensity(chart: ChartTime, data: IAnalyticsChartsData): ChartTime {
+    renderTimelineDensity(chart: ChartTime, data: IAnalyticsChartsData[]): ChartTime {
         let _this = this;
 
         //Remove scatter plot
@@ -994,33 +1010,39 @@ class AdminControlCharts implements IAdminControlCharts {
         chart.elements.zoomSVG = undefined;
         chart.elements.zoomFocus = undefined;
 
-        //Draw contours
         drawContours();
 
         //Draw contours function
         function drawContours() {
-            let densityData = d3.contourDensity<IReflectionAuthorEntry>()
-            .x(d => chart.x.scale(d.timestamp))
-            .y(d => chart.y.scale(d.point))
-            .bandwidth(5)
-            .thresholds(20)
-            .size([chart.width - chart.padding.yAxis, chart.height - chart.padding.xAxis - chart.padding.top])
-            (data.value);
-
-            chart.elements.content = chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-contours`)
-            .data(densityData)
+            chart.elements.content = chart.elements.contentContainer.selectAll<SVGGElement, IAnalyticsChartsData>(".timeline-container")
+            .data(data)
             .join(
-                enter => enter.append("path")
-                    .attr("id", `${chart.id}-timeline-contours`)
-                    .attr("class", "contour")
-                    .attr("d", d3.geoPath())               
-                    .attr("stroke", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 25))
-                    .attr("fill", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 20)),
-                update => update.attr("d", d3.geoPath())
-                    .attr("stroke", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 25))
-                    .attr("fill", d => d3.interpolateRgb("#ffffff", data.colour)(d.value * 20)),
+                enter => enter.append("g")
+                    .attr("class", "timeline-container")
+                    .attr("stroke", d => d.colour)
+                    .attr("fill", d => d.colour)
+                    .call(div => div.selectAll(".contour")
+                        .data(d => getDensityData(d))
+                        .enter()
+                        .append("path")
+                        .attr("class", "contour")
+                        .attr("d", d3.geoPath())               
+                        .attr("opacity", d => d.value * 25)),
+                update => update.attr("stroke", d => d.colour)
+                    .attr("fill", d => d.colour)
+                    .call(div => _this.interactions.timeline(div, getDensityData)),
                 exit => exit.remove()
-            );
+            )
+
+            function getDensityData(data: IAnalyticsChartsData): d3.ContourMultiPolygon[] {
+                return d3.contourDensity<IReflectionAuthorEntry>()
+                .x(d => chart.x.scale(d.timestamp))
+                .y(d => chart.y.scale(d.point))
+                .bandwidth(5)
+                .thresholds(20)
+                .size([chart.width - chart.padding.yAxis, chart.height - chart.padding.xAxis - chart.padding.top])
+                (data.value);
+            }
         }
        
 
@@ -1191,7 +1213,7 @@ class AdminControlCharts implements IAdminControlCharts {
         d3.select(`#${chart.id} #timeline-plot`).on("click", func != undefined ? (e: any) => func(e) : (e: any) => {
             var selectedOption = e.target.control.value;
             if (selectedOption == "density") {
-                _this.renderTimelineDensity(chart, data);
+                _this.renderTimelineDensity(chart, [data]);
             }
             if (selectedOption == "scatter") {
                 _this.renderTimelineScatter(chart, zoomChart, data);
@@ -1321,6 +1343,15 @@ class AdminControlTransitions implements IAdminControlTransitions {
                         .attr("width", d => chart.bandwidth(d.percentage) - chart.bandwidth(-d.percentage))),
                 exit => exit)
     };
+    timeline(update: d3.Selection<SVGGElement, IAnalyticsChartsData, SVGGElement, unknown>, getDensityData: Function): void {
+        update.selectAll(".contour")
+            .data(d => getDensityData(d))
+            .join(
+                enter => enter,
+                update => update.attr("d", d3.geoPath())
+                    .attr("opacity", (d: d3.ContourMultiPolygon) => d.value * 20),
+                exit => exit);
+    }
 }
 
 interface IAdminControlInteractions extends IAdminControlTransitions {
@@ -1519,7 +1550,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                         _this.renderTimelineScatter(_this.timeline, _this.timelineZoom, _this.allEntries.find(d => d.group == groupId));
                     } else {
                         _this.timeline.elements.contentContainer.selectAll(`#${_this.timeline.id}-timeline-contours`).remove();
-                        _this.renderTimelineDensity(_this.timeline, _this.allEntries.find(d => d.group == groupId));
+                        //_this.renderTimelineDensity(_this.timeline, _this.allEntries.find(d => d.group == groupId));
                     }
                     _this.handleTimelineButtons(_this.timeline, _this.timelineZoom, _this.allEntries.find(d => d.group == groupId));
                     _this.updateHistograms([clickData], [clickData.getUsersData()]);
@@ -1751,7 +1782,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         }
         return chart;
     };
-    renderTimelineDensity(chart: ChartTime, data: IAnalyticsChartsData): ChartTime {
+    renderTimelineDensity(chart: ChartTime, data: IAnalyticsChartsData[]): ChartTime {
         chart = super.renderTimelineDensity(chart, data);
         this.interactions.click.removeClick(chart);
         return chart;
@@ -1766,7 +1797,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 if (!chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`).empty()) {
                     _this.removeUserStatistics();
                 }
-                _this.renderTimelineDensity(chart, data);
+                _this.renderTimelineDensity(chart, [data]);
             }
             if (selectedOption == "scatter") {
                 _this.renderTimelineScatter(chart, zoomChart, data);
@@ -2050,7 +2081,7 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
             .html(`The oldest reflection was on ${(d3.min(data.map(d => d.getStat("oldRef").value)) as Date).toDateString()} in the group code ${data[d3.minIndex(data.map(d => d.getStat("oldRef").value))].group}, while
                 the newest reflection was on ${(d3.max(data.map(d => d.getStat("newRef").value)) as Date).toDateString()} in the group code ${data[d3.maxIndex(data.map(d => d.getStat("newRef").value))].group}`)
         let timelineChart = new ChartTime("group-timeline", d3.extent(data[0].value.map(d => d.timestamp)));
-        adminControlCharts.renderTimelineDensity(timelineChart, data[0]);
+        adminControlCharts.renderTimelineDensity(timelineChart, [data[0]]);
         let timelineZoomChart = new ChartTimeZoom(timelineChart, d3.extent(data[0].value.map(d => d.timestamp)));
         adminControlCharts.renderTimelineButtons(timelineCard);
         adminControlCharts.handleTimelineButtons(timelineChart, timelineZoomChart, data[0]);
@@ -2070,11 +2101,10 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
                 timelineChart.x.scale.domain(d3.extent(d.value.map(d => d.timestamp)));
                 timelineZoomChart.x.scale.domain(d3.extent(d.value.map(d => d.timestamp)));
                 adminControlCharts.interactions.axisTime(timelineChart, d);
-                if (timelineChart.elements.contentContainer.selectAll(`#${timelineChart.id}-timeline-contours`).empty()) {
+                if (timelineChart.elements.contentContainer.selectAll(".contour").empty()) {
                     adminControlCharts.renderTimelineScatter(timelineChart, timelineZoomChart, d);
                 } else {
-                    timelineChart.elements.contentContainer.selectAll(`#${timelineChart.id}-timeline-contours`).remove();
-                    adminControlCharts.renderTimelineDensity(timelineChart, d);
+                    adminControlCharts.renderTimelineDensity(timelineChart, [d]);
                 }
                 adminControlCharts.handleTimelineButtons(timelineChart, timelineZoomChart, d);
             });
@@ -2200,7 +2230,7 @@ export function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalyticsCharts
         let timelineCard = adminExperimentalCharts.htmlContainers.appendCard(adminExperimentalCharts.htmlContainers.timeline, `Reflections by group vs time`, undefined, true);
 
         adminExperimentalCharts.timeline = new ChartTime("group-timeline", d3.extent(data[0].value.map(d => d.timestamp)));
-        adminExperimentalCharts.renderTimelineDensity(adminExperimentalCharts.timeline, data[0]);
+        adminExperimentalCharts.renderTimelineDensity(adminExperimentalCharts.timeline, data);
         let timelineZoomChart = new ChartTimeZoom(adminExperimentalCharts.timeline, d3.extent(data[0].value.map(d => d.timestamp)));
         adminExperimentalCharts.renderTimelineButtons(timelineCard);
         adminExperimentalCharts.handleTimelineButtons(adminExperimentalCharts.timeline, timelineZoomChart, data[0]);
