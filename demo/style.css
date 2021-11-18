@@ -94,10 +94,8 @@
 }
 
 .bar, .line-circle, .histogram-rect, .zoom-circle, .legend-color {
-    fill: #3399CC;
     fill-opacity: 0.2;
     stroke-width: 1;
-    stroke:#3399CC;
 }
 
 .bar, .line-circle {
@@ -172,8 +170,12 @@
 }
 
 .click-line {
+    fill: none;
     stroke: #3399CC;
     stroke-width: 1;
+}
+
+.click-line.dash {
     stroke-dasharray: 5,5;
 }
 
