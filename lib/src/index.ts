@@ -1007,9 +1007,9 @@ class AdminControlCharts implements IAdminControlCharts {
                 `Filtering by <span class="badge badge-pill badge-info">${data[0].group} <i class="fas fa-window-close"></i></span>`);
 
         //Remove scatter plot
-        chart.elements.contentContainer.selectAll(".line-circle").remove();
+        chart.elements.contentContainer.selectAll(".circle").remove();
         chart.elements.svg.selectAll(".zoom-container").remove();
-        chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`).remove();
+        chart.elements.contentContainer.selectAll(".click-line").remove();
         chart.elements.zoomSVG = undefined;
         chart.elements.zoomFocus = undefined;
 
@@ -1076,7 +1076,7 @@ class AdminControlCharts implements IAdminControlCharts {
             update => update.call(update => _this.interactions.timelineScatter(update, chart)),
             exit => exit.remove())     
 
-        chart.elements.content = chart.elements.contentContainer.selectAll(".line-circle");
+        chart.elements.content = chart.elements.contentContainer.selectAll(".circle");
 
         //Enable tooltip       
         _this.interactions.tooltip.enableTooltip(chart, onMouseover, onMouseout);
@@ -1123,15 +1123,6 @@ class AdminControlCharts implements IAdminControlCharts {
         }
 
         //Process zoom circles
-        chart.elements.zoomSVG.selectAll<SVGGElement, IAnalyticsChartsData>(".zoom-timeline-container")
-            .data(data)
-            .join(
-                enter => enter.append("g")
-                    .attr("class", "zoom-timeline-container")
-                    .call(enter => _this.interactions.timelineScatter(enter, zoomChart, true)),
-                update => update.call(update => _this.interactions.timelineScatter(update, zoomChart, true)),
-                exit => exit.remove());
-
         chart.elements.zoomFocus.selectAll<SVGGElement, IAnalyticsChartsData>(".zoom-timeline-content-container")
             .data(data)
             .join(
@@ -1140,6 +1131,15 @@ class AdminControlCharts implements IAdminControlCharts {
                     .call(enter => _this.interactions.timelineScatter(enter, zoomChart, true, true)),
                 update => update.call(update => _this.interactions.timelineScatter(update, zoomChart, true, true)),
                 exit => exit.remove());  
+        
+        chart.elements.zoomSVG.selectAll<SVGGElement, IAnalyticsChartsData>(".zoom-timeline-container")
+            .data(data)
+            .join(
+                enter => enter.append("g")
+                    .attr("class", "zoom-timeline-container")
+                    .call(enter => { zoomChart.x.scale.rangeRound([0, chart.width - chart.padding.yAxis]); _this.interactions.timelineScatter(enter, zoomChart, true) }),
+                update => update.call(update => { zoomChart.x.scale.rangeRound([0, chart.width - chart.padding.yAxis]); _this.interactions.timelineScatter(update, zoomChart, true) }),
+                exit => exit.remove());
            
         //Enable zoom
         _this.interactions.zoom.enableZoom(chart, zoomed);
@@ -1151,13 +1151,13 @@ class AdminControlCharts implements IAdminControlCharts {
                 .x(d => chart.x.scale(d.timestamp))
                 .y(d => chart.y.scale(d.point));
 
-            chart.elements.contentContainer.selectAll<SVGCircleElement, IReflectionAuthorEntry>(".line-circle")
+            chart.elements.contentContainer.selectAll<SVGCircleElement, IReflectionAuthorEntry>(".circle")
                 .attr("cx", d => chart.x.scale(d.timestamp));
 
             chart.elements.zoomFocus.selectAll<SVGCircleElement, IReflectionAuthorEntry>(".zoom-content")
                 .attr("cx", d => zoomChart.x.scale(d.timestamp));
 
-            chart.elements.contentContainer.selectAll<SVGLineElement, IReflectionAuthorEntry[]>(`#${chart.id}-timeline-circles-line`)
+            chart.elements.contentContainer.selectAll<SVGLineElement, IReflectionAuthorEntry[]>(".click-line")
                 .attr("d", d => newLine(d));
 
             chart.elements.contentContainer.selectAll<SVGRectElement, IReflectionAuthorEntry>(".click-container")
@@ -1243,7 +1243,7 @@ class AdminControlCharts implements IAdminControlCharts {
             chart.elements.svg.select(".y-axis").remove();
             chart.elements.svg.select(".x-axis").attr("clip-path", null);
             chart.elements.contentContainer.append("rect")
-                .attr("class", "bar")
+                .attr("class", "bar no-click")
                 .attr("x", 0)
                 .attr("y", 0)
                 .attr("height", chart.y.scale(0))
@@ -1262,7 +1262,8 @@ class AdminControlCharts implements IAdminControlCharts {
                 .attr("y", chart.y.scale(1))
                 .attr("font-size", 10)
                 .attr("font-family", "sans-serif")
-                .text(`Group: ${groupMean}`);
+                .attr("text-anchor", "middle")
+                .text(`Group average: ${groupMean}`);
             chart.elements.contentContainer.append("text")
                 .attr("x", chart.x.scale(data.point))
                 .attr("y", chart.y.scale(0.5))
@@ -1337,7 +1338,7 @@ class AdminControlTransitions implements IAdminControlTransitions {
             .data(d => d.value.map(c => new TimelineData(c, d.colour, d.group)))
             .join(
                 enter => enter.append("circle")
-                    .attr("class", invisible ? "zoom-content" : "line-circle")
+                    .attr("class", invisible ? "zoom-content" : zoom ? "circle no-hover" : "circle")
                     .attr("r", zoom ? 2 : 5)
                     .attr("cx", d => chart.x.scale(d.timestamp))
                     .attr("cy", d => chart.y.scale(d.point))
@@ -1777,7 +1778,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             //Remove users html containers
             _this.removeUserStatistics();
             chart.click = true;
-            chart.elements.content.attr("class", (data: IReflectionAuthorEntry) => `line-circle ${data.pseudonym == d.pseudonym ? "clicked" : ""}`);
+            chart.elements.content.attr("class", (data: IReflectionAuthorEntry) => `circle ${data.pseudonym == d.pseudonym ? "clicked" : ""}`);
             let userData = data.find(c => c.group == d.group).value.filter(c => c.pseudonym == d.pseudonym);
 
             let line = d3.line<IReflectionAuthorEntry>()
@@ -1823,7 +1824,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         function newFunc(e: any) {
             var selectedOption = e.target.control.value;
             if (selectedOption == "density") {
-                if (!chart.elements.contentContainer.selectAll(`#${chart.id}-timeline-circles-line`).empty()) {
+                if (!chart.elements.contentContainer.selectAll(".click-line").empty()) {
                     _this.removeUserStatistics();
                 }
                 _this.renderTimelineDensity(chart, data);
@@ -2106,8 +2107,8 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
                 adminControlCharts.htmlContainers.helpPopover(d3.select(this), `${timelineChart.id}-help`, "<b>Density plot</b><br>A density plot shows the distribution of a numeric variable<br><b>Scatter plot</b><br>The data is showed as a collection of points<br>The data represented are <i>reflections over time</i>");
                 adminControlCharts.htmlContainers.helpPopover(adminControlCharts.htmlContainers.timeline.select("#timeline-plot"), `${timelineChart.id}-help-button`, "<u><i>click</i></u> me to change chart type");
                 adminControlCharts.htmlContainers.helpPopover(adminControlCharts.htmlContainers.timeline.select(".zoom-rect.active"), `${timelineChart.id}-help-zoom`, "use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move");
-                if (!timelineChart.elements.contentContainer.select(`#${timelineChart.id}-timeline-circles`).empty()) {
-                    let showDataHelp = adminControlCharts.htmlContainers.helpPopover(timelineChart.elements.contentContainer.select(`#${timelineChart.id}-timeline-circles`), `${timelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
+                if (!timelineChart.elements.contentContainer.select(".circle").empty()) {
+                    let showDataHelp = adminControlCharts.htmlContainers.helpPopover(timelineChart.elements.contentContainer.select(".circle"), `${timelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
                     if (showDataHelp) {
                         d3.select(`#${timelineChart.id}-help-data`).style("top", parseInt(d3.select(`#${timelineChart.id}-help-data`).style("top")) - 14 + "px");
                     }
@@ -2242,9 +2243,9 @@ export function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalyticsCharts
             .on("click", function (e: Event) {
                 adminExperimentalCharts.htmlContainers.helpPopover(adminExperimentalCharts.htmlContainers.timeline.select("#timeline-plot"), `${adminExperimentalCharts.timeline.id}-help-button`, "<u><i>click</i></u> me to change chart type");
                 adminExperimentalCharts.htmlContainers.helpPopover(adminExperimentalCharts.htmlContainers.timeline.select(".zoom-rect.active"), `${adminExperimentalCharts.timeline.id}-help-zoom`, "use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move");
-                if (!adminExperimentalCharts.timeline.elements.contentContainer.select(".line-circle").empty()) {
+                if (!adminExperimentalCharts.timeline.elements.contentContainer.select(".circle").empty()) {
                     adminExperimentalCharts.htmlContainers.helpPopover(d3.select(this), `${adminExperimentalCharts.timeline.id}-help`, "<b>Scatter plot</b><br>A scatter plot shows the data as a collection of points<br>The data represented are <i>reflections over time</i>");
-                    let showDataHelp = adminExperimentalCharts.htmlContainers.helpPopover(adminExperimentalCharts.timeline.elements.contentContainer.select(".line-circle"), `${adminExperimentalCharts.timeline.id}-help-data`, "<u><i>hover</i></u> me for information on demand<br><u><i>click</i></u> me to connect the user's reflections");
+                    let showDataHelp = adminExperimentalCharts.htmlContainers.helpPopover(adminExperimentalCharts.timeline.elements.contentContainer.select(".circle"), `${adminExperimentalCharts.timeline.id}-help-data`, "<u><i>hover</i></u> me for information on demand<br><u><i>click</i></u> me to connect the user's reflections");
                     if (showDataHelp) {
                         d3.select(`#${adminExperimentalCharts.timeline.id}-help-data`).style("top", parseInt(d3.select(`#${adminExperimentalCharts.timeline.id}-help-data`).style("top")) - 14 + "px");
                     }
