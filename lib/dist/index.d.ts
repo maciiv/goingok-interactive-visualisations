@@ -33,6 +33,6 @@ declare class AnalyticsChartsData implements IAnalyticsChartsData {
     constructor(group: string, value: IReflectionAuthorEntry[], createDate: Date, colour?: string, selected?: boolean);
     getUsersData(): AnalyticsChartsData;
 }
-export declare function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]): void;
-export declare function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]): void;
+export declare function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]): Promise<void>;
+export declare function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]): Promise<void>;
 export {};

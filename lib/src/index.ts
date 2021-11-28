@@ -2045,17 +2045,55 @@ class Sort implements ISort {
     }
 }
 
+interface ILoading {
+    isLoading: boolean;
+    spinner: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
+    appendDiv():  d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
+    removeDiv(): void;
+}
+
+class Loading implements ILoading {
+    isLoading: boolean;
+    spinner: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
+    constructor() {
+        this.isLoading = true;
+        this.spinner = this.appendDiv();
+
+    }
+    appendDiv():  d3.Selection<HTMLDivElement, unknown, HTMLElement, any> {
+        let div = d3.select(".wrapper")
+            .append("div")
+            .attr("class", "loader")
+        div.append("div")
+            .attr("class", "loader-inner")
+            .selectAll(".loader-line-wrap")
+            .data([1, 2, 3, 4, 5])
+            .enter()
+            .append("div")
+            .attr("class", "loader-line-wrap")
+            .append("div")
+            .attr("class", "loader-line");
+        return div;
+    }
+    removeDiv(): void {
+        this.spinner.remove();
+    }
+}
+
 /* ------------------------------------------------
     End of admin experimental interfaces and classes
 -------------------------------------------------- */
 
-export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]) {
+export async function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]) {
+    let loading = new Loading();
     let rawData = entriesRaw.map(d => new AnalyticsChartsDataRaw(d.group, d.value, d.createDate));
     let entries = rawData.map(d => d.transformData());
     let colourScale = d3.scaleOrdinal(d3.schemeCategory10);
     entries = entries.map(d => new AnalyticsChartsData(d.group, d.value, d.creteDate, colourScale(d.group), d.selected));
-    drawCharts(entries);
-    function drawCharts(allEntries: IAnalyticsChartsData[]) {
+    await drawCharts(entries);
+    loading.isLoading = false;
+    loading.removeDiv();
+    async function drawCharts(allEntries: IAnalyticsChartsData[]) {
         let adminControlCharts = new AdminControlCharts();
         //Handle sidebar button
         adminControlCharts.sidebarBtn();
@@ -2160,13 +2198,16 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDat
     }
 }
 
-export function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]) {
+export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]) {
+    let loading = new Loading();
     let rawData = entriesRaw.map(d => new AnalyticsChartsDataRaw(d.group, d.value, d.createDate));
     let entries = rawData.map(d => d.transformData());
     let colourScale = d3.scaleOrdinal(d3.schemeCategory10);
     entries = entries.map((d, i) => new AnalyticsChartsData(d.group, d.value, d.creteDate, colourScale(d.group), i == 0 ? true : false));
-    drawCharts(entries);
-    function drawCharts(allEntries: IAnalyticsChartsData[]) {
+    await drawCharts(entries);
+    loading.isLoading = false;
+    loading.removeDiv();
+    async function drawCharts(allEntries: IAnalyticsChartsData[]) {
         let adminExperimentalCharts = new AdminExperimentalCharts();
         //Handle sidebar button
         adminExperimentalCharts.sidebarBtn();
