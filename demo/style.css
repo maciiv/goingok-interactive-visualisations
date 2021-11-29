@@ -296,9 +296,9 @@
     overflow: auto;
 }
 
-/**************************************************/
-/* Spinner CSS */
-/**************************************************/
+/**************************************************
+Spinner CSS
+***************************************************/
 
 .loader {
     background: #000;
@@ -392,4 +392,61 @@
 	100% {
 		transform: rotate(360deg);
 	}
+}
+
+/**************************************************
+Tutorial CSS
+***************************************************/
+
+.no-overflow {
+    overflow: hidden;
+}
+
+.tutorial {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+}
+
+.tutorial .tutorial-backdrop {
+    z-index: 1050;
+    background-color: #000000;
+    opacity: 0.75;
+    height: inherit;
+    width: inherit;
+    position: inherit;
+}
+
+.tutorial .tutorial-content {
+    color: #ffffff;
+    z-index: 1100;
+    position: inherit;
+    font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    font-size: 22px;
+    max-width: 500px;
+}
+
+.tutorial .tutorial-arrow {
+    position: inherit;
+    z-index: 1100;
+}
+
+.tutorial .tutorial-buttons {
+    z-index: 1100;
+    position: inherit;
+    width: 200px;
+    display: flex;
+}
+
+.arrow {
+    stroke: #ffffff;
+    stroke-width: 3px;
+    fill: none;
+}
+
+.arrow-head {
+    stroke: #ffffff;
+    fill: #ffffff;
 }
