@@ -1237,9 +1237,6 @@ class AdminControlCharts implements IAdminControlCharts {
 
         function drawUserChart(id: string, data: IReflectionAuthorEntry) {          
             let chart = new UserChart(id, "user-chart");
-            if (chart.x.scale(data.point) < 0) {
-                console.log(data, chart.x.scale(data.point), id)
-            }
             chart.elements.svg.select(".y-axis").remove();
             chart.elements.svg.select(".x-axis").attr("clip-path", null);
             chart.elements.contentContainer.append("rect")
@@ -2045,6 +2042,7 @@ class Sort implements ISort {
     }
 }
 
+// Loading interfaces and classes
 interface ILoading {
     isLoading: boolean;
     spinner: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
@@ -2080,20 +2078,35 @@ class Loading implements ILoading {
     }
 }
 
+// Tutorial interfaces and classes
+interface ITutorialData {
+    id: string;
+    content: string;
+}
+
+class TutorialData implements ITutorialData {
+    id: string;
+    content: string;
+    constructor(id: string, content: string) {
+        this.id = id;
+        this.content = content;
+    }
+}
+
 interface ITutorial {
     tutorial: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
-    tutorialData: {id: string, content: string}[];
+    tutorialData: ITutorialData[];
     slide: number;
     appendTutorial(id: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
 }
 
 class Tutorial implements ITutorial {
     tutorial: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
-    tutorialData: {id: string, content: string}[];
+    tutorialData: ITutorialData[];
     slide: number;
-    constructor(constructor: {id: string, content: string}[]) {
+    constructor(data: ITutorialData[]) {
         this.tutorial = this.appendTutorial();
-        this.tutorialData = constructor;
+        this.tutorialData = data;
         this.slide = 0;
         this.appendTutorialBackdrop();
     }
@@ -2110,7 +2123,7 @@ class Tutorial implements ITutorial {
             this.removeTutorial();
             return;
         }
-
+        window.scroll(0, 0);
         let tutorialData = this.tutorialData[this.slide];
         let tutorialFocus = d3.select<HTMLDivElement, unknown>(tutorialData.id).node().getBoundingClientRect();
         class TutorialContentData {
@@ -2125,6 +2138,7 @@ class Tutorial implements ITutorial {
                 this.height = height;
             }
         }
+        window.scroll(0, tutorialFocus.top - 200);
         let data = [new TutorialContentData("0px", "0px", "100%", tutorialFocus.top + "px"), 
             new TutorialContentData(tutorialFocus.bottom + "px", "0px", "100%", "100%"), 
             new TutorialContentData(tutorialFocus.top + "px", "0px", tutorialFocus.left + "px", tutorialFocus.height + "px"), 
@@ -2152,7 +2166,6 @@ class Tutorial implements ITutorial {
         if (tutorialFocus.left + 50 > window.innerWidth / 2) {
             isLeft = false;
         }
-        console.log(isLeft)
         if (this.tutorial.selectAll(".tutorial-content").empty()) {
             this.tutorial.append("div")
                 .attr("class", "tutorial-content")
@@ -2242,6 +2255,11 @@ export async function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsCha
     let colourScale = d3.scaleOrdinal(d3.schemeCategory10);
     entries = entries.map(d => new AnalyticsChartsData(d.group, d.value, d.creteDate, colourScale(d.group), d.selected));
     await drawCharts(entries);
+    new Tutorial([ new TutorialData("#groups", "All your groups are selected to visualise and colours assigned"),
+    new TutorialData(".card-title button", "Click the help symbol in any chart to get additional information"),
+    new TutorialData("#groups-chart .bar", "Hover for information on demand"), 
+    new TutorialData("#group-histogram-chart .histogram-rect", "Hover for information on demand"),
+    new TutorialData("#timeline-plot", "Swap chart types. Both charts have zoom available")]);
     loading.isLoading = false;
     loading.removeDiv();
     async function drawCharts(allEntries: IAnalyticsChartsData[]) {
@@ -2356,12 +2374,12 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalytics
     let colourScale = d3.scaleOrdinal(d3.schemeCategory10);
     entries = entries.map((d, i) => new AnalyticsChartsData(d.group, d.value, d.creteDate, colourScale(d.group), i == 0 ? true : false));
     await drawCharts(entries);
-    new Tutorial([{id: "#groups", content: "Add groups to the charts and change their colours"},
-    {id: ".fa-question-circle", content: "Click the help symbol in any chart to get additional information"},
-    {id: "#groups-chart .bar", content: "Hover for information on demand or click to compare and drill-down. Other visualisations will show only the selected group"}, 
-    {id: "#group-histogram-chart .threshold-line", content: "Drag to change the threshold (soaring or distressed) and recalculate the bins"}, 
-    {id: "#group-histogram-chart .histogram-rect", content: "Click to compare the bin with other's group bins"},
-    {id: "#timeline-plot", content: "Swap chart types. Both charts have zoom available. In the scatter plot, click a bubble to access the user's information"}]);
+    new Tutorial([new TutorialData("#groups", "Add groups to the charts and change their colours"),
+    new TutorialData(".card-title button", "Click the help symbol in any chart to get additional information"),
+    new TutorialData("#groups-chart .bar", "Hover for information on demand or click to compare and drill-down. Other visualisations will show only the selected group"), 
+    new TutorialData("#group-histogram-chart .threshold-line", "Drag to change the threshold (soaring or distressed) and recalculate the bins"), 
+    new TutorialData("#group-histogram-chart .histogram-rect", "Click to compare the bin with other's group bins"),
+    new TutorialData("#timeline-plot", "Swap chart types. Both charts have zoom available. In the scatter plot, click a bubble to access the user's information")]);
     loading.isLoading = false;
     loading.removeDiv();
     async function drawCharts(allEntries: IAnalyticsChartsData[]) {
