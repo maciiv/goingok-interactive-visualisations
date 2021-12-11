@@ -365,6 +365,7 @@ class ChartElements implements IChartElements {
         return d3.select(`#${chart.id} ${containerClass == undefined ? ".chart-container" : "." + containerClass}`)
             .append("svg")
             .attr("id", `chart-${chart.id}`)
+            .attr("class", "chart-svg")
             .attr("preserveAspectRatio", "xMinYMin meet")
             .attr("viewBox", `0 0 ${chart.width} ${chart.height}`);
     };
@@ -595,9 +596,6 @@ interface IHtmlContainers {
     appendCard(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, header: string, id?: string, help?: boolean): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
     helpPopover(button: any, id: string, content: string): boolean;
     removeHelp(chart: IChart): void;
-    renderNavbarScrollspy(): void;
-    renderNavbarScrollspyItem(id: string, name: string): void;
-    removeNavbarScrollspyItem(id: string): void;
 }
 
 // Basic class for Html containers
@@ -615,12 +613,10 @@ class HtmlContainers implements IHtmlContainers {
             this.statistics = undefined;
         }
         if (this.timeline != undefined) {
-            this.removeNavbarScrollspyItem(this.timeline.attr("id"));
             this.timeline.remove();
             this.timeline = undefined;
         }
         if (this.histogram != undefined) {
-            this.removeNavbarScrollspyItem(this.histogram.attr("id"));
             this.histogram.remove();
             this.histogram = undefined;
         }
@@ -635,7 +631,6 @@ class HtmlContainers implements IHtmlContainers {
     };
     removeUsers() {
         if (this.userStatistics != undefined) {
-            this.removeNavbarScrollspyItem(this.userStatistics.attr("id"));
             this.userStatistics.remove();
             this.userStatistics = undefined;
         }
@@ -653,9 +648,9 @@ class HtmlContainers implements IHtmlContainers {
             .attr("class", "card-body")
             .call(div => div.append("h5")
                 .attr("class", "card-title")
-                .html(!help ? header : `${header}<button type="button" class="btn btn-light btn-sm float-right"><i class="fas fa-question-circle"></i></button>`))
+                .html(!help ? `<span>${header}</span>` : `<span>${header}</span><button type="button" class="btn btn-light btn-sm float-right"><i class="fas fa-question-circle"></i></button>`))
             .call(div => div.append("h6")
-                .attr("class", "card-subtitle mb-2 text-muted"))
+                .attr("class", "card-subtitle mb-2 instructions"))
             .call(div => div.append("div")
                 .attr("class", "chart-container"))           
     };
@@ -689,37 +684,6 @@ class HtmlContainers implements IHtmlContainers {
         d3.select(`#${chart.id}-help-drag`).remove();
         d3.select(`#${chart.id}-help-zoom`).remove();
     };
-    renderNavbarScrollspy(): void {
-        d3.select("body")
-            .attr("data-spy", "scroll")
-            .attr("data-target", "#analytics-navbar")
-            .attr("data-offset", 0);
-
-        this.renderNavbarScrollspyItem(this.boxPlot.attr("id"), "Reflections");
-        if(this.timeline != undefined) {
-            this.renderNavbarScrollspyItem(this.timeline.attr("id"), "Timeline");
-        }        
-        if(this.userStatistics != undefined) {
-            this.renderNavbarScrollspyItem(this.userStatistics.attr("id"), "Users");
-        }
-    };
-    renderNavbarScrollspyItem(id: string, name: string): void {
-        let exists = d3.select("#analytics-navbar ul").selectAll("a").filter(function() {
-            return d3.select(this).attr("href") == `#${id}`;
-        });
-        if(exists.empty()) {
-            d3.select("#analytics-navbar ul").append("li")
-                .attr("class", "nav-item")
-                .attr("id", `${id}-li`)
-                .append("a")
-                .attr("class", "nav-link")
-                .attr("href", `#${id}`)
-                .html(name);   
-        }
-    };
-    removeNavbarScrollspyItem(id: string): void {
-        d3.select(`#analytics-navbar ul #${id}-li`).remove();
-    }
 }
 
 /* ------------------------------------------------
@@ -750,10 +714,12 @@ class AdminControlCharts implements IAdminControlCharts {
     interactions = new AdminControlInteractions();
     sidebarBtn(): void {
         //Handle side bar btn click
-        d3.select("#sidebar-btn").on("click", () => {
+        d3.select("#sidebar-btn").on("click", function () {
             let isActive = d3.select("#sidebar").attr("class").includes("active");
             d3.select("#sidebar")
-                .attr("class", isActive ? "" : "active");
+                .classed("active", !isActive);
+            d3.select(this)
+                .classed("active", isActive);
         });
     };
     preloadGroups(allEntries: IAnalyticsChartsData[], enable: boolean = false): IAnalyticsChartsData[] {
@@ -783,9 +749,7 @@ class AdminControlCharts implements IAdminControlCharts {
     };
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries {
         d3.select(`#${chart.id} .card-subtitle`)
-            .html(data.length != 1 ? `The reflections of the group code ${data[d3.minIndex(data.map(c => c.stats.find(d => d.stat == "iqr").value as number))].group} have the lowest variability, while
-                the reflections of the group code ${data[d3.maxIndex(data.map(c => c.stats.find(d => d.stat == "iqr").value as number))].group} have the highest variability` : 
-                "You can add more group codes to this chart by selecting them from the left bar");
+            .html(data.length <= 1 ? "Add more group codes from the left bar" : "Click a group code to filter");
 
         //MinMax lines processing
         chart.elements.contentContainer.selectAll<SVGLineElement, IAnalyticsChartsDataStats>(`#${chart.id}-data-min-max`)
@@ -931,11 +895,9 @@ class AdminControlCharts implements IAdminControlCharts {
         chart.setBandwidth(data);
         chart.setBin();
 
-        let binData = data.map(d => chart.bin(d.value.map(d => d.point)).map(c => { return new HistogramData(d.group, d.colour, c, Math.round(c.length / d.value.length * 100)) }));
         d3.select(`#${chart.id} .card-subtitle`)
-            .html(data.length != 1 ? `The group code ${binData[d3.maxIndex(binData.map(d => d3.max(d.filter(d => d.bin.x0 == 0).map(d => d.percentage))))][0].group} has the biggest distressed bin, while
-                the group code ${binData[d3.maxIndex(binData.map(d => d3.max(d.filter(d => d.bin.x1 == 100).map(d => d.percentage))))][0].group} has the biggest soaring bin` : 
-                `Filtering by <span class="badge badge-pill badge-info">${data[0].group} <i class="fas fa-window-close"></i></span>`);
+            .html(data.length == 1 ? `Filtering by <span class="badge badge-pill badge-info">${data[0].group} <i class="fas fa-window-close"></i></span>` :
+                "");
 
         //Process histogram
         chart.elements.contentContainer.selectAll<SVGGElement, IAnalyticsChartsData>(`.${chart.id}-histogram-container`)
@@ -1003,6 +965,8 @@ class AdminControlCharts implements IAdminControlCharts {
         let _this = this;
 
         d3.select(`#${chart.id} .card-subtitle`)
+            .classed("instructions", data.length <= 1)
+            .classed("text-muted", data.length != 1)
             .html(data.length != 1 ? `The oldest reflection was on ${d3.min(data.map(d => d3.min(d.value.map(d => d.timestamp)))).toDateString()} in the group code ${data[d3.minIndex(data.map(d => d3.min(d.value.map(d => d.timestamp))))].group}, while
                 the newest reflection was on ${d3.max(data.map(d => d3.max(d.value.map(d => d.timestamp)))).toDateString()} in the group code ${data[d3.maxIndex(data.map(d => d3.max(d.value.map(d => d.timestamp))))].group}` :
                 `Filtering by <span class="badge badge-pill badge-info">${data[0].group} <i class="fas fa-window-close"></i></span>`);
@@ -1063,6 +1027,8 @@ class AdminControlCharts implements IAdminControlCharts {
 
         let _this = this;
         d3.select(`#${chart.id} .card-subtitle`)
+            .classed("instructions", data.length <= 1)
+            .classed("text-muted", data.length != 1)
             .html(data.length != 1 ? `The oldest reflection was on ${d3.min(data.map(d => d3.min(d.value.map(d => d.timestamp)))).toDateString()} in the group code ${data[d3.minIndex(data.map(d => d3.min(d.value.map(d => d.timestamp))))].group}, while
                 the newest reflection was on ${d3.max(data.map(d => d3.max(d.value.map(d => d.timestamp)))).toDateString()} in the group code ${data[d3.maxIndex(data.map(d => d3.max(d.value.map(d => d.timestamp))))].group}` :
                 `Filtering by <span class="badge badge-pill badge-info">${data[0].group} <i class="fas fa-window-close"></i></span>`);
@@ -1179,10 +1145,10 @@ class AdminControlCharts implements IAdminControlCharts {
         .attr("data-toggle", "buttons")
         .call(div => div.append("label")
             .attr("class", "btn btn-light active")
-            .html(`<input type="radio" name="plot" value="density" checked>Density Plot<br>`))
+            .html(`<input type="radio" name="plot" value="scatter" checked>Scatter Plot<br>`))
         .call(div => div.append("label")
             .attr("class", "btn btn-light")
-            .html(`<input type="radio" name="plot" value="scatter">Scatter Plot<br>`));
+            .html(`<input type="radio" name="plot" value="density">Density Plot<br>`));
     }
     handleTimelineButtons(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData[], func?: Function): void {
         let _this = this
@@ -1205,6 +1171,8 @@ class AdminControlCharts implements IAdminControlCharts {
         let groupMean = Math.round(d3.mean(data.value.map(d => d.point)));
 
         d3.select("#user-statistics .card-subtitle")
+            .classed("text-muted", true)
+            .classed("instructions", false)
             .html(timelineData == undefined ? `The user ${userData.value[d3.minIndex(userData.value.map(d => d.point))].pseudonym} is the most distressed, while
                 the user ${userData.value[d3.maxIndex(userData.value.map(d => d.point))].pseudonym} is the most soaring` :
                 `The user ${timelineData.pseudonym} has a total of ${data.value.filter(d => d.pseudonym == timelineData.pseudonym).length} reflections between
@@ -1239,6 +1207,7 @@ class AdminControlCharts implements IAdminControlCharts {
 
         function drawUserChart(id: string, data: IReflectionAuthorEntry) {          
             let chart = new UserChart(id, "user-chart");
+            chart.elements.svg.classed("chart-svg", false);
             chart.elements.svg.select(".y-axis").remove();
             chart.elements.svg.select(".x-axis").attr("clip-path", null);
             chart.elements.contentContainer.append("rect")
@@ -1632,10 +1601,12 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         this.handleTimelineButtons(this.timeline, this.timelineZoom, data);
     };
     private removeUserStatistics() {
-        d3.select("#user-statistics .card-title")
+        d3.select("#user-statistics .card-title span")
             .html("Users compared to their group");
         d3.select("#user-statistics .card-subtitle")
-            .html("Select a reflection from the scatter plot to view specific users"); 
+            .classed("instructions", true)
+            .classed("text-muted", false)
+            .html("Select a reflection from the scatter plot to view specific users");
         d3.select("#user-statistics .users-tab-pane").remove();
     };
     private removeAllHelp(boxPlot: ChartSeries) {
@@ -1804,7 +1775,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             if (_this.htmlContainers.userStatistics == undefined) {
                 _this.htmlContainers.userStatistics = _this.htmlContainers.appendDiv("user-statistics", "col-md-12 mt-3");
             }
-            d3.select("#user-statistics .card-title")
+            d3.select("#user-statistics .card-title span")
                 .html(`User ${d.pseudonym} compared to their group`)
             let userCard = d3.select("#user-statistics .card-body")
                 .append("div")
@@ -1815,7 +1786,6 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             _this.htmlContainers.removeHelp(chart);
             //Scroll
             document.querySelector("#group-timeline").scrollIntoView({ behavior: 'smooth', block: 'start' });
-            _this.htmlContainers.renderNavbarScrollspy();
         }
         return chart;
     };
@@ -2315,8 +2285,8 @@ export async function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsCha
         adminControlCharts.htmlContainers.timeline = adminControlCharts.htmlContainers.appendDiv("group-timeline", "col-md-12 mt-3");
         let timelineCard = adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.timeline, `Reflections by group vs time`, undefined, true);
         let timelineChart = new ChartTime("group-timeline", [d3.min(data.map(d => d.getStat("oldRef").value)) as Date, d3.max(data.map(d => d.getStat("newRef").value)) as Date]);
-        adminControlCharts.renderTimelineDensity(timelineChart, data);
         let timelineZoomChart = new ChartTimeZoom(timelineChart, [d3.min(data.map(d => d.getStat("oldRef").value)) as Date, d3.max(data.map(d => d.getStat("newRef").value)) as Date]);
+        adminControlCharts.renderTimelineScatter(timelineChart, timelineZoomChart, data);
         adminControlCharts.renderTimelineButtons(timelineCard);
         adminControlCharts.handleTimelineButtons(timelineChart, timelineZoomChart, data);
 
@@ -2350,7 +2320,7 @@ export async function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsCha
 
         //Draw user statistics
         adminControlCharts.htmlContainers.userStatistics = adminControlCharts.htmlContainers.appendDiv("user-statistics", "col-md-6 mt-3");
-        let userStatistics = adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.userStatistics, `Users compared to their group`, "user-statistics", false);
+        let userStatistics = adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.userStatistics, `Users compared to their group`, "user-statistics", true);
         userStatistics.select(".chart-container").remove();
         userStatistics.append("ul")
             .attr("class", "nav nav-tabs")
@@ -2375,7 +2345,11 @@ export async function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsCha
             .attr("id", d => `user-statistics-${d.group}`);
         users.each((d, i, g) => i == 0 ? adminControlCharts.renderUserStatistics(d3.select(g[i]), d, [30, 70]) : "");
 
-        adminControlCharts.htmlContainers.renderNavbarScrollspy();
+        //Handle users histogram chart help
+        adminControlCharts.htmlContainers.userStatistics.select(".card-title button")
+            .on("click", function (e: Event) {
+                adminControlCharts.htmlContainers.helpPopover(d3.select(this), "user-statistics-help", "<b>Users ststistics</b><br>Each user's reflections are shown sorted by time. The chart depicts the average reflection point of the user against their group average");
+            });
     }
 }
 
@@ -2461,8 +2435,8 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalytics
         let timelineCard = adminExperimentalCharts.htmlContainers.appendCard(adminExperimentalCharts.htmlContainers.timeline, `Selected group reflections vs time - Timeline`, undefined, true);
 
         adminExperimentalCharts.timeline = new ChartTime("group-timeline", [d3.min(data.map(d => d.getStat("oldRef").value)) as Date, d3.max(data.map(d => d.getStat("newRef").value)) as Date]);
-        adminExperimentalCharts.renderTimelineDensity(adminExperimentalCharts.timeline, data);
         adminExperimentalCharts.timelineZoom = new ChartTimeZoom(adminExperimentalCharts.timeline, [d3.min(data.map(d => d.getStat("oldRef").value)) as Date, d3.max(data.map(d => d.getStat("newRef").value)) as Date]);
+        adminExperimentalCharts.renderTimelineScatter(adminExperimentalCharts.timeline, adminExperimentalCharts.timelineZoom, data);
         adminExperimentalCharts.renderTimelineButtons(timelineCard);
         adminExperimentalCharts.handleTimelineButtons(adminExperimentalCharts.timeline, adminExperimentalCharts.timelineZoom, data);
 
@@ -2502,12 +2476,16 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalytics
 
         //Draw user statistics
         adminExperimentalCharts.htmlContainers.userStatistics = adminExperimentalCharts.htmlContainers.appendDiv("user-statistics", "col-md-6 mt-3");
-        let userStatistics = adminExperimentalCharts.htmlContainers.appendCard(adminExperimentalCharts.htmlContainers.userStatistics, `Users compared to their group`, "user-statistics", false);
+        let userStatistics = adminExperimentalCharts.htmlContainers.appendCard(adminExperimentalCharts.htmlContainers.userStatistics, `Users compared to their group`, "user-statistics", true);
         userStatistics.select(".chart-container").remove();
         userStatistics.select(".card-subtitle")
-            .html("Select a reflection from the scatter plot to view specific users"); 
-
-        adminExperimentalCharts.htmlContainers.renderNavbarScrollspy();
+            .html("Select a reflection from the scatter plot to view specific users");
+        
+        //Handle users histogram chart help
+        adminExperimentalCharts.htmlContainers.userStatistics.select(".card-title button")
+            .on("click", function (e: Event) {
+                adminExperimentalCharts.htmlContainers.helpPopover(d3.select(this), "user-statistics-help", "<b>Users ststistics</b><br>The selected user's reflections are shown sorted by time. The chart depicts the average reflection point of the user against their group average");
+            });
 
         //Update charts depending on group
         adminExperimentalCharts.handleGroups();
