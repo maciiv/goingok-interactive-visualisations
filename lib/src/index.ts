@@ -58,7 +58,7 @@ class AnalyticsChartsData implements IAnalyticsChartsData {
     creteDate: Date;
     colour: string;
     selected: boolean;
-    constructor(group: string, value: IReflectionAuthorEntry[], createDate: Date, colour: string = undefined, selected: boolean = false) {
+    constructor(group: string, value: IReflectionAuthorEntry[], createDate: Date = undefined, colour: string = undefined, selected: boolean = false) {
         this.group = group;
         this.value = value;
         this.creteDate = createDate;
@@ -182,7 +182,7 @@ class ChartTime implements IChart {
     x: ChartTimeAxis;
     y: ChartLinearAxis;
     elements: IChartElements;
-    htmlContainers: IHtmlContainers;
+    help: IHelp;
     padding: IChartPadding;
     click: boolean;
     constructor(id: string, domain: Date[]) {
@@ -191,7 +191,7 @@ class ChartTime implements IChart {
         this.width = containerDimensions.width;
         this.height = containerDimensions.height;
         this.padding = new ChartPadding(75, 75, 5);
-        this.htmlContainers = new HtmlContainers();
+        this.help = new Help();
         this.y = new ChartLinearAxis("Reflection Point", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left");
         this.x = new ChartTimeAxis("Time", domain, [0, this.width - this.padding.yAxis]);
         this.click = false;
@@ -364,7 +364,6 @@ class ChartElements implements IChartElements {
     private appendSVG(chart: IChart, containerClass?: string): d3.Selection<SVGSVGElement, unknown, HTMLElement, any> {
         return d3.select(`#${chart.id} ${containerClass == undefined ? ".chart-container" : "." + containerClass}`)
             .append("svg")
-            .attr("id", `chart-${chart.id}`)
             .attr("class", "chart-svg")
             .attr("preserveAspectRatio", "xMinYMin meet")
             .attr("viewBox", `0 0 ${chart.width} ${chart.height}`);
@@ -544,22 +543,17 @@ class TimelineData implements ITimelineData {
 }
 
 // Interface for bin hover data
-interface IHistogramData {
-    group: string;
-    colour: string;
+interface IHistogramData extends IAnalyticsChartsData {
     bin: d3.Bin<number, number>;
     percentage: number;
 }
 
 // Class for bin hover data
-class HistogramData implements IHistogramData {
-    group: string;
-    colour : string;
+class HistogramData extends AnalyticsChartsData implements IHistogramData {    
     bin: d3.Bin<number, number>;
     percentage: number;
-    constructor(group: string, colour: string, bin: d3.Bin<number, number>, percentage: number) {
-        this.group = group;
-        this.colour = colour;
+    constructor(value: IReflectionAuthorEntry[], group: string, colour: string, bin: d3.Bin<number, number>, percentage: number) {
+        super(group, value, undefined, colour);
         this.bin = bin;
         this.percentage = percentage;
     }
@@ -582,78 +576,13 @@ class ClickTextData implements IClickTextData {
 }
 
 // Basic interface for Html containers
-interface IHtmlContainers {
-    boxPlot: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>,
-    statistics: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>,
-    timeline: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>,
-    histogram: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>,
-    userHistogram: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>,
-    compare: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>
-    userStatistics: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
-    remove(): void;
-    removeUsers(): void;
-    appendDiv(id: string, css: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
-    appendCard(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, header: string, id?: string, help?: boolean): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
+interface IHelp {
     helpPopover(button: any, id: string, content: string): boolean;
     removeHelp(chart: IChart): void;
 }
 
 // Basic class for Html containers
-class HtmlContainers implements IHtmlContainers {
-    boxPlot: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
-    statistics: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
-    timeline: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
-    histogram: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
-    userHistogram: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
-    compare: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
-    userStatistics: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
-    remove() {
-        if (this.statistics != undefined) {
-            this.statistics.remove();
-            this.statistics = undefined;
-        }
-        if (this.timeline != undefined) {
-            this.timeline.remove();
-            this.timeline = undefined;
-        }
-        if (this.histogram != undefined) {
-            this.histogram.remove();
-            this.histogram = undefined;
-        }
-        if (this.userHistogram != undefined) {
-            this.userHistogram.remove();
-            this.userHistogram = undefined;
-        }
-        if (this.compare != undefined) {
-            this.compare.remove();
-        }
-        this.removeUsers();
-    };
-    removeUsers() {
-        if (this.userStatistics != undefined) {
-            this.userStatistics.remove();
-            this.userStatistics = undefined;
-        }
-    };
-    appendDiv(id: string, css: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any> {
-        return d3.select("#analytics-charts").append("div")
-            .attr("id", id)
-            .attr("class", css);
-    };
-    appendCard(div: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, header: string, id?: string, help: boolean = false): d3.Selection<HTMLDivElement, unknown, HTMLElement, any> {
-        return div.append("div")
-            .attr("class", "card")
-            .attr("id", id != null ? id : "no-id")
-            .append("div")
-            .attr("class", "card-body")
-            .call(div => div.append("h5")
-                .attr("class", "card-title")
-                .html(!help ? `<span>${header}</span>` : `<span>${header}</span><button type="button" class="btn btn-light btn-sm float-right"><i class="fas fa-question-circle"></i></button>`))
-            .call(div => div.append("h6")
-                .attr("class", "card-subtitle mb-2 instructions"))
-            .call(div => div.append("div")
-                .attr("class", "chart-container"))           
-    };
+class Help implements IHelp {
     helpPopover(button: any, id: string, content: string): boolean {
         if (d3.select(`#${id}`).empty()) {
             let popover = d3.select("body").append("div")
@@ -683,6 +612,8 @@ class HtmlContainers implements IHtmlContainers {
         d3.select(`#${chart.id}-help-data`).remove();
         d3.select(`#${chart.id}-help-drag`).remove();
         d3.select(`#${chart.id}-help-zoom`).remove();
+        d3.select(`#${chart.id} .card-title i`)
+            .attr("class", "fas fa-question-circle");
     };
 }
 
@@ -695,7 +626,7 @@ class HtmlContainers implements IHtmlContainers {
 -------------------------------------------------- */
 
 interface IAdminControlCharts {
-    htmlContainers: IHtmlContainers;
+    help: IHelp;
     interactions: IAdminControlInteractions;
     sidebarBtn(): void;
     preloadGroups(allEntries: IAnalyticsChartsData[]): IAnalyticsChartsData[];
@@ -704,13 +635,12 @@ interface IAdminControlCharts {
     handleHistogramHover(chart: HistogramChartSeries, bandwidth: d3.ScaleLinear<number, number, never>): void;
     renderTimelineDensity(chart: ChartTime, data: IAnalyticsChartsData[]): ChartTime;
     renderTimelineScatter(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData[]): ChartTime;
-    renderTimelineButtons(card: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>): void;
     handleTimelineButtons(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData[], func?: Function): void;
     renderUserStatistics(card: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsData, thresholds: number[], timelineData?: ITimelineData): void;
 }
 
 class AdminControlCharts implements IAdminControlCharts {
-    htmlContainers = new HtmlContainers();
+    help = new Help();
     interactions = new AdminControlInteractions();
     sidebarBtn(): void {
         //Handle side bar btn click
@@ -748,6 +678,9 @@ class AdminControlCharts implements IAdminControlCharts {
         return allEntries;
     };
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries {
+        d3.select(`#${chart.id} .card-title span`)
+            .html()
+
         d3.select(`#${chart.id} .card-subtitle`)
             .html(data.length <= 1 ? "Add more group codes from the left bar" : "Click a group code to filter");
 
@@ -907,7 +840,7 @@ class AdminControlCharts implements IAdminControlCharts {
                     .attr("class", `${chart.id}-histogram-container`)
                     .attr("transform", d => `translate(${chart.x.scale(d.group)}, 0)`)
                     .call(enter => enter.selectAll(".histogram-rect")
-                        .data(d => chart.bin(d.value.map(d => d.point)).map(c => { return new HistogramData(d.group, d.colour, c, Math.round(c.length / d.value.length * 100)) }))
+                        .data(d => chart.bin(d.value.map(d => d.point)).map(c => { return new HistogramData(d.value, d.group, d.colour, c, Math.round(c.length / d.value.length * 100)) }))
                         .enter()
                         .append("rect")
                         .attr("id", `${chart.id}-data`)
@@ -997,12 +930,12 @@ class AdminControlCharts implements IAdminControlCharts {
 
             function getDensityData(data: IAnalyticsChartsData): d3.ContourMultiPolygon[] {
                 return d3.contourDensity<IReflectionAuthorEntry>()
-                .x(d => chart.x.scale(d.timestamp))
-                .y(d => chart.y.scale(d.point))
-                .bandwidth(5)
-                .thresholds(20)
-                .size([chart.width - chart.padding.yAxis, chart.height - chart.padding.xAxis - chart.padding.top])
-                (data.value);
+                    .x(d => chart.x.scale(d.timestamp))
+                    .y(d => chart.y.scale(d.point))
+                    .bandwidth(5)
+                    .thresholds(20)
+                    .size([chart.width - chart.padding.yAxis, chart.height - chart.padding.xAxis - chart.padding.top])
+                    (data.value);
             }
         }
        
@@ -1017,7 +950,7 @@ class AdminControlCharts implements IAdminControlCharts {
 
             chart.x.axis.ticks(newChartRange[1] / 75);
             chart.elements.xAxis.call(chart.x.axis);
-            _this.htmlContainers.removeHelp(chart);
+            _this.help.removeHelp(chart);
         }
         return chart;
     };
@@ -1132,24 +1065,10 @@ class AdminControlCharts implements IAdminControlCharts {
 
             chart.x.axis.ticks(newChartRange[1] / 75);
             chart.elements.xAxis.call(chart.x.axis);
-            _this.htmlContainers.removeHelp(chart);
+            _this.help.removeHelp(chart);
         }
         return chart;
     };
-    renderTimelineButtons(card: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>): void {
-        card.insert("div", ".chart-container")
-        .attr("class", "row mt-3")
-        .append("div")
-        .attr("id", "timeline-plot")
-        .attr("class", "btn-group btn-group-toggle mr-auto ml-auto")
-        .attr("data-toggle", "buttons")
-        .call(div => div.append("label")
-            .attr("class", "btn btn-light active")
-            .html(`<input type="radio" name="plot" value="scatter" checked>Scatter Plot<br>`))
-        .call(div => div.append("label")
-            .attr("class", "btn btn-light")
-            .html(`<input type="radio" name="plot" value="density">Density Plot<br>`));
-    }
     handleTimelineButtons(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData[], func?: Function): void {
         let _this = this
         d3.select(`#${chart.id} #timeline-plot`).on("click", func != undefined ? (e: any) => func(e) : (e: any) => {
@@ -1161,7 +1080,7 @@ class AdminControlCharts implements IAdminControlCharts {
                 _this.renderTimelineScatter(chart, zoomChart, data);
             }
             if (!d3.select(`#${chart.id}-help`).empty()) {
-                _this.htmlContainers.removeHelp(chart);
+                _this.help.removeHelp(chart);
             }
         });
     };
@@ -1189,20 +1108,25 @@ class AdminControlCharts implements IAdminControlCharts {
                 .attr("class", "col-md-4")
                 .call(div => div.append("h6")
                     .attr("class", "mb-0 mt-1")
-                    .html(d => `${d.pseudonym} (<span class="${(d.point - groupMean) < 0 ? "negative" : "positive"}">${(d.point - groupMean) < 0 ? "" : "+"}${d.point - groupMean}</span>)`))
+                    .html(d => `${d.pseudonym} is`))
                 .call(div => div.append("span")
                     .attr("class", "text-muted")
-                    .html(d => `<b>${_this.getUserStaitsticBinName(d, thresholds)}</b>`)))
+                    .html(d => `<b>${_this.getUserStatisticBinName(d, thresholds)}</b>`)))
             .call(div => div.append("div")
                 .attr("class", "col-md-8 mt-1 user-chart"))
             .call(div => div.append("div")
                 .attr("class", "col-md-12")
-                .selectAll("p")
+                .append("p")
+                .attr("class", "mb-1")
+                .html(d => `User ${d.pseudonym} reflections in chronological order:`))
+            .call(div => div.append("ul")
+                .attr("class", "pr-3")
+                .selectAll("li")
                 .data(d => d3.sort(d3.filter(data.value, x => x.pseudonym == d.pseudonym), r => r.timestamp))
                 .enter()
-                .append("p")
+                .append("li")
                 .classed("reflection-selected", d => timelineData != undefined ? d.timestamp == timelineData.timestamp : false)
-                .html(d => `<i>${d.timestamp.toDateString()}:</i> ${d.text}`))
+                .html(d => `<i>${d.timestamp.toDateString()} | Reflection point ${d.point}</i><br> ${d.text}`))
             .each((d, i, g) => drawUserChart(d3.select(d3.select(g[i]).node().parentElement).attr("id") + " #" + d3.select(g[i]).attr("id"), d));
 
         function drawUserChart(id: string, data: IReflectionAuthorEntry) {          
@@ -1240,7 +1164,7 @@ class AdminControlCharts implements IAdminControlCharts {
                 .text(data.point);
         }
     };
-    protected getUserStaitsticBinName(data: IReflectionAuthorEntry, thresholds: number[]): string {
+    protected getUserStatisticBinName(data: IReflectionAuthorEntry, thresholds: number[]): string {
         let distressed = thresholds[0];
         let soaring = thresholds[1];
         if (data.point <= distressed) {
@@ -1276,7 +1200,7 @@ class AdminControlTransitions implements IAdminControlTransitions {
     };
     histogram(chart: HistogramChartSeries, update: d3.Selection<SVGGElement, IAnalyticsChartsData, SVGGElement, unknown>): void {        
         update.selectAll(".histogram-rect")
-            .data(d => chart.bin(d.value.map(d => d.point)).map(c => { return new HistogramData(d.group, d.colour, c, Math.round(c.length / d.value.length * 100)) }))
+            .data(d => chart.bin(d.value.map(d => d.point)).map(c => { return new HistogramData(d.value, d.group, d.colour, c, Math.round(c.length / d.value.length * 100)) }))
             .join(
                 enter => enter,
                 update => update.style("stroke", d => d.colour)
@@ -1610,10 +1534,10 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         d3.select("#user-statistics .users-tab-pane").remove();
     };
     private removeAllHelp(boxPlot: ChartSeries) {
-        this.htmlContainers.removeHelp(boxPlot);
-        this.htmlContainers.removeHelp(this.histogram);
-        this.htmlContainers.removeHelp(this.usersHistogram);
-        this.htmlContainers.removeHelp(this.timeline);
+        this.help.removeHelp(boxPlot);
+        this.help.removeHelp(this.histogram);
+        this.help.removeHelp(this.usersHistogram);
+        this.help.removeHelp(this.timeline);
     }
     renderGroupChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): ChartSeries {
         chart = super.renderGroupChart(chart, data);
@@ -1664,7 +1588,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             chart.elements.contentContainer.selectAll(`.${chart.id}-histogram-text-container`).remove();
             d3.select(this).classed("grab", false);
             d3.select(this).classed("grabbing", true);
-            _this.htmlContainers.removeHelp(chart);
+            _this.help.removeHelp(chart);
         }
         function dragging(e: MouseEvent, d: number) {
             if (d > 50) {
@@ -1707,7 +1631,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             }  
             if (chart.id == "group-histogram-users-chart" && !_this.timeline.elements.contentContainer.selectAll(".clicked").empty()) {
                 let userData = _this.timeline.elements.contentContainer.selectAll<SVGCircleElement, IReflectionAuthorEntry>(".clicked").datum();
-                let binName = _this.getUserStaitsticBinName(data.map(d => d.value.find(d => d.pseudonym == userData.pseudonym))[0], chart.elements.getThresholdsValues(chart));
+                let binName = _this.getUserStatisticBinName(data.map(d => d.value.find(d => d.pseudonym == userData.pseudonym))[0], chart.elements.getThresholdsValues(chart));
                 d3.select(`#user-statistics #${userData.pseudonym} .text-muted`)
                     .html(`<b>${binName}</b>`);
             }
@@ -1772,9 +1696,6 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             userData.forEach(c => _this.interactions.click.appendScatterText(chart, c, c.point.toString()));
 
             //Draw user statistics container
-            if (_this.htmlContainers.userStatistics == undefined) {
-                _this.htmlContainers.userStatistics = _this.htmlContainers.appendDiv("user-statistics", "col-md-12 mt-3");
-            }
             d3.select("#user-statistics .card-title span")
                 .html(`User ${d.pseudonym} compared to their group`)
             let userCard = d3.select("#user-statistics .card-body")
@@ -1783,7 +1704,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 .attr("id", `user-statistics-${d.pseudonym}`);
             _this.renderUserStatistics(userCard, data.find(c => c.group == d.group), _this.usersHistogram.elements.getThresholdsValues(_this.usersHistogram), d);
 
-            _this.htmlContainers.removeHelp(chart);
+            _this.help.removeHelp(chart);
             //Scroll
             document.querySelector("#group-timeline").scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
@@ -1811,7 +1732,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 _this.renderTimelineScatter(chart, zoomChart, data);
             }
             if (!d3.select(`#${chart.id}-help`).empty()) {
-                _this.htmlContainers.removeHelp(chart);
+                _this.help.removeHelp(chart);
             }
         }
     }
@@ -1937,7 +1858,7 @@ class Click implements IClick {
                     .attr("class", "click-container")
                     .attr("transform", c => `translate(${chart.x.scale(c.group) + chart.x.scale.bandwidth() / 2}, 0)`)
                     .call(enter => enter.selectAll("text")
-                        .data(d => chart.bin(d.value.map(d => d.point)).map(c => { return new HistogramData(d.group, d.colour, c, Math.round(c.length / d.value.length * 100)) }))
+                        .data(d => chart.bin(d.value.map(d => d.point)).map(c => { return new HistogramData(d.value, d.group, d.colour, c, Math.round(c.length / d.value.length * 100)) }))
                         .enter()
                         .append("text")
                         .attr("class", "click-text black")
@@ -1951,7 +1872,7 @@ class Click implements IClick {
                     .duration(750)
                     .attr("transform", c => `translate(${chart.x.scale(c.group) + chart.x.scale.bandwidth() / 2}, 0)`))
                     .call(update => update.selectAll("text")
-                        .data(d => chart.bin(d.value.map(d => d.point)).map(c => { return new HistogramData(d.group, d.colour, c, Math.round(c.length / d.value.length * 100)) }))
+                        .data(d => chart.bin(d.value.map(d => d.point)).map(c => { return new HistogramData(d.value, d.group, d.colour, c, Math.round(c.length / d.value.length * 100)) }))
                         .join(
                             enter => enter,
                             update => update.attr("y", c => c.bin.x0 == 0 ? chart.y.scale(0 + tDistressed / 2) : c.bin.x1 == 100 ? chart.y.scale(tSoaring + (100 - tSoaring) / 2) : chart.y.scale(50))
@@ -2080,6 +2001,7 @@ interface ITutorial {
     tutorialData: ITutorialData[];
     slide: number;
     appendTutorial(id: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
+    removeTutorial(): void;
 }
 
 class Tutorial implements ITutorial {
@@ -2218,12 +2140,12 @@ class Tutorial implements ITutorial {
             .attr("class", "arrow")
             .attr("marker-end", "url(#arrow-head)");
         
-    }
+    };
     removeTutorial(): void {
         d3.select("body")
             .classed("no-overflow", false);
         this.tutorial.remove();
-    }
+    };
 }
 
 /* ------------------------------------------------
@@ -2253,51 +2175,44 @@ export async function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsCha
         //Create data with current entries
         let data = allEntries.map(d => new AnalyticsChartsDataStats(d));
 
-        //Append groups chart container
-        adminControlCharts.htmlContainers.boxPlot = adminControlCharts.htmlContainers.appendDiv("groups-chart", "col-md-6");
-        adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.boxPlot, "All reflections by group - Box plot", undefined, true);
-
         //Create groups chart with current data
         let groupChart = new ChartSeries("groups-chart", data.map(d => d.group));
         adminControlCharts.renderGroupChart(groupChart, data);
+        d3.select("#groups-chart .card-subtitle")
+            .html("");
 
         //Handle groups chart help
-        adminControlCharts.htmlContainers.boxPlot.select(".card-title button")
+        d3.select("#groups-chart .card-title button")
             .on("click", function (e: Event) {
-                adminControlCharts.htmlContainers.helpPopover(d3.select(this), `${groupChart.id}-help`, "<b>Box plot</b><br>A box plot is used to show the data distribution<br><i>Q3:</i> The median of the upper half of the data set<br><i>Median:</i> The middle value of a dataset<br><i>Q1:</i> The median of the lower half of the dataset");
-                adminControlCharts.htmlContainers.helpPopover(groupChart.elements.contentContainer.select(".bar"), `${groupChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
+                adminControlCharts.help.helpPopover(d3.select(this), `${groupChart.id}-help`, "<b>Box plot</b><br>A box plot is used to show the data distribution<br><i>Q3:</i> The median of the upper half of the data set<br><i>Median:</i> The middle value of a dataset<br><i>Q1:</i> The median of the lower half of the dataset");
+                adminControlCharts.help.helpPopover(groupChart.elements.contentContainer.select(".bar"), `${groupChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
             });
 
         //Draw groups histogram container  
-        adminControlCharts.htmlContainers.histogram = adminControlCharts.htmlContainers.appendDiv("group-histogram-chart", "col-md-6");
-        adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.histogram, `All reflections by group - Histogram`, undefined, true);
         let histogramChart = new HistogramChartSeries("group-histogram-chart", data.map(d => d.group));
         adminControlCharts.renderHistogram(histogramChart, data);
 
         //Handle histogram chart help
-        adminControlCharts.htmlContainers.histogram.select(".card-title button")
+        d3.select("#group-histogram-chart .card-title button")
             .on("click", function (e: Event) {
-                adminControlCharts.htmlContainers.helpPopover(d3.select(this), `${histogramChart.id}-help`, "<b>Histogram</b><br>A histogram group data points into user-specific ranges. The data points in this histogram are <i>reflections</i>");
-                adminControlCharts.htmlContainers.helpPopover(histogramChart.elements.contentContainer.select(".histogram-rect"), `${histogramChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
+                adminControlCharts.help.helpPopover(d3.select(this), `${histogramChart.id}-help`, "<b>Histogram</b><br>A histogram group data points into user-specific ranges. The data points in this histogram are <i>reflections</i>");
+                adminControlCharts.help.helpPopover(histogramChart.elements.contentContainer.select(".histogram-rect"), `${histogramChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
             });
 
         //Draw timeline 
-        adminControlCharts.htmlContainers.timeline = adminControlCharts.htmlContainers.appendDiv("group-timeline", "col-md-12 mt-3");
-        let timelineCard = adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.timeline, `Reflections by group vs time`, undefined, true);
         let timelineChart = new ChartTime("group-timeline", [d3.min(data.map(d => d.getStat("oldRef").value)) as Date, d3.max(data.map(d => d.getStat("newRef").value)) as Date]);
         let timelineZoomChart = new ChartTimeZoom(timelineChart, [d3.min(data.map(d => d.getStat("oldRef").value)) as Date, d3.max(data.map(d => d.getStat("newRef").value)) as Date]);
         adminControlCharts.renderTimelineScatter(timelineChart, timelineZoomChart, data);
-        adminControlCharts.renderTimelineButtons(timelineCard);
         adminControlCharts.handleTimelineButtons(timelineChart, timelineZoomChart, data);
 
         //Handle timeline chart help
-        adminControlCharts.htmlContainers.timeline.select(".card-title button")
+        d3.select("#group-timeline .card-title button")
             .on("click", function (e: Event) {
-                adminControlCharts.htmlContainers.helpPopover(d3.select(this), `${timelineChart.id}-help`, "<b>Density plot</b><br>A density plot shows the distribution of a numeric variable<br><b>Scatter plot</b><br>The data is showed as a collection of points<br>The data represented are <i>reflections over time</i>");
-                adminControlCharts.htmlContainers.helpPopover(adminControlCharts.htmlContainers.timeline.select("#timeline-plot"), `${timelineChart.id}-help-button`, "<u><i>click</i></u> me to change chart type");
-                adminControlCharts.htmlContainers.helpPopover(adminControlCharts.htmlContainers.timeline.select(".zoom-rect.active"), `${timelineChart.id}-help-zoom`, "use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move");
+                adminControlCharts.help.helpPopover(d3.select(this), `${timelineChart.id}-help`, "<b>Density plot</b><br>A density plot shows the distribution of a numeric variable<br><b>Scatter plot</b><br>The data is showed as a collection of points<br>The data represented are <i>reflections over time</i>");
+                adminControlCharts.help.helpPopover(d3.select("#group-timeline #timeline-plot"), `${timelineChart.id}-help-button`, "<u><i>click</i></u> me to change chart type");
+                adminControlCharts.help.helpPopover(d3.select("#group-timeline .zoom-rect.active"), `${timelineChart.id}-help-zoom`, "use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move");
                 if (!timelineChart.elements.contentContainer.select(".circle").empty()) {
-                    let showDataHelp = adminControlCharts.htmlContainers.helpPopover(timelineChart.elements.contentContainer.select(".circle"), `${timelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
+                    let showDataHelp = adminControlCharts.help.helpPopover(timelineChart.elements.contentContainer.select(".circle"), `${timelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
                     if (showDataHelp) {
                         d3.select(`#${timelineChart.id}-help-data`).style("top", parseInt(d3.select(`#${timelineChart.id}-help-data`).style("top")) - 14 + "px");
                     }
@@ -2305,23 +2220,19 @@ export async function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsCha
             });
         
         //Draw users histogram container
-        adminControlCharts.htmlContainers.userHistogram = adminControlCharts.htmlContainers.appendDiv("group-histogram-users-chart", "col-md-6 mt-3");
-        adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.userHistogram, `All reflections by users and group - Histogram`, undefined, true);
         let usersData = data.map(d => d.getUsersData());
         let histogramUsersChart = new HistogramChartSeries("group-histogram-users-chart", data.map(d => d.group));
         adminControlCharts.renderHistogram(histogramUsersChart, usersData);
 
         //Handle users histogram chart help
-        adminControlCharts.htmlContainers.userHistogram.select(".card-title button")
+        d3.select("#group-histogram-user-chart .card-title button")
             .on("click", function (e: Event) {
-                adminControlCharts.htmlContainers.helpPopover(d3.select(this), `${histogramUsersChart.id}-help`, "<b>Histogram</b><br>A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i>");
-                adminControlCharts.htmlContainers.helpPopover(histogramUsersChart.elements.contentContainer.select(`#${histogramUsersChart.id}-data`), `${histogramUsersChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
+                adminControlCharts.help.helpPopover(d3.select(this), `${histogramUsersChart.id}-help`, "<b>Histogram</b><br>A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i>");
+                adminControlCharts.help.helpPopover(histogramUsersChart.elements.contentContainer.select(`#${histogramUsersChart.id}-data`), `${histogramUsersChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
             });
 
         //Draw user statistics
-        adminControlCharts.htmlContainers.userStatistics = adminControlCharts.htmlContainers.appendDiv("user-statistics", "col-md-6 mt-3");
-        let userStatistics = adminControlCharts.htmlContainers.appendCard(adminControlCharts.htmlContainers.userStatistics, `Users compared to their group`, "user-statistics", true);
-        userStatistics.select(".chart-container").remove();
+        let userStatistics = d3.select("#user-statistics .card-body");
         userStatistics.append("ul")
             .attr("class", "nav nav-tabs")
             .selectAll("li")
@@ -2346,9 +2257,9 @@ export async function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsCha
         users.each((d, i, g) => i == 0 ? adminControlCharts.renderUserStatistics(d3.select(g[i]), d, [30, 70]) : "");
 
         //Handle users histogram chart help
-        adminControlCharts.htmlContainers.userStatistics.select(".card-title button")
+        d3.select("#user-statistics .card-title button")
             .on("click", function (e: Event) {
-                adminControlCharts.htmlContainers.helpPopover(d3.select(this), "user-statistics-help", "<b>Users ststistics</b><br>Each user's reflections are shown sorted by time. The chart depicts the average reflection point of the user against their group average");
+                adminControlCharts.help.helpPopover(d3.select(this), "user-statistics-help", "<b>Users ststistics</b><br>Each user's reflections are shown sorted by time. The chart depicts the average reflection point of the user against their group average");
             });
     }
 }
@@ -2380,8 +2291,7 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalytics
         let data = entries.map(d => new AnalyticsChartsDataStats(d));
 
         //Append groups chart container
-        adminExperimentalCharts.htmlContainers.boxPlot = adminExperimentalCharts.htmlContainers.appendDiv("groups-chart", "col-md-6");
-        let groupCard = adminExperimentalCharts.htmlContainers.appendCard(adminExperimentalCharts.htmlContainers.boxPlot, "Reflections of selected groups - Box plot", undefined, true);
+        let groupCard = d3.select("#groups-chart .card-body");
         groupCard.insert("div", ".chart-container")
             .attr("class", "row")
             .call(div => div.append("span")
@@ -2406,85 +2316,76 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalytics
         adminExperimentalCharts.boxPlot = adminExperimentalCharts.renderGroupChart(adminExperimentalCharts.boxPlot, data);
 
          //Handle groups chart help
-         adminExperimentalCharts.htmlContainers.boxPlot.select(".card-title button")
+         d3.select("#groups-chart .card-title button")
          .on("click", function (e: Event) {
-            adminExperimentalCharts.htmlContainers.helpPopover(d3.select(this), `${adminExperimentalCharts.boxPlot.id}-help`, "<b>Box plot</b><br>A box plot is used to show the data distribution<br><i>Q3:</i> The median of the upper half of the data set<br><i>Median:</i> The middle value of a dataset<br><i>Q1:</i> The median of the lower half of the dataset");
-            adminExperimentalCharts.htmlContainers.helpPopover(adminExperimentalCharts.boxPlot.elements.contentContainer.select(`#${adminExperimentalCharts.boxPlot.id}-data`), `${adminExperimentalCharts.boxPlot.id}-help-data`, "<u><i>hover</i></u> me for information on demand<br><u><i>click</i></u> me to compare and drill-down");
-            adminExperimentalCharts.htmlContainers.helpPopover(adminExperimentalCharts.htmlContainers.boxPlot.select("#sort-by"), `${adminExperimentalCharts.boxPlot.id}-help-button`, "<u><i>click</i></u> me to sort the groups");
+            adminExperimentalCharts.help.helpPopover(d3.select(this), `${adminExperimentalCharts.boxPlot.id}-help`, "<b>Box plot</b><br>A box plot is used to show the data distribution<br><i>Q3:</i> The median of the upper half of the data set<br><i>Median:</i> The middle value of a dataset<br><i>Q1:</i> The median of the lower half of the dataset");
+            adminExperimentalCharts.help.helpPopover(adminExperimentalCharts.boxPlot.elements.contentContainer.select(`#${adminExperimentalCharts.boxPlot.id}-data`), `${adminExperimentalCharts.boxPlot.id}-help-data`, "<u><i>hover</i></u> me for information on demand<br><u><i>click</i></u> me to compare and drill-down");
+            adminExperimentalCharts.help.helpPopover(d3.select("#groups-chart #sort-by"), `${adminExperimentalCharts.boxPlot.id}-help-button`, "<u><i>click</i></u> me to sort the groups");
          });
 
         //Draw groups histogram container  
-        adminExperimentalCharts.htmlContainers.histogram = adminExperimentalCharts.htmlContainers.appendDiv("group-histogram-chart", "col-md-6");
-        adminExperimentalCharts.htmlContainers.appendCard(adminExperimentalCharts.htmlContainers.histogram, `Selected groups reflections - Histogram`, undefined, true);
         adminExperimentalCharts.histogram = new HistogramChartSeries("group-histogram-chart", data.map(d => d.group));
         adminExperimentalCharts.renderHistogram(adminExperimentalCharts.histogram, data);
 
         //Handle histogram chart help
-        adminExperimentalCharts.htmlContainers.histogram.select(".card-title button")
+        d3.select("#group-histogram-chart .card-title button")
             .on("click", function (e: Event) {
-                adminExperimentalCharts.htmlContainers.helpPopover(d3.select(this), `${adminExperimentalCharts.histogram.id}-help`, "<b>Histogram</b><br>A histogram group data points into user-specific ranges. The data points in this histogram are <i>reflections point</i>");
-                adminExperimentalCharts.htmlContainers.helpPopover(adminExperimentalCharts.histogram.elements.contentContainer.select(".histogram-rect"), `${adminExperimentalCharts.histogram.id}-help-data`, "<u><i>hover</i></u> me for information on demand<br><u><i>click</i></u> me to compare");
-                let showDragHelp = adminExperimentalCharts.htmlContainers.helpPopover(adminExperimentalCharts.histogram.elements.contentContainer.select(".threshold-line.soaring"), `${adminExperimentalCharts.histogram.id}-help-drag`, "<u><i>drag</i></u> me to change the thresholds");
+                adminExperimentalCharts.help.helpPopover(d3.select(this), `${adminExperimentalCharts.histogram.id}-help`, "<b>Histogram</b><br>A histogram group data points into user-specific ranges. The data points in this histogram are <i>reflections point</i>");
+                adminExperimentalCharts.help.helpPopover(adminExperimentalCharts.histogram.elements.contentContainer.select(".histogram-rect"), `${adminExperimentalCharts.histogram.id}-help-data`, "<u><i>hover</i></u> me for information on demand<br><u><i>click</i></u> me to compare");
+                let showDragHelp = adminExperimentalCharts.help.helpPopover(adminExperimentalCharts.histogram.elements.contentContainer.select(".threshold-line.soaring"), `${adminExperimentalCharts.histogram.id}-help-drag`, "<u><i>drag</i></u> me to change the thresholds");
                 if (showDragHelp) {
                     d3.select(`#${adminExperimentalCharts.histogram.id}-help-drag`).style("top", parseInt(d3.select(`#${adminExperimentalCharts.histogram.id}-help-drag`).style("top")) - 19 + "px");
                 }
             });
 
         //Draw timeline 
-        adminExperimentalCharts.htmlContainers.timeline = adminExperimentalCharts.htmlContainers.appendDiv("group-timeline", "col-md-12 mt-3");
-        let timelineCard = adminExperimentalCharts.htmlContainers.appendCard(adminExperimentalCharts.htmlContainers.timeline, `Selected group reflections vs time - Timeline`, undefined, true);
-
         adminExperimentalCharts.timeline = new ChartTime("group-timeline", [d3.min(data.map(d => d.getStat("oldRef").value)) as Date, d3.max(data.map(d => d.getStat("newRef").value)) as Date]);
         adminExperimentalCharts.timelineZoom = new ChartTimeZoom(adminExperimentalCharts.timeline, [d3.min(data.map(d => d.getStat("oldRef").value)) as Date, d3.max(data.map(d => d.getStat("newRef").value)) as Date]);
         adminExperimentalCharts.renderTimelineScatter(adminExperimentalCharts.timeline, adminExperimentalCharts.timelineZoom, data);
-        adminExperimentalCharts.renderTimelineButtons(timelineCard);
         adminExperimentalCharts.handleTimelineButtons(adminExperimentalCharts.timeline, adminExperimentalCharts.timelineZoom, data);
 
         //Handle timeline chart help
-        adminExperimentalCharts.htmlContainers.timeline.select(".card-title button")
+        d3.select("#group-timeline .card-title button")
             .on("click", function (e: Event) {
-                adminExperimentalCharts.htmlContainers.helpPopover(adminExperimentalCharts.htmlContainers.timeline.select("#timeline-plot"), `${adminExperimentalCharts.timeline.id}-help-button`, "<u><i>click</i></u> me to change chart type");
-                adminExperimentalCharts.htmlContainers.helpPopover(adminExperimentalCharts.htmlContainers.timeline.select(".zoom-rect.active"), `${adminExperimentalCharts.timeline.id}-help-zoom`, "use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move");
+                adminExperimentalCharts.help.helpPopover(d3.select("#group-timeline #timeline-plot"), `${adminExperimentalCharts.timeline.id}-help-button`, "<u><i>click</i></u> me to change chart type");
+                adminExperimentalCharts.help.helpPopover(d3.select("#group-timeline .zoom-rect.active"), `${adminExperimentalCharts.timeline.id}-help-zoom`, "use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move");
                 if (!adminExperimentalCharts.timeline.elements.contentContainer.select(".circle").empty()) {
-                    adminExperimentalCharts.htmlContainers.helpPopover(d3.select(this), `${adminExperimentalCharts.timeline.id}-help`, "<b>Scatter plot</b><br>A scatter plot shows the data as a collection of points<br>The data represented are <i>reflections over time</i>");
-                    let showDataHelp = adminExperimentalCharts.htmlContainers.helpPopover(adminExperimentalCharts.timeline.elements.contentContainer.select(".circle"), `${adminExperimentalCharts.timeline.id}-help-data`, "<u><i>hover</i></u> me for information on demand<br><u><i>click</i></u> me to connect the user's reflections");
+                    adminExperimentalCharts.help.helpPopover(d3.select(this), `${adminExperimentalCharts.timeline.id}-help`, "<b>Scatter plot</b><br>A scatter plot shows the data as a collection of points<br>The data represented are <i>reflections over time</i>");
+                    let showDataHelp = adminExperimentalCharts.help.helpPopover(adminExperimentalCharts.timeline.elements.contentContainer.select(".circle"), `${adminExperimentalCharts.timeline.id}-help-data`, "<u><i>hover</i></u> me for information on demand<br><u><i>click</i></u> me to connect the user's reflections");
                     if (showDataHelp) {
                         d3.select(`#${adminExperimentalCharts.timeline.id}-help-data`).style("top", parseInt(d3.select(`#${adminExperimentalCharts.timeline.id}-help-data`).style("top")) - 14 + "px");
                     }
                 } else {
-                    adminExperimentalCharts.htmlContainers.helpPopover(d3.select(this), `${adminExperimentalCharts.timeline.id}-help`, "<b>Density plot</b><br>A density plot shows the distribution of a numeric variable<br>The data represented are <i>reflections over time</i>");
+                    adminExperimentalCharts.help.helpPopover(d3.select(this), `${adminExperimentalCharts.timeline.id}-help`, "<b>Density plot</b><br>A density plot shows the distribution of a numeric variable<br>The data represented are <i>reflections over time</i>");
                 }
             });
 
         //Draw users histogram container
-        adminExperimentalCharts.htmlContainers.userHistogram = adminExperimentalCharts.htmlContainers.appendDiv("group-histogram-users-chart", "col-md-6 mt-3");
-        adminExperimentalCharts.htmlContainers.appendCard(adminExperimentalCharts.htmlContainers.userHistogram, `Selected groups reflections by users - Histogram`, undefined, true);
         let usersData = data.map(d => d.getUsersData());
         adminExperimentalCharts.usersHistogram = new HistogramChartSeries("group-histogram-users-chart", data.map(d => d.group));
         adminExperimentalCharts.renderHistogram(adminExperimentalCharts.usersHistogram, usersData);
 
         //Handle users histogram chart help
-        adminExperimentalCharts.htmlContainers.userHistogram.select(".card-title button")
+        d3.select("#group-histogram-users-chart .card-title button")
             .on("click", function (e: Event) {
-                adminExperimentalCharts.htmlContainers.helpPopover(d3.select(this), `${adminExperimentalCharts.usersHistogram.id}-help`, "<b>Histogram</b><br>A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i>");
-                adminExperimentalCharts.htmlContainers.helpPopover(adminExperimentalCharts.usersHistogram.elements.contentContainer.select(".histogram-rect"), `${adminExperimentalCharts.usersHistogram.id}-help-data`, "<u><i>hover</i></u> me for information on demand<br><u><i>click</i></u> me to compare");
-                let showDragHelp = adminExperimentalCharts.htmlContainers.helpPopover(adminExperimentalCharts.usersHistogram.elements.contentContainer.select(".threshold-line.soaring"), `${adminExperimentalCharts.usersHistogram.id}-help-drag`, "<u><i>drag</i></u> me to change the thresholds");
+                adminExperimentalCharts.help.helpPopover(d3.select(this), `${adminExperimentalCharts.usersHistogram.id}-help`, "<b>Histogram</b><br>A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i>");
+                adminExperimentalCharts.help.helpPopover(adminExperimentalCharts.usersHistogram.elements.contentContainer.select(".histogram-rect"), `${adminExperimentalCharts.usersHistogram.id}-help-data`, "<u><i>hover</i></u> me for information on demand<br><u><i>click</i></u> me to compare");
+                let showDragHelp = adminExperimentalCharts.help.helpPopover(adminExperimentalCharts.usersHistogram.elements.contentContainer.select(".threshold-line.soaring"), `${adminExperimentalCharts.usersHistogram.id}-help-drag`, "<u><i>drag</i></u> me to change the thresholds");
                 if (showDragHelp) {
                     d3.select(`#${adminExperimentalCharts.usersHistogram.id}-help-drag`).style("top", parseInt(d3.select(`#${adminExperimentalCharts.usersHistogram.id}-help-drag`).style("top")) - 19 + "px");
                 }
             });
 
         //Draw user statistics
-        adminExperimentalCharts.htmlContainers.userStatistics = adminExperimentalCharts.htmlContainers.appendDiv("user-statistics", "col-md-6 mt-3");
-        let userStatistics = adminExperimentalCharts.htmlContainers.appendCard(adminExperimentalCharts.htmlContainers.userStatistics, `Users compared to their group`, "user-statistics", true);
+        let userStatistics = d3.select("#user-statistics .card");
         userStatistics.select(".chart-container").remove();
         userStatistics.select(".card-subtitle")
             .html("Select a reflection from the scatter plot to view specific users");
         
         //Handle users histogram chart help
-        adminExperimentalCharts.htmlContainers.userStatistics.select(".card-title button")
+        d3.select("#user-statistics .card-title button")
             .on("click", function (e: Event) {
-                adminExperimentalCharts.htmlContainers.helpPopover(d3.select(this), "user-statistics-help", "<b>Users ststistics</b><br>The selected user's reflections are shown sorted by time. The chart depicts the average reflection point of the user against their group average");
+                adminExperimentalCharts.help.helpPopover(d3.select(this), "user-statistics-help", "<b>Users ststistics</b><br>The selected user's reflections are shown sorted by time. The chart depicts the average reflection point of the user against their group average");
             });
 
         //Update charts depending on group

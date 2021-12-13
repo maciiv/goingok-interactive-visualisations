@@ -88,6 +88,7 @@
 .statistics-text {
     font-size: 0.875rem;
     overflow: auto;
+    margin-top: 0.75rem;
 }
 
 .statistics-text .positive {

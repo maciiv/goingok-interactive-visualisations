@@ -30,7 +30,7 @@ declare class AnalyticsChartsData implements IAnalyticsChartsData {
     creteDate: Date;
     colour: string;
     selected: boolean;
-    constructor(group: string, value: IReflectionAuthorEntry[], createDate: Date, colour?: string, selected?: boolean);
+    constructor(group: string, value: IReflectionAuthorEntry[], createDate?: Date, colour?: string, selected?: boolean);
     getUsersData(): AnalyticsChartsData;
 }
 export declare function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]): Promise<void>;
