@@ -2163,7 +2163,8 @@ export async function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsCha
     new TutorialData(".card-title button", "Click the help symbol in any chart to get additional information"),
     new TutorialData("#groups-chart .bar", "Hover for information on demand"), 
     new TutorialData("#group-histogram-chart .histogram-rect", "Hover for information on demand"),
-    new TutorialData("#timeline-plot", "Swap chart types. Both charts have zoom available")]);
+    new TutorialData("#timeline-plot", "Swap chart types. Both charts have zoom available"),
+    new TutorialData("#group-timeline .circle", "Hover for information on demand")]);
     loading.isLoading = false;
     loading.removeDiv();
     async function drawCharts(allEntries: IAnalyticsChartsData[]) {
@@ -2225,7 +2226,7 @@ export async function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsCha
         adminControlCharts.renderHistogram(histogramUsersChart, usersData);
 
         //Handle users histogram chart help
-        d3.select("#group-histogram-user-chart .card-title button")
+        d3.select("#group-histogram-users-chart .card-title button")
             .on("click", function (e: Event) {
                 adminControlCharts.help.helpPopover(d3.select(this), `${histogramUsersChart.id}-help`, "<b>Histogram</b><br>A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i>");
                 adminControlCharts.help.helpPopover(histogramUsersChart.elements.contentContainer.select(`#${histogramUsersChart.id}-data`), `${histogramUsersChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
@@ -2276,7 +2277,8 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalytics
     new TutorialData("#groups-chart .bar", "Hover for information on demand or click to compare and drill-down. Other charts will show only the selected group"), 
     new TutorialData("#group-histogram-chart .threshold-line", "Drag to change the threshold (soaring or distressed) and recalculate the bins"), 
     new TutorialData("#group-histogram-chart .histogram-rect", "Click to compare the bin with other's group bins"),
-    new TutorialData("#timeline-plot", "Swap chart types. Both charts have zoom available. In the scatter plot, click a bubble to access the user's information")]);
+    new TutorialData("#timeline-plot", "Swap chart types. Both charts have zoom available"),
+    new TutorialData("#group-timeline .circle", "Hover for information on demand or click to connect the user's reflections")]);
     loading.isLoading = false;
     loading.removeDiv();
     async function drawCharts(allEntries: IAnalyticsChartsData[]) {
