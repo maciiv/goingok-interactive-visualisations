@@ -32,7 +32,63 @@
                 <div class="content-wrapper">
                     <div class="container-fluid">            
                         <div class="row" id="analytics-charts">
-                            <div class="col-md-6" id="groups-chart">
+                            <div class="col-md-4" id="users-total">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h1 class="card-title d-flex">
+                                            <span class="mx-auto"></span>
+                                        </h1>
+                                        <h5 class="card-subtitle mb-2 text-muted d-flex">
+                                            <span class="mx-auto">Total users</span>
+                                        </h5>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4" id="ref-total">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h1 class="card-title d-flex">
+                                            <span class="mx-auto"></span>
+                                        </h1>
+                                        <h5 class="card-subtitle mb-2 text-muted d-flex">
+                                            <span class="mx-auto">Total reflections</span>
+                                        </h5>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4" id="ru-rate">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h1 class="card-title d-flex">
+                                            <span class="mx-auto"></span>
+                                        </h1>
+                                        <h5 class="card-subtitle mb-2 text-muted d-flex">
+                                            <span class="mx-auto">Reflections per user</span>
+                                        </h5>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-12 mt-3" id="sort">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-subtitle">
+                                            <span>Sort groups by:</span>
+                                            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                                <label class="btn btn-light active">
+                                                    <input type="radio" name="sort" value="date" checked>Create date
+                                                </label>
+                                                <label class="btn btn-light">
+                                                    <input type="radio" name="sort" value="name">Name
+                                                </label>
+                                                <label class="btn btn-light">
+                                                    <input type="radio" name="sort" value="mean">Mean
+                                                </label>
+                                            </div>
+                                        </h6>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mt-3" id="groups-chart">
                                 <div class="card">
                                     <div class="card-body">
                                         <h5 class="card-title">
@@ -46,7 +102,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6" id="group-histogram-chart">
+                            <div class="col-md-6 mt-3" id="group-histogram-chart">
                                 <div class="card">
                                     <div class="card-body">
                                         <h5 class="card-title">
