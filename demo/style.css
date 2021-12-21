@@ -99,15 +99,23 @@
     color: #ff3300;
 }
 
+.user-chart {
+    height: 15vh;
+}
+
 .users-tab-pane {
     height: 30vh;
     overflow-y: auto;
     overflow-x: hidden;
 }
 
-.bar, .circle, .histogram-rect, .zoom-circle, .legend-color {
+.bar, .circle, .circle-group, .histogram-rect, .zoom-circle, .legend-color {
     fill-opacity: 0.2;
     stroke-width: 1;
+}
+
+.circle-user {
+    fill-opacity: 0.75;
 }
 
 .bar, .circle {

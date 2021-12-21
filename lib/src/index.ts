@@ -133,7 +133,7 @@ class AnalyticsChartsDataStats extends AnalyticsChartsData implements IAnalytics
 // Basic interface for chart scales
 interface IChartScales {
     x: ChartSeriesAxis | ChartTimeAxis | ChartLinearAxis;
-    y: ChartLinearAxis;
+    y: ChartLinearAxis | ChartSeriesAxis;
 }
 
 // Basic interface for charts
@@ -213,7 +213,7 @@ class UserChart implements IChart {
     width: number;
     height: number;
     x: ChartLinearAxis;
-    y: ChartLinearAxis;
+    y: ChartSeriesAxis;
     elements: IChartElements;
     padding: IChartPadding;
     click: boolean;
@@ -221,10 +221,11 @@ class UserChart implements IChart {
         this.id = id;
         let containerDimensions = d3.select<HTMLDivElement, unknown>(`#${id} .${containerClass}`).node().getBoundingClientRect();
         this.width = containerDimensions.width;
-        this.height = 50;
-        this.padding = new ChartPadding(20, 30, 10, 30);
-        this.y = new ChartLinearAxis("", [0, 1], [20, 0], "left");
-        this.x = new ChartLinearAxis("Reflection Point Average", [0, 100], [0, this.width - this.padding.yAxis - this.padding.right], "bottom");
+        this.height = containerDimensions.height;
+        this.padding = new ChartPadding(20, 50, 10, 10);
+        this.y = new ChartSeriesAxis("", ["distressed", "going ok", "soaring"], [this.height - this.padding.xAxis - this.padding.top, 0], "left");
+        this.x = new ChartLinearAxis("Reflection Point Average", [0, 100], [0, this.width - this.padding.yAxis - this.padding.right], "bottom", false);
+        this.x.axis.tickValues([0, 25, 50, 75, 100]);
         this.click = false;
         this.elements = new ChartElements(this, containerClass);
     }
@@ -236,6 +237,7 @@ interface IHistogramChartSeries extends IChart {
     thresholdAxis: d3.Axis<d3.NumberValue>;
     bandwidth: d3.ScaleLinear<number, number, never>;
     bin: d3.HistogramGeneratorNumber<number, number>;
+    y: ChartLinearAxis;
     setBandwidth(data: IAnalyticsChartsData[]): void;
     setBin(): void;
 }
@@ -276,13 +278,19 @@ class ChartSeriesAxis implements IChartAxis {
     scale: d3.ScaleBand<string>;
     axis: d3.Axis<d3.AxisDomain>;
     label: string;
-    constructor(label: string, domain: string[], range: number[]) {
+    constructor(label: string, domain: string[], range: number[], position?: string) {
         this.label = label;
         this.scale = d3.scaleBand()
             .domain(domain)
             .rangeRound(range)
             .padding(0.25);
-        this.axis = d3.axisBottom(this.scale);
+            if (position == "right") {
+                this.axis = d3.axisRight(this.scale);
+            } else if (position == "left") {
+                this.axis = d3.axisLeft(this.scale);
+            } else {
+                this.axis = d3.axisBottom(this.scale);
+            }
     };
 }
 
@@ -700,7 +708,7 @@ class AdminControlCharts implements IAdminControlCharts {
                 enter => enter.append("rect")
                             .attr("id", `${chart.id}-data`)
                             .attr("class", "bar")
-                            .attr("y", d => chart.y.scale(d.getStat("usersTotal").value as number))
+                            .attr("y", d => chart.y.scale(0))
                             .attr("x", d => chart.x.scale(d.group))
                             .attr("width", chart.x.scale.bandwidth())
                             .attr("height", 0)
@@ -1038,20 +1046,19 @@ class AdminControlCharts implements IAdminControlCharts {
     };
     renderUserStatistics(card: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAnalyticsChartsData, thresholds: number[], timelineData?: ITimelineData): void {
         let _this = this;
-        let userData = data.getUsersData();
-        let groupMean = Math.round(d3.mean(data.value.map(d => d.point)));
+        let usersData = data.getUsersData();
 
         d3.select("#reflections .card-subtitle")
             .classed("text-muted", true)
             .classed("instructions", false)
-            .html(timelineData == undefined ? `The user ${userData.value[d3.minIndex(userData.value.map(d => d.point))].pseudonym} is the most distressed, while
-                the user ${userData.value[d3.maxIndex(userData.value.map(d => d.point))].pseudonym} is the most soaring` :
+            .html(timelineData == undefined ? `The user ${usersData.value[d3.minIndex(usersData.value.map(d => d.point))].pseudonym} is the most distressed, while
+                the user ${usersData.value[d3.maxIndex(usersData.value.map(d => d.point))].pseudonym} is the most soaring` :
                 `The user ${timelineData.pseudonym} has a total of ${data.value.filter(d => d.pseudonym == timelineData.pseudonym).length} reflections between
                 ${d3.min(data.value.filter(d => d.pseudonym == timelineData.pseudonym).map(d => d.timestamp)).toDateString()} and
                 ${d3.max(data.value.filter(d => d.pseudonym == timelineData.pseudonym).map(d => d.timestamp)).toDateString()}`)
 
         card.selectAll("div")
-            .data(timelineData == undefined ? userData.value : userData.value.filter(d => d.pseudonym == timelineData.pseudonym))
+            .data(timelineData == undefined ? usersData.value : usersData.value.filter(d => d.pseudonym == timelineData.pseudonym))
             .enter()
             .append("div")
             .attr("class", "row statistics-text")
@@ -1063,57 +1070,55 @@ class AdminControlCharts implements IAdminControlCharts {
                     .html(d => `${d.pseudonym} is`))
                 .call(div => div.append("span")
                     .attr("class", "text-muted")
-                    .html(d => `<b>${_this.getUserStatisticBinName(d, thresholds)}</b>`)))
+                    .html(d => `<b>${_this.getUserStatisticBinName(d, thresholds)}</b>`))
+                .call(div => div.append("div")
+                    .attr("class", "w-100 mt-1 user-chart")))
             .call(div => div.append("div")
-                .attr("class", "col-md-8 mt-1 user-chart"))
-            .call(div => div.append("div")
-                .attr("class", "col-md-12")
+                .attr("class", "col-md-8")
                 .append("p")
                 .attr("class", "mb-1")
-                .html(d => `User ${d.pseudonym} reflections in chronological order:`))
-            .call(div => div.append("ul")
-                .attr("class", "pr-3")
-                .selectAll("li")
-                .data(d => d3.sort(d3.filter(data.value, x => x.pseudonym == d.pseudonym), r => r.timestamp))
-                .enter()
-                .append("li")
-                .classed("reflection-selected", d => timelineData != undefined ? d.timestamp == timelineData.timestamp : false)
-                .html(d => `<i>${d.timestamp.toDateString()} | Reflection point ${d.point}</i><br> ${d.text}`))
-            .each((d, i, g) => drawUserChart(d3.select(d3.select(g[i]).node().parentElement).attr("id") + " #" + d3.select(g[i]).attr("id"), d));
+                .html(d => `User ${d.pseudonym} reflections in chronological order:`)
+                .call(div => div.append("ul")
+                    .attr("class", "pr-3")
+                    .selectAll("li")
+                    .data(d => d3.sort(d3.filter(data.value, x => x.pseudonym == d.pseudonym), r => r.timestamp))
+                    .enter()
+                    .append("li")
+                    .classed("reflection-selected", d => timelineData != undefined ? d.timestamp == timelineData.timestamp : false)
+                    .html(d => `<i>${d.timestamp.toDateString()} | Reflection point ${d.point}</i><br> ${d.text}`)))
+            .each((d, i, g) => drawUserChart(d3.select(d3.select(g[i]).node().parentElement).attr("id") + " #" + d3.select(g[i]).attr("id"), d.pseudonym, thresholds));
 
-        function drawUserChart(id: string, data: IReflectionAuthorEntry) {          
+        function drawUserChart(id: string, pseudonym: string, thresholds: number[]) {          
             let chart = new UserChart(id, "user-chart");
+            let bin = d3.bin().domain([0, 100]).thresholds(thresholds);
+            let userData = data.value.filter(d => d.pseudonym == pseudonym);
+
             chart.elements.svg.classed("chart-svg", false);
-            chart.elements.svg.select(".y-axis").remove();
             chart.elements.svg.select(".x-axis").attr("clip-path", null);
-            chart.elements.contentContainer.append("rect")
-                .attr("class", "bar no-click")
-                .attr("x", 0)
-                .attr("y", 0)
-                .attr("height", chart.y.scale(0))
-                .attr("width", chart.x.scale(data.point))
-                .style("stroke", userData.colour)
-                .style("fill", userData.colour);
-            chart.elements.contentContainer.append("line")
-                .attr("class", "threshold-line")
-                .attr("x1", chart.x.scale(groupMean))
-                .attr("x2", chart.x.scale(groupMean))
-                .attr("y1", chart.y.scale(1))
-                .attr("y2", chart.y.scale(0))
-                .style("stroke", userData.colour);
-            chart.elements.contentContainer.append("text")
-                .attr("x", chart.x.scale(groupMean))
-                .attr("y", chart.y.scale(1))
-                .attr("font-size", 10)
-                .attr("font-family", "sans-serif")
-                .attr("text-anchor", "middle")
-                .text(`Group average: ${groupMean}`);
-            chart.elements.contentContainer.append("text")
-                .attr("x", chart.x.scale(data.point))
-                .attr("y", chart.y.scale(0.5))
-                .attr("font-family", "sans-serif")
-                .style("dominant-baseline", "central")
-                .text(data.point);
+            chart.elements.contentContainer.selectAll("#group")
+                .data(bin(usersData.value.map(d => d.point)).map(c => { return new HistogramData(usersData.value, usersData.group, usersData.colour, c, Math.round(c.length / usersData.value.length * 100)) }))
+                .join(
+                    enter => enter.append("circle")
+                        .attr("id", "group")
+                        .attr("class", "circle-group")
+                        .attr("r", 5)
+                        .attr("cx", d => chart.x.scale(d.percentage))
+                        .attr("cy", d => (d.bin.x0 == 0 ? chart.y.scale("distressed") : d.bin.x1 == 100 ? chart.y.scale("soaring") : chart.y.scale("going ok")) + chart.y.scale.bandwidth() / 2)
+                        .attr("fill", d => d.colour)
+                        .attr("stroke", d => d.colour)
+                );
+            chart.elements.contentContainer.selectAll("#user")
+                .data(bin(userData.map(d => d.point)).map(c => { return new HistogramData(userData, usersData.group, usersData.colour, c, Math.round(c.length / userData.length * 100)) }))
+                .join(
+                    enter => enter.append("circle")
+                        .attr("id", "user")
+                        .attr("class", "circle-user")
+                        .attr("r", 5)
+                        .attr("cx", d => chart.x.scale(d.percentage))
+                        .attr("cy", d => (d.bin.x0 == 0 ? chart.y.scale("distressed") : d.bin.x1 == 100 ? chart.y.scale("soaring") : chart.y.scale("going ok")) + chart.y.scale.bandwidth() / 2)
+                        .attr("fill", d => d.colour)
+                        .attr("stroke", d => d.colour)
+                );
         }
     };
     protected getUserStatisticBinName(data: IReflectionAuthorEntry, thresholds: number[]): string {
@@ -1582,9 +1587,9 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 _this.interactions.click.appendThresholdPercentages(chart, data, clickData);
             }  
             if (chart.id == "group-histogram-users-chart" && !_this.timeline.elements.contentContainer.selectAll(".clicked").empty()) {
-                let userData = _this.timeline.elements.contentContainer.selectAll<SVGCircleElement, IReflectionAuthorEntry>(".clicked").datum();
-                let binName = _this.getUserStatisticBinName(data.map(d => d.value.find(d => d.pseudonym == userData.pseudonym))[0], chart.elements.getThresholdsValues(chart));
-                d3.select(`#reflections #${userData.pseudonym} .text-muted`)
+                let usersData = _this.timeline.elements.contentContainer.selectAll<SVGCircleElement, IReflectionAuthorEntry>(".clicked").datum();
+                let binName = _this.getUserStatisticBinName(data.map(d => d.value.find(d => d.pseudonym == usersData.pseudonym))[0], chart.elements.getThresholdsValues(chart));
+                d3.select(`#reflections #${usersData.pseudonym} .text-muted`)
                     .html(`<b>${binName}</b>`);
             }
         }
@@ -1632,20 +1637,20 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
             d3.select(this)
                 .classed("main", true);
             
-            let userData = data.find(c => c.group == d.group).value.filter(c => c.pseudonym == d.pseudonym);
+            let usersData = data.find(c => c.group == d.group).value.filter(c => c.pseudonym == d.pseudonym);
 
             let line = d3.line<IReflectionAuthorEntry>()
                 .x(d => chart.x.scale(d.timestamp))
                 .y(d => chart.y.scale(d.point));
 
             chart.elements.contentContainer.append("path")
-                .datum(d3.sort(userData, d => d.timestamp))
+                .datum(d3.sort(usersData, d => d.timestamp))
                 .attr("class", "click-line")
                 .attr("d", d => line(d))
                 .style("stroke", d.colour);
 
             //Draw click containers
-            userData.forEach(c => _this.interactions.click.appendScatterText(chart, c, c.point.toString()));
+            usersData.forEach(c => _this.interactions.click.appendScatterText(chart, c, c.point.toString()));
 
             //Draw user statistics container
             d3.select("#reflections .card-title span")
