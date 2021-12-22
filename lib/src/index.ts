@@ -1684,7 +1684,6 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
                 let clickData = chart.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IHistogramData;
                 _this.interactions.click.appendThresholdPercentages(chart, data, clickData);
             } 
-            console.log(chart.id) 
             if (chart.id == "histogram" && !_this.timeline.elements.contentContainer.selectAll(".clicked").empty()) {
                 let usersData = _this.timeline.elements.contentContainer.selectAll<SVGCircleElement, IReflectionAuthorEntry>(".clicked").datum();
                 let binName = _this.getUserStatisticBinName(data.map(d => d.value.find(d => d.pseudonym == usersData.pseudonym))[0], chart.elements.getThresholdsValues(chart));
