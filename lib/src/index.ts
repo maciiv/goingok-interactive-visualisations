@@ -1536,7 +1536,8 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         let data = this.getUpdatedData();
         this.interactions.click.removeClick(this.barChart);
         this.updateHistogram(data.map(d => d.getUsersData()), data.map(d => d.group));
-        this.updateTimeline(data);
+        this.updateTimeline(data)
+        this.renderTotals(data);
     };
     private getUpdatedData(): IAnalyticsChartsDataStats[] {
         return d3.filter(this.allEntries, d => d.selected).map(d => new AnalyticsChartsDataStats(d));
