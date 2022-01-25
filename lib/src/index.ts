@@ -700,7 +700,7 @@ class AdminControlCharts implements IAdminControlCharts {
                 .attr("class", "input-group-prepend")
                 .call(div => div.append("div")
                     .attr("class", "input-group-text group-row")
-                    .html((d, i) => ` <input type="checkbox" value="${d.group}" ${!enable ? "checked disabled" : i == 0 ? "checked" : ""} />`)))
+                    .html((d, i) => ` <input type="checkbox" value="${d.group}" checked ${!enable ? "disabled" : ""} />`)))
             .call(div => div.append("input")
                 .attr("type", "text")
                 .attr("class", "form-control group-row")
@@ -2318,7 +2318,7 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalytics
     let rawData = entriesRaw.map(d => new AnalyticsChartsDataRaw(d.group, d.value, d.createDate));
     let entries = rawData.map(d => d.transformData());
     let colourScale = d3.scaleOrdinal(d3.schemeCategory10);
-    entries = entries.map((d, i) => new AnalyticsChartsData(d.group, d.value, d.creteDate, colourScale(d.group), i == 0 ? true : false));
+    entries = entries.map(d => new AnalyticsChartsData(d.group, d.value, d.creteDate, colourScale(d.group), true));
     await drawCharts(entries);
     new Tutorial([new TutorialData("#groups", "Add groups to the charts and change their colours"),
     new TutorialData(".card-title button", "Click the help symbol in any chart to get additional information"),
