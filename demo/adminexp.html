@@ -15,18 +15,17 @@
         </nav>        
         <div class="wrapper">
             <nav id="sidebar" class="active sticky-top">
-                <div class="row mr-0">
-                    <div class="col-md-10 pr-0">
-                        <div class="sidebar-header p-4">
-                            <h3>GoingOK</h3>
-                            <hr>
-                        </div>
+                <div class="row">
+                    <div class="col-md-12 d-flex my-3">
+                        <h3 class="m-auto">GoingOK</h3>
+                        <button type="button" id="sidebar-btn" class="btn btn-dark mr-2"><i class="fa fa-align-justify"></i></button>
+                    </div>
+                    <div class="col-md-12">
                         <ul id="groups" class="list-unstyled components"></ul>
                     </div>
-                    <div class="col-md-2 p-0" id="analytics-navbar">
-                        <button type="button" id="sidebar-btn" class="btn btn-dark my-4"> <i class="fa fa-align-justify"></i></button>
+                    <div id="switch-dashboard" class="col-md-12 d-flex">
+                        <a class="btn btn-warning btn-block mx-3" href="/admincontrol">Switch dashboard</a>
                     </div>
-                </div>
             </nav>
             <div class="content">
                 <div class="content-wrapper">

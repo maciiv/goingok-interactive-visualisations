@@ -105,7 +105,7 @@ class AnalyticsChartsDataStats extends AnalyticsChartsData implements IAnalytics
         this.stats.push(new DataStats("mean", "Mean", Math.round(d3.mean(entries.value.map(r => r.point)))));
         this.stats.push(new DataStats("oldRef", "Oldest reflection", d3.min(entries.value.map(r => new Date(r.timestamp)))))
         this.stats.push(new DataStats("newRef", "Newest reflection", d3.max(entries.value.map(r => new Date(r.timestamp)))))
-        this.stats.push(new DataStats("ruRate", "Reflections per user", Math.round(entries.value.length / uniqueUsers.length)))
+        this.stats.push(new DataStats("ruRate", "Reflections per user", Math.round(entries.value.length / uniqueUsers.length * 100) / 100))
     };
     roundDecimal(value: number): string {
         let p = d3.precisionFixed(0.1);
@@ -684,6 +684,10 @@ class AdminControlCharts implements IAdminControlCharts {
             let isActive = d3.select("#sidebar").attr("class").includes("active");
             d3.select("#sidebar")
                 .classed("active", !isActive);
+            d3.select("#groups")
+                .classed("active", isActive);
+            d3.select("#switch-dashboard")
+                .classed("active", isActive);
             d3.select(this)
                 .classed("active", isActive);
         });
@@ -750,12 +754,12 @@ class AdminControlCharts implements IAdminControlCharts {
             });
         let ruRate = d3.select<HTMLSpanElement, number>("#ru-rate .card-title span").datum();
         d3.select<HTMLSpanElement, number>("#ru-rate .card-title span")
-            .datum(Math.round(d3.mean(data.map(d => (d.getStat("ruRate").value as number) * 100))) / 100)
+            .datum(data.length != 0 ? Math.round(d3.mean(data.map(d => (d.getStat("ruRate").value as number) * 100))) / 100 : 0)
             .transition()
             .duration(1000)
             .tween("html", function() {
                 let oldRURate = ruRate == undefined ? 0 : ruRate;
-                let newRURate = Math.round(d3.mean(data.map(d => (d.getStat("ruRate").value as number) * 100))) / 100;
+                let newRURate = data.length != 0 ? Math.round(d3.mean(data.map(d => (d.getStat("ruRate").value as number) * 100))) / 100 : 0;
                 return function(t: number) {
                     if(oldRURate < newRURate) {
                         this.innerHTML = (oldRURate + (t * (newRURate - oldRURate))).toFixed(2);
@@ -929,6 +933,12 @@ class AdminControlCharts implements IAdminControlCharts {
     renderTimelineDensity(chart: ChartTime, data: IAnalyticsChartsData[]): ChartTime {
         let _this = this;
 
+        if (data.length == 0) {
+            d3.select(`#${chart.id} .card-subtitle`)
+                .html("");
+            return chart;
+        }
+
         d3.select(`#${chart.id} .card-subtitle`)
             .classed("instructions", data.length <= 1)
             .classed("text-muted", data.length != 1)
@@ -989,6 +999,12 @@ class AdminControlCharts implements IAdminControlCharts {
     renderTimelineScatter(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData[]): ChartTime {
         //Remove density plot
         chart.elements.contentContainer.selectAll(".contour").remove();
+
+        if (data.length == 0) {
+            d3.select(`#${chart.id} .card-subtitle`)
+                .html("");
+            return chart;
+        }
 
         let _this = this;
         d3.select(`#${chart.id} .card-subtitle`)
@@ -1549,9 +1565,11 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
         return;
     };
     private updateBarChart(chart: ChartSeries, data: IAnalyticsChartsDataStats[]): void {
-        chart.y.scale.domain([0, d3.max(data.map(d => d.getStat("usersTotal").value as number))]);
-        this.interactions.axisSeries(chart, data);
-        this.interactions.axisLinear(chart);
+        if (data.length != 0) {
+            chart.y.scale.domain([0, d3.max(data.map(d => d.getStat("usersTotal").value as number))]);
+            this.interactions.axisSeries(chart, data);
+            this.interactions.axisLinear(chart);
+        }       
         this.renderBarChart(chart, data);
     }
     private updateHistogram(data: IAnalyticsChartsData[], scale?: string[]): void {
@@ -1710,6 +1728,17 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
     renderTimelineScatter(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAnalyticsChartsData[]): ChartTime {
         let _this = this;
         chart = super.renderTimelineScatter(chart, zoomChart, data);
+
+        if (data.length == 0) {
+            //Remove scatter plot
+            chart.elements.contentContainer.selectAll(".circle").remove();
+            chart.elements.svg.selectAll(".zoom-container").remove();
+            chart.elements.contentContainer.selectAll(".click-line").remove();
+            chart.elements.zoomSVG = undefined;
+            chart.elements.zoomFocus = undefined;
+            return chart;
+        }
+
         d3.select(`#${chart.id} .badge`).on("click", () => _this.handleFilterButton());
         //Enable click
         _this.interactions.click.enableClick(chart, onClick);
@@ -1769,6 +1798,11 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
     };
     renderTimelineDensity(chart: ChartTime, data: IAnalyticsChartsData[]): ChartTime {
         chart = super.renderTimelineDensity(chart, data);
+        if (data.length == 0) {
+            //Remove density plot
+            chart.elements.contentContainer.selectAll(".contour").remove();
+            return chart;
+        }
         d3.select(`#${chart.id} .badge`).on("click", () => this.handleFilterButton());
         this.interactions.click.removeClick(chart);
         return chart;
