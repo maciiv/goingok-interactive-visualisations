@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" type="text/css" href="style.css" />
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" />
+        <title>Author Control</title>
+        <script src="https://d3js.org/d3.v6.min.js"></script>        
+    </head>
+    <body>            
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" id="main-nav-bar">
+            <h3 class="mb-3 text-light d-block mx-auto">GoingOk Navbar</h3>
+        </nav>
+        <div class="wrapper">            
+            <nav id="sidebar" class="active sticky-top">
+                <div class="row mr-0">
+                    <div class="col-md-10 pr-0">
+                        <div class="sidebar-header p-4">
+                            <h3>GoingOK</h3>
+                            <hr>
+                        </div>
+                        <ul id="groups" class="list-unstyled components"></ul>
+                    </div>
+                    <div class="col-md-2 p-0" id="analytics-navbar">
+                        <button type="button" id="sidebar-btn" class="btn btn-dark my-4"> <i class="fa fa-align-justify"></i></button>
+                    </div>
+                </div>
+            </nav>
+            <div class="content">
+                <div class="content-wrapper">
+                    <div class="container-fluid">            
+                        <div class="row" id="analytics-charts">
+                            <div class="col-md-4" id="point-avg">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h1 class="card-title d-flex">
+                                            <span class="mx-auto"></span>
+                                        </h1>
+                                        <h5 class="card-subtitle mb-2 text-muted d-flex">
+                                            <span class="mx-auto">You are</span>
+                                        </h5>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4" id="ref-total">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h1 class="card-title d-flex">
+                                            <span class="mx-auto"></span>
+                                        </h1>
+                                        <h5 class="card-subtitle mb-2 text-muted d-flex">
+                                            <span class="mx-auto">Your total reflections</span>
+                                        </h5>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4" id="ru-rate">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h1 class="card-title d-flex">
+                                            <span class="mx-auto"></span>
+                                        </h1>
+                                        <h5 class="card-subtitle mb-2 text-muted d-flex">
+                                            <span class="mx-auto">Reflections per user</span>
+                                        </h5>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mt-3" id="users">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <span>Total users by group</span>
+                                            <button type="button" class="btn btn-light btn-sm float-right">
+                                                <i class="fas fa-question-circle"></i>
+                                            </button>
+                                        </h5>
+                                        <h6 class="card-subtitle mb-2 instructions"></h6>
+                                        <div class="chart-container"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mt-3" id="histogram">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <span>Users distribution</span>
+                                            <button type="button" class="btn btn-light btn-sm float-right">
+                                                <i class="fas fa-question-circle"></i>
+                                            </button>
+                                        </h5>
+                                        <h6 class="card-subtitle mb-2 instructions"></h6>
+                                        <div class="chart-container"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-12 mt-3" id="timeline">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <span>Users reflection points timeline</span>
+                                            <button type="button" class="btn btn-light btn-sm float-right">
+                                                <i class="fas fa-question-circle"></i>
+                                            </button>
+                                        </h5>
+                                        <h6 class="card-subtitle mb-2 instructions"></h6>
+                                        <div class="row mt-3">
+                                            <div id="timeline-plot" class="btn-group btn-group-toggle mx-auto" data-toggle="buttons">
+                                                <label class="btn btn-light active">
+                                                    <input type="radio" name="plot" value="scatter" checked>Scatter Plot
+                                                </label>
+                                                <label class="btn btn-light">
+                                                    <input type="radio" name="plot" value="density">Density Plot
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="chart-container"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-12 mt-3" id="reflections">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <span>Users reflections</span>
+                                            <button type="button" class="btn btn-light btn-sm float-right">
+                                                <i class="fas fa-question-circle"></i>
+                                            </button>
+                                        </h5>
+                                        <h6 class="card-subtitle mb-2 instructions"></h6>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>       
+        
+        <!--Bootstrap-->
+        <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+        <script src="../lib/dist/index.js"></script>
+        <script>
+            d3.csv("test-data.csv").then(function (c) {
+                    var data = c.map(function (r) {
+                        return {
+                            timestamp: r.timestamp,
+                            point: r.point,
+                            pseudonym: r.pseudonym,
+                            groupCode: "group-1",
+                            text: r.text
+                        };
+                    });
+                    var userData = data.filter(c => c.pseudonym === "texbux99")
+                buildControlAdminAnalyticsCharts(groupData);
+            });
+        </script>
+    </body>
+</html>
