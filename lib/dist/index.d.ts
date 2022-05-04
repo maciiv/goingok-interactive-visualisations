@@ -3,6 +3,7 @@ interface IReflectionAuthorEntryRaw {
     pseudonym: string;
     point: string;
     text: string;
+    transformData(): IReflectionAuthorEntry;
 }
 interface IAnalyticsChartsDataRaw {
     group: string;
@@ -35,4 +36,5 @@ declare class AnalyticsChartsData implements IAnalyticsChartsData {
 }
 export declare function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]): Promise<void>;
 export declare function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]): Promise<void>;
+export declare function buildControlAuthorAnalyticsCharts(pseudonym: string, entriesRaw: IReflectionAuthorEntryRaw[]): Promise<void>;
 export {};

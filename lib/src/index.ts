@@ -1266,16 +1266,13 @@ class AdminControlCharts implements IAdminControlCharts {
     }
 }
 
-interface IAdminControlTransitions {
+interface ITransitions {
     axisSeries(chart: ChartSeries, data: IAnalyticsChartsData[]): void;
     axisTime(chart: ChartTime, data: IAnalyticsChartsData[]): void;
     axisLinear(chart: ChartSeries): void;
-    histogram(chart: HistogramChartSeries, update: d3.Selection<SVGGElement, IAnalyticsChartsData, SVGGElement, unknown>): void;
-    timelineDensity(update: d3.Selection<SVGGElement, IAnalyticsChartsData, SVGGElement, unknown>, getDensityData: Function): void;
-    timelineScatter(update: d3.Selection<SVGGElement, IAnalyticsChartsData, SVGGElement, unknown>, chart: ChartTime | ChartTimeZoom, zoom?: boolean, invisible?: boolean): void;
 }
 
-class AdminControlTransitions implements IAdminControlTransitions {
+class Transitions {
     axisSeries(chart: ChartSeries, data: IAnalyticsChartsData[]): void {
         chart.x.scale.domain(data.map(d => d.group));
         d3.select<SVGGElement, unknown>(`#${chart.id} .x-axis`).transition()
@@ -1293,6 +1290,15 @@ class AdminControlTransitions implements IAdminControlTransitions {
             .duration(750)
             .call(chart.y.axis);
     };
+}
+
+interface IAdminControlTransitions extends ITransitions {
+    histogram(chart: HistogramChartSeries, update: d3.Selection<SVGGElement, IAnalyticsChartsData, SVGGElement, unknown>): void;
+    timelineDensity(update: d3.Selection<SVGGElement, IAnalyticsChartsData, SVGGElement, unknown>, getDensityData: Function): void;
+    timelineScatter(update: d3.Selection<SVGGElement, IAnalyticsChartsData, SVGGElement, unknown>, chart: ChartTime | ChartTimeZoom, zoom?: boolean, invisible?: boolean): void;
+}
+
+class AdminControlTransitions extends Transitions implements IAdminControlTransitions {
     histogram(chart: HistogramChartSeries, update: d3.Selection<SVGGElement, IAnalyticsChartsData, SVGGElement, unknown>): void {        
         update.selectAll(".histogram-rect")
             .data(d => chart.bin(d.value.map(d => d.point)).map(c => { return new HistogramData(d.value, d.group, d.colour, c, Math.round(c.length / d.value.length * 100)) }))
@@ -2065,7 +2071,7 @@ class Sort implements ISort {
 
 interface IAuthorControlCharts {
     help: IHelp;
-    interactions: IAdminControlInteractions;
+    interactions: IAuthorControlInteractions;
     renderTotals(authorData: IReflectionAuthorEntry[], data: IReflectionAuthorEntry[]) : void;
     renderTimeline(chart: ChartTime, zoomChart: ChartTimeZoom, authorData: IReflectionAuthorEntry[], data: IReflectionAuthorEntry[]): ChartTime;
 }
@@ -2108,6 +2114,14 @@ class AuthorControlCharts implements IAuthorControlCharts {
                     
                 }
             });
+        
+        let you = d3.mean(authorData.map(d => d.point)) < 30 ? "Distressed" : d3.mean(authorData.map(d => d.point)) > 70 ? "Soaring" : "GoingOK"
+        d3.select<HTMLSpanElement, number>("#you .card-title span")
+            .classed("bin-name", true)
+            .classed("soaring", you === "Soaring")
+            .classed("distressed", you === "Distressed")
+            .classed("goingok", you === "GoingOK")
+            .html(you);
     }
 
     renderTimeline(chart: ChartTime, zoomChart: ChartTimeZoom, authorData: IReflectionAuthorEntry[], data: IReflectionAuthorEntry[]): ChartTime {
@@ -2116,18 +2130,47 @@ class AuthorControlCharts implements IAuthorControlCharts {
             .classed("instructions", data.length <= 1)
             .classed("text-muted", data.length != 1)
             .html(data.length != 1 ? `Your oldest reflection was on ${d3.min(authorData.map(d => d.timestamp)).toDateString()}, while
-                the newest reflection was on ${d3.max(data.map(d => d.timestamp)).toDateString()}` :
-                `Filtering by <span class="badge badge-pill badge-info">${data[0].group} <i class="fas fa-window-close"></i></span>`);
+                your newest reflection was on ${d3.max(authorData.map(d => d.timestamp)).toDateString()}` :
+                `Filtering by <span class="badge badge-pill badge-info">Test <i class="fas fa-window-close"></i></span>`);
+
+         //Line generator
+         let line = d3.line<IReflectionAuthorEntry>()
+            .x(d => chart.x.scale(d.timestamp))
+            .y(d => chart.y.scale(d.point))
+            .curve(d3.curveMonotoneX);
+     
+        //Draw author line
+        chart.elements.contentContainer.append("path")
+            .datum(d3.sort(authorData, d => d.timestamp))
+            .attr("class", "author-line")
+            .attr("d", d => line(d));
+        
+        //Area generator
+        let area = d3.area<IReflectionAuthorEntry>()
+            .x(d => chart.x.scale(d.timestamp))
+            .y0(d => chart.y.scale(0))
+            .y1(d => chart.y.scale(d.point))
+            .curve(d3.curveMonotoneX);
+        
+        //Draw group area
+        chart.elements.contentContainer.append("path")
+            .datum(d3.sort(data, d => d.timestamp))
+            .attr("class", "group-area")
+            .attr("d", d => area(d));
 
         //Draw circles
-        chart.elements.contentContainer.selectAll<SVGGElement, IAnalyticsChartsData>(".timeline-container")
-        .data(authorData)
+        chart.elements.contentContainer.selectAll<SVGCircleElement, IReflectionAuthorEntry>("circle")
+        .data(d3.sort(authorData, d => d.timestamp))
         .join(
-            enter => enter.append("g")
-                .attr("class", "timeline-container")
-                .call(enter => _this.interactions.timelineScatter(enter, chart)),
-            update => update.call(update => _this.interactions.timelineScatter(update, chart)),
-            exit => exit.remove())     
+            enter => enter.append("circle")
+                .attr("class", "circle")
+                .attr("cx", d => chart.x.scale(d.timestamp))
+                .attr("cy", d => chart.y.scale(d.point))
+                .attr("r", 5)
+                .style("stroke", "#3399CC")
+                .style("fill", "#3399CC"),
+            update => update,
+            exit => exit.remove())       
 
         chart.elements.content = chart.elements.contentContainer.selectAll(".circle");
 
@@ -2139,8 +2182,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
             }
             _this.interactions.tooltip.appendTooltipContainer(chart);
             let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.timestamp.toDateString(), 
-                [new TooltipValues("User", d.pseudonym), 
-                 new TooltipValues("Point", d.point)]);
+                [new TooltipValues("Point", d.point)]);
             _this.interactions.tooltip.positionTooltipContainer(chart, xTooltip(d.timestamp, tooltipBox), yTooltip(d.point, tooltipBox));
 
             function xTooltip(x: Date, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
@@ -2179,19 +2221,46 @@ class AuthorControlCharts implements IAuthorControlCharts {
         chart.elements.zoomFocus.selectAll<SVGGElement, IAnalyticsChartsData>(".zoom-timeline-content-container")
             .data(data)
             .join(
-                enter => enter.append("g")
-                    .attr("class", "zoom-timeline-content-container")
-                    .call(enter => _this.interactions.timelineScatter(enter, zoomChart, true, true)),
-                update => update.call(update => _this.interactions.timelineScatter(update, zoomChart, true, true)),
+                enter => enter.append("circle")
+                    .attr("class", "zoom-content")
+                    .attr("cx", d => zoomChart.x.scale(d.timestamp))
+                    .attr("cy", d => zoomChart.y.scale(d.point))
+                    .attr("r", 2),
+                update => update,
                 exit => exit.remove());  
         
-        chart.elements.zoomSVG.selectAll<SVGGElement, IAnalyticsChartsData>(".zoom-timeline-container")
-            .data(data)
+        let zoomLine = d3.line<IReflectionAuthorEntry>()
+            .x(d => zoomChart.x.scale(d.timestamp))
+            .y(d => zoomChart.y.scale(d.point))
+            .curve(d3.curveMonotoneX);
+
+        let zoomArea = d3.area<IReflectionAuthorEntry>()
+            .x(d => zoomChart.x.scale(d.timestamp))
+            .y0(d => zoomChart.y.scale(0))
+            .y1(d => zoomChart.y.scale(d.point))
+            .curve(d3.curveMonotoneX);
+        
+        chart.elements.zoomSVG.append("path")
+            .datum(d3.sort(data, d => d.timestamp))
+            .attr("class", "group-area")
+            .attr("d", d => zoomArea(d));
+        
+        chart.elements.zoomSVG.append("path")
+            .datum(d3.sort(authorData, d => d.timestamp))
+            .attr("class", "author-line")
+            .attr("d", d => zoomLine(d));
+
+        chart.elements.zoomSVG.selectAll<SVGCircleElement, IAnalyticsChartsData>(".zoom-timeline-container")
+            .data(authorData)
             .join(
-                enter => enter.append("g")
-                    .attr("class", "zoom-timeline-container")
-                    .call(enter => { zoomChart.x.scale.rangeRound([0, chart.width - chart.padding.yAxis]); _this.interactions.timelineScatter(enter, zoomChart, true) }),
-                update => update.call(update => { zoomChart.x.scale.rangeRound([0, chart.width - chart.padding.yAxis]); _this.interactions.timelineScatter(update, zoomChart, true) }),
+                enter => enter.append("circle")
+                    .attr("class", "zoom-circle")
+                    .attr("cx", d => zoomChart.x.scale(d.timestamp))
+                    .attr("cy", d => zoomChart.y.scale(d.point))
+                    .attr("r", 2)
+                    .style("stroke", "#3399CC")
+                    .style("fill", "#3399CC"),
+                update => update,
                 exit => exit.remove());
            
         //Enable zoom
@@ -2202,7 +2271,13 @@ class AuthorControlCharts implements IAuthorControlCharts {
             zoomChart.x.scale.rangeRound([0, chart.width - chart.padding.yAxis - 5].map(d => e.transform.invertX(d)));
             let newLine = d3.line<IReflectionAuthorEntry>()
                 .x(d => chart.x.scale(d.timestamp))
-                .y(d => chart.y.scale(d.point));
+                .y(d => chart.y.scale(d.point))
+                .curve(d3.curveMonotoneX);
+            let newArea = d3.area<IReflectionAuthorEntry>()
+                .x(d => chart.x.scale(d.timestamp))
+                .y0(d => chart.y.scale(0))
+                .y1(d => chart.y.scale(d.point))
+                .curve(d3.curveMonotoneX);
 
             chart.elements.contentContainer.selectAll<SVGCircleElement, IReflectionAuthorEntry>(".circle")
                 .attr("cx", d => chart.x.scale(d.timestamp));
@@ -2210,8 +2285,11 @@ class AuthorControlCharts implements IAuthorControlCharts {
             chart.elements.zoomFocus.selectAll<SVGCircleElement, IReflectionAuthorEntry>(".zoom-content")
                 .attr("cx", d => zoomChart.x.scale(d.timestamp));
 
-            chart.elements.contentContainer.selectAll<SVGLineElement, IReflectionAuthorEntry[]>(".click-line")
+            chart.elements.contentContainer.selectAll<SVGLineElement, IReflectionAuthorEntry[]>(".author-line")
                 .attr("d", d => newLine(d));
+            
+            chart.elements.contentContainer.selectAll<SVGPathElement, IReflectionAuthorEntry[]>(".group-area")
+                .attr("d", d => newArea(d));
 
             chart.elements.contentContainer.selectAll<SVGRectElement, IReflectionAuthorEntry>(".click-container")
                 .attr("transform", d => `translate(${chart.x.scale(d.timestamp)}, ${chart.y.scale(d.point)})`);
@@ -2222,6 +2300,24 @@ class AuthorControlCharts implements IAuthorControlCharts {
         }
         return chart;
     };
+}
+
+interface IAuthorControlTransitions extends ITransitions {
+
+}
+
+class AuthorControlTransitions extends Transitions implements IAuthorControlTransitions {
+   
+}
+
+interface IAuthorControlInteractions extends IAuthorControlTransitions {
+    tooltip: ITooltip;
+    zoom: IZoom;
+}
+
+class AuthorControlInteractions extends AuthorControlTransitions implements IAuthorControlInteractions {
+    tooltip = new Tooltip();
+    zoom = new Zoom();
 }
 
 /* ------------------------------------------------
@@ -2644,15 +2740,17 @@ export async function buildControlAuthorAnalyticsCharts(pseudonym: string, entri
     let loading = new Loading();
     let rawData = entriesRaw.map(d => new ReflectionAuthorEntryRaw(d.timestamp, d.pseudonym, d.point, d.text));
     let entries = rawData.map(d => d.transformData());
-    let authorEntries = entries.filter(d => d.pseudonym === pseudonym)
+    let authorEntries = entries.filter(d => d.pseudonym === pseudonym);
+    await drawCharts(authorEntries, entries);
     loading.isLoading = false;
     loading.removeDiv();
 
     async function drawCharts(authorEntries: IReflectionAuthorEntry[], entries: IReflectionAuthorEntry[]) {
         let authorControlCharts = new AuthorControlCharts();
-        authorControlCharts.renderTotals(authorEntries);
+        authorControlCharts.renderTotals(authorEntries, entries);
 
         let timelineChart = new ChartTime("timeline", d3.extent(entries.map(d => d.timestamp)));
         let timelineZoomChart = new ChartTimeZoom(timelineChart, d3.extent(entries.map(d => d.timestamp)));
+        authorControlCharts.renderTimeline(timelineChart, timelineZoomChart, authorEntries, entries);
     }
 }
