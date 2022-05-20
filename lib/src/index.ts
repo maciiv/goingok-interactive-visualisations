@@ -2069,10 +2069,28 @@ class Sort implements ISort {
     Start of author control interfaces and classes 
 -------------------------------------------------- */
 
+interface ITags {
+    start_index: number,
+    tag: string,
+    end_index: number
+}
+
+interface IWords {
+    start_index: number,
+    word: string,
+    type: string
+}
+
+interface IReflectionAnalytics extends IReflectionAuthorEntry {
+    tags: ITags[],
+    words: IWords[]
+}
+
 interface IAuthorControlCharts {
     help: IHelp;
     interactions: IAuthorControlInteractions;
     renderTotals(authorData: IReflectionAuthorEntry[], data: IReflectionAuthorEntry[]) : void;
+    renderReflections(data: IReflectionAnalytics[]): void;
     renderTimeline(chart: ChartTime, zoomChart: ChartTimeZoom, authorData: IReflectionAuthorEntry[], data: IReflectionAuthorEntry[]): ChartTime;
 }
 
@@ -2122,6 +2140,10 @@ class AuthorControlCharts implements IAuthorControlCharts {
             .classed("distressed", you === "Distressed")
             .classed("goingok", you === "GoingOK")
             .html(you);
+    }
+
+    renderReflections(data: IReflectionAnalytics[]) {
+
     }
 
     renderTimeline(chart: ChartTime, zoomChart: ChartTimeZoom, authorData: IReflectionAuthorEntry[], data: IReflectionAuthorEntry[]): ChartTime {
