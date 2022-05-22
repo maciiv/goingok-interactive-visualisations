@@ -2118,14 +2118,14 @@ class AuthorControlCharts implements IAuthorControlCharts {
             const isOpenTag = tags.find(c => c.start_index === currentWord.start_index);
             const isCloseTag = tags.find(c => c.end_index === currentWord.start_index);
             if (isOpenTag !== undefined && isCloseTag !== undefined) {
-                html += `<span class="badge badge-pill ${isOpenTag.tag.toLowerCase()}">${currentWord.word}</span>`
+                html += `<span class="badge badge-pill ${isOpenTag.tag.toLowerCase()}">${currentWord.word}</span> `
             } else if (isOpenTag !== undefined) {
                 html += `<span class="badge badge-pill ${isOpenTag.tag.toLocaleLowerCase()}">${currentWord.word} `
             } else if (isCloseTag !== undefined) {
-                html += `${currentWord.word}</span>`
+                html += `${currentWord.word}</span> `
             } else if (currentWord.type === "punctuation") {
                 html = html.trim();
-                html += currentWord.word
+                html += currentWord.word + " "
             } else {
                 html += currentWord.word + " "
             }
