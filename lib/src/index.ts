@@ -2089,239 +2089,49 @@ interface IReflectionAnalytics extends IReflectionAuthorEntry {
 interface IAuthorControlCharts {
     help: IHelp;
     interactions: IAuthorControlInteractions;
-    renderTotals(authorData: IReflectionAuthorEntry[], data: IReflectionAuthorEntry[]) : void;
     renderReflections(data: IReflectionAnalytics[]): void;
-    renderTimeline(chart: ChartTime, zoomChart: ChartTimeZoom, authorData: IReflectionAuthorEntry[], data: IReflectionAuthorEntry[]): ChartTime;
 }
 
 class AuthorControlCharts implements IAuthorControlCharts {
     help = new Help();
     interactions = new AdminControlInteractions();
-    renderTotals(authorData: IReflectionAuthorEntry[], data: IReflectionAuthorEntry[]): void {
-        let point =  d3.select<HTMLSpanElement, number>("#point-avg .card-title span").datum();
-        d3.select<HTMLSpanElement, number>("#point-avg .card-title span")
-            .datum(d3.mean(authorData.map(d => d.point)))
-            .transition()
-            .duration(1000)
-            .tween("html", function() {
-                let oldPoint = point == undefined ? 0 : point;
-                let newPoint = d3.mean(authorData.map(d => d.point))
-                return function(t: number) {
-                    if(oldPoint < newPoint) {
-                        this.innerHTML = (oldPoint + Math.round(t * (newPoint - oldPoint))).toString();
-                    } else {
-                        this.innerHTML = (oldPoint - Math.round(t * (oldPoint - newPoint))).toString();
-                    }
-                    
-                }
-            });
-        let refs = d3.select<HTMLSpanElement, number>("#ref-total .card-title span").datum();
-        d3.select<HTMLSpanElement, number>("#ref-total .card-title span")
-            .datum(d3.count(authorData.map(d => d.timestamp)))
-            .transition()
-            .duration(1000)
-            .tween("html", function() {
-                let oldRefs = refs == undefined ? 0 : refs;
-                let newRefs = d3.count(authorData.map(d => d.timestamp))
-                return function(t: number) {
-                    if(oldRefs < newRefs) {
-                        this.innerHTML = (oldRefs + Math.round(t * (newRefs - oldRefs))).toString();
-                    } else {
-                        this.innerHTML = (oldRefs - Math.round(t * (oldRefs - newRefs))).toString();
-                    }
-                    
-                }
-            });
-        
-        let you = d3.mean(authorData.map(d => d.point)) < 30 ? "Distressed" : d3.mean(authorData.map(d => d.point)) > 70 ? "Soaring" : "GoingOK"
-        d3.select<HTMLSpanElement, number>("#you .card-title span")
-            .classed("bin-name", true)
-            .classed("soaring", you === "Soaring")
-            .classed("distressed", you === "Distressed")
-            .classed("goingok", you === "GoingOK")
-            .html(you);
-    }
 
     renderReflections(data: IReflectionAnalytics[]) {
-
+        const _this = this
+        d3.select<HTMLDivElement, Date>("#reflections .card-body")
+            .selectAll(".reflection")
+            .data(data)
+            .enter()
+            .append("div")
+            .attr("class", "reflection")
+            .call(div => div.append("h6")
+                .html(d => `<i>${d.timestamp.toDateString()} | Point: ${d.point}`))
+            .call(div => div.append("p")
+                .html(d => _this.processReflectionsText(d.tags, d.words)))
     }
 
-    renderTimeline(chart: ChartTime, zoomChart: ChartTimeZoom, authorData: IReflectionAuthorEntry[], data: IReflectionAuthorEntry[]): ChartTime {
-        let _this = this;
-        d3.select(`#${chart.id} .card-subtitle`)
-            .classed("instructions", data.length <= 1)
-            .classed("text-muted", data.length != 1)
-            .html(data.length != 1 ? `Your oldest reflection was on ${d3.min(authorData.map(d => d.timestamp)).toDateString()}, while
-                your newest reflection was on ${d3.max(authorData.map(d => d.timestamp)).toDateString()}` :
-                `Filtering by <span class="badge badge-pill badge-info">Test <i class="fas fa-window-close"></i></span>`);
-
-         //Line generator
-         let line = d3.line<IReflectionAuthorEntry>()
-            .x(d => chart.x.scale(d.timestamp))
-            .y(d => chart.y.scale(d.point))
-            .curve(d3.curveMonotoneX);
-     
-        //Draw author line
-        chart.elements.contentContainer.append("path")
-            .datum(d3.sort(authorData, d => d.timestamp))
-            .attr("class", "author-line")
-            .attr("d", d => line(d));
-        
-        //Area generator
-        let area = d3.area<IReflectionAuthorEntry>()
-            .x(d => chart.x.scale(d.timestamp))
-            .y0(d => chart.y.scale(0))
-            .y1(d => chart.y.scale(d.point))
-            .curve(d3.curveMonotoneX);
-        
-        //Draw group area
-        chart.elements.contentContainer.append("path")
-            .datum(d3.sort(data, d => d.timestamp))
-            .attr("class", "group-area")
-            .attr("d", d => area(d));
-
-        //Draw circles
-        chart.elements.contentContainer.selectAll<SVGCircleElement, IReflectionAuthorEntry>("circle")
-        .data(d3.sort(authorData, d => d.timestamp))
-        .join(
-            enter => enter.append("circle")
-                .attr("class", "circle")
-                .attr("cx", d => chart.x.scale(d.timestamp))
-                .attr("cy", d => chart.y.scale(d.point))
-                .attr("r", 5)
-                .style("stroke", "#3399CC")
-                .style("fill", "#3399CC"),
-            update => update,
-            exit => exit.remove())       
-
-        chart.elements.content = chart.elements.contentContainer.selectAll(".circle");
-
-        //Enable tooltip       
-        _this.interactions.tooltip.enableTooltip(chart, onMouseover, onMouseout);
-        function onMouseover(e: Event, d: ITimelineData) {
-            if (d3.select(this).attr("class").includes("clicked")) {
-                return;
+    processReflectionsText(tags: ITags[], words: IWords[]): string {
+        let html = "";
+        for (var i = 0; i <= words.length; i++) {
+            if (words[i] === undefined) continue;
+            let currentWord = words[i];
+            const isOpenTag = tags.find(c => c.start_index === currentWord.start_index);
+            const isCloseTag = tags.find(c => c.end_index === currentWord.start_index);
+            if (isOpenTag !== undefined && isCloseTag !== undefined) {
+                html += `<span class="badge badge-pill ${isOpenTag.tag.toLowerCase()}">${currentWord.word}</span>`
+            } else if (isOpenTag !== undefined) {
+                html += `<span class="badge badge-pill ${isOpenTag.tag.toLocaleLowerCase()}">${currentWord.word} `
+            } else if (isCloseTag !== undefined) {
+                html += `${currentWord.word}</span>`
+            } else if (currentWord.type === "punctuation") {
+                html = html.trim();
+                html += currentWord.word
+            } else {
+                html += currentWord.word + " "
             }
-            _this.interactions.tooltip.appendTooltipContainer(chart);
-            let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.timestamp.toDateString(), 
-                [new TooltipValues("Point", d.point)]);
-            _this.interactions.tooltip.positionTooltipContainer(chart, xTooltip(d.timestamp, tooltipBox), yTooltip(d.point, tooltipBox));
-
-            function xTooltip(x: Date, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
-                let xTooltip = chart.x.scale(x);
-                if (chart.width - chart.padding.yAxis < xTooltip + tooltipBox.node().getBBox().width) {
-                    return xTooltip - tooltipBox.node().getBBox().width;
-                }
-                return xTooltip
-            };
-
-            function yTooltip(y: number, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
-                var yTooltip = chart.y.scale(y) - tooltipBox.node().getBBox().height - 10;
-                if (yTooltip < 0) {
-                    return yTooltip + tooltipBox.node().getBBox().height + 20;
-                }
-                return yTooltip;
-            };
-
-            _this.interactions.tooltip.appendLine(chart, 0, chart.y.scale(d.point), chart.x.scale(d.timestamp), chart.y.scale(d.point), d.colour);
-            _this.interactions.tooltip.appendLine(chart, chart.x.scale(d.timestamp), chart.y.scale(0), chart.x.scale(d.timestamp), chart.y.scale(d.point), d.colour);
-        }
-        function onMouseout() {
-            chart.elements.svg.select(".tooltip-container").transition()
-                .style("opacity", 0);
-            _this.interactions.tooltip.removeTooltip(chart);
-        }
-
-        //Append zoom bar
-        if (chart.elements.zoomSVG == undefined) {
-            chart.elements.zoomSVG = _this.interactions.zoom.appendZoomBar(chart);
-            chart.elements.zoomFocus = chart.elements.zoomSVG.append("g")
-                .attr("class", "zoom-focus");
-        }
-
-        //Process zoom circles
-        chart.elements.zoomFocus.selectAll<SVGGElement, IAnalyticsChartsData>(".zoom-timeline-content-container")
-            .data(data)
-            .join(
-                enter => enter.append("circle")
-                    .attr("class", "zoom-content")
-                    .attr("cx", d => zoomChart.x.scale(d.timestamp))
-                    .attr("cy", d => zoomChart.y.scale(d.point))
-                    .attr("r", 2),
-                update => update,
-                exit => exit.remove());  
-        
-        let zoomLine = d3.line<IReflectionAuthorEntry>()
-            .x(d => zoomChart.x.scale(d.timestamp))
-            .y(d => zoomChart.y.scale(d.point))
-            .curve(d3.curveMonotoneX);
-
-        let zoomArea = d3.area<IReflectionAuthorEntry>()
-            .x(d => zoomChart.x.scale(d.timestamp))
-            .y0(d => zoomChart.y.scale(0))
-            .y1(d => zoomChart.y.scale(d.point))
-            .curve(d3.curveMonotoneX);
-        
-        chart.elements.zoomSVG.append("path")
-            .datum(d3.sort(data, d => d.timestamp))
-            .attr("class", "group-area")
-            .attr("d", d => zoomArea(d));
-        
-        chart.elements.zoomSVG.append("path")
-            .datum(d3.sort(authorData, d => d.timestamp))
-            .attr("class", "author-line")
-            .attr("d", d => zoomLine(d));
-
-        chart.elements.zoomSVG.selectAll<SVGCircleElement, IAnalyticsChartsData>(".zoom-timeline-container")
-            .data(authorData)
-            .join(
-                enter => enter.append("circle")
-                    .attr("class", "zoom-circle")
-                    .attr("cx", d => zoomChart.x.scale(d.timestamp))
-                    .attr("cy", d => zoomChart.y.scale(d.point))
-                    .attr("r", 2)
-                    .style("stroke", "#3399CC")
-                    .style("fill", "#3399CC"),
-                update => update,
-                exit => exit.remove());
-           
-        //Enable zoom
-        _this.interactions.zoom.enableZoom(chart, zoomed);
-        function zoomed(e: any) {
-            let newChartRange = [0, chart.width - chart.padding.yAxis].map(d => e.transform.applyX(d));
-            chart.x.scale.rangeRound(newChartRange);
-            zoomChart.x.scale.rangeRound([0, chart.width - chart.padding.yAxis - 5].map(d => e.transform.invertX(d)));
-            let newLine = d3.line<IReflectionAuthorEntry>()
-                .x(d => chart.x.scale(d.timestamp))
-                .y(d => chart.y.scale(d.point))
-                .curve(d3.curveMonotoneX);
-            let newArea = d3.area<IReflectionAuthorEntry>()
-                .x(d => chart.x.scale(d.timestamp))
-                .y0(d => chart.y.scale(0))
-                .y1(d => chart.y.scale(d.point))
-                .curve(d3.curveMonotoneX);
-
-            chart.elements.contentContainer.selectAll<SVGCircleElement, IReflectionAuthorEntry>(".circle")
-                .attr("cx", d => chart.x.scale(d.timestamp));
-
-            chart.elements.zoomFocus.selectAll<SVGCircleElement, IReflectionAuthorEntry>(".zoom-content")
-                .attr("cx", d => zoomChart.x.scale(d.timestamp));
-
-            chart.elements.contentContainer.selectAll<SVGLineElement, IReflectionAuthorEntry[]>(".author-line")
-                .attr("d", d => newLine(d));
-            
-            chart.elements.contentContainer.selectAll<SVGPathElement, IReflectionAuthorEntry[]>(".group-area")
-                .attr("d", d => newArea(d));
-
-            chart.elements.contentContainer.selectAll<SVGRectElement, IReflectionAuthorEntry>(".click-container")
-                .attr("transform", d => `translate(${chart.x.scale(d.timestamp)}, ${chart.y.scale(d.point)})`);
-
-            chart.x.axis.ticks(newChartRange[1] / 75);
-            chart.elements.xAxis.call(chart.x.axis);
-            _this.help.removeHelp(chart);
-        }
-        return chart;
-    };
+        }     
+        return html;
+    }
 }
 
 interface IAuthorControlTransitions extends ITransitions {
@@ -2758,21 +2568,15 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalytics
     }
 }
 
-export async function buildControlAuthorAnalyticsCharts(pseudonym: string, entriesRaw: IReflectionAuthorEntryRaw[]) {
+export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionAnalytics[]) {
     let loading = new Loading();
-    let rawData = entriesRaw.map(d => new ReflectionAuthorEntryRaw(d.timestamp, d.pseudonym, d.point, d.text));
-    let entries = rawData.map(d => d.transformData());
-    let authorEntries = entries.filter(d => d.pseudonym === pseudonym);
-    await drawCharts(authorEntries, entries);
+    const entries = entriesRaw.map(d => { return {"timestamp": new Date(d.timestamp), "pseudonym": d.pseudonym, "point": d.point, "text": d.text, "tags": d.tags, "words": d.words } as IReflectionAnalytics});
+    await drawCharts(entries);
     loading.isLoading = false;
     loading.removeDiv();
 
-    async function drawCharts(authorEntries: IReflectionAuthorEntry[], entries: IReflectionAuthorEntry[]) {
+    async function drawCharts(entries: IReflectionAnalytics[]) {
         let authorControlCharts = new AuthorControlCharts();
-        authorControlCharts.renderTotals(authorEntries, entries);
-
-        let timelineChart = new ChartTime("timeline", d3.extent(entries.map(d => d.timestamp)));
-        let timelineZoomChart = new ChartTimeZoom(timelineChart, d3.extent(entries.map(d => d.timestamp)));
-        authorControlCharts.renderTimeline(timelineChart, timelineZoomChart, authorEntries, entries);
+        authorControlCharts.renderReflections(entries);
     }
 }

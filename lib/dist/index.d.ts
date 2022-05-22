@@ -34,7 +34,21 @@ declare class AnalyticsChartsData implements IAnalyticsChartsData {
     constructor(group: string, value: IReflectionAuthorEntry[], createDate?: Date, colour?: string, selected?: boolean);
     getUsersData(): AnalyticsChartsData;
 }
+interface ITags {
+    start_index: number;
+    tag: string;
+    end_index: number;
+}
+interface IWords {
+    start_index: number;
+    word: string;
+    type: string;
+}
+interface IReflectionAnalytics extends IReflectionAuthorEntry {
+    tags: ITags[];
+    words: IWords[];
+}
 export declare function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]): Promise<void>;
 export declare function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]): Promise<void>;
-export declare function buildControlAuthorAnalyticsCharts(pseudonym: string, entriesRaw: IReflectionAuthorEntryRaw[]): Promise<void>;
+export declare function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionAnalytics[]): Promise<void>;
 export {};
