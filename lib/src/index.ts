@@ -2086,15 +2086,40 @@ interface IReflectionAnalytics extends IReflectionAuthorEntry {
     words: IWords[]
 }
 
+interface IReflectionAnalyticsSummary {
+    tag: string,
+    count: number,
+    percentage: number
+}
+
 interface IAuthorControlCharts {
     help: IHelp;
     interactions: IAuthorControlInteractions;
+    renderSummary(data: IReflectionAnalytics[]): void;
     renderReflections(data: IReflectionAnalytics[]): void;
 }
 
 class AuthorControlCharts implements IAuthorControlCharts {
     help = new Help();
     interactions = new AdminControlInteractions();
+
+    renderSummary(data: IReflectionAnalytics[]): void {
+        let summary = [] as IReflectionAnalyticsSummary[]
+        let reflectionsSummary = [] as IReflectionAnalyticsSummary[]
+        data.forEach(c => {
+            let reflections = Array.from(d3.rollup(c.tags, d => d.length, d => d.tag), ([tag, count]) => ({tag, count}) as IReflectionAnalyticsSummary);
+            reflectionsSummary = reflectionsSummary.concat(reflections)
+        })
+        let summaryRaw = Array.from(d3.rollup(reflectionsSummary, d => d3.sum(d.map(c => c.count)), d => d.tag), ([tag, count]) => ({tag, count}) as IReflectionAnalyticsSummary);
+        summaryRaw.forEach(c => {           
+            summary.push({
+                "tag": c.tag,
+                "count": c.count,
+                "percentage": Math.round(c.count * 100 / d3.sum(summaryRaw.map(d => d.count)))
+            })
+        })
+        console.log(summary)
+    }
 
     renderReflections(data: IReflectionAnalytics[]) {
         const _this = this
@@ -2104,7 +2129,8 @@ class AuthorControlCharts implements IAuthorControlCharts {
             .enter()
             .append("div")
             .attr("class", "reflection")
-            .call(div => div.append("h6")
+            .call(div => div.append("p")
+                .attr("class", "mb-0")
                 .html(d => `<i>${d.timestamp.toDateString()} | Point: ${d.point}`))
             .call(div => div.append("p")
                 .html(d => _this.processReflectionsText(d.tags, d.words)))
@@ -2577,6 +2603,7 @@ export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionA
 
     async function drawCharts(entries: IReflectionAnalytics[]) {
         let authorControlCharts = new AuthorControlCharts();
+        authorControlCharts.renderSummary(entries)
         authorControlCharts.renderReflections(entries);
     }
 }

@@ -88,6 +88,10 @@
     min-height: 30vh;
 }
 
+.chart-container-summary {
+    min-height: 5vh;
+}
+
 .chart-svg {
     margin-top: 10px;
 }
@@ -359,6 +363,14 @@
 
 .bin-name.goingok {
     color: #2eb82e;
+}
+
+.ar {
+    background-color: #0f856b;
+}
+
+.af {
+    background-color: #3399CC;
 }
 
 /**************************************************

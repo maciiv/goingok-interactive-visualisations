@@ -47,7 +47,8 @@
             "text": "Weeks 1 and 2 have been ok with the content delivered. Week 3 will be more stressful due to the amount of assessment released. Luckily things have settled and I and stable with the new place I moved into.",
             "tags": [
                 { "start_index": 4, "tag": "AR", "end_index": 5 },
-                { "start_index": 17, "tag": "AF", "end_index": 17 }
+                { "start_index": 17, "tag": "AF", "end_index": 17 },
+                { "start_index": 26, "tag": "AF", "end_index": 28 }
             ],
             "words": [
                 { "start_index": 0, "word": "weeks", "type": "word" },
