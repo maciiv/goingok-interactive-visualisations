@@ -2349,6 +2349,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
             .join(
                 enter => enter.append("g")
                     .attr("class", "multilevel-group")
+                    .attr("transform", (d, i) => `translate (0, -${chart.y.scale(100 * (i + 1))})`)
                     .call(enter => enter.append("path")
                         .attr("class", d => `multilevel-area ${d.toLowerCase()}`)
                         .datum(d => d3.sort(reflectionsSummary.filter(c => c.tag === d), d => d.timestamp))
