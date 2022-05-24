@@ -89,7 +89,11 @@
 }
 
 .chart-container-summary {
-    min-height: 5vh;
+    min-height: 7vh;
+}
+
+.chart-container-network {
+    min-height: 40vh;
 }
 
 .chart-svg {
@@ -124,7 +128,7 @@
     overflow-x: hidden;
 }
 
-.bar, .circle, .circle-group, .histogram-rect, .zoom-circle, .legend-color {
+.bar, .circle, .circle-group, .histogram-rect, .zoom-circle, .legend-color, .summary-bar, .summary-pie {
     fill-opacity: 0.2;
     stroke-width: 1;
 }
@@ -156,7 +160,7 @@
     stroke-width: 1;
 }
 
-.bar:hover, .arc:hover, .histogram-rect:hover, .circle:hover {
+.bar:hover, .arc:hover, .histogram-rect:hover, .circle:hover, .summary-bar:hover, .summary-pie:hover {
     fill-opacity: 0.4;
     r: 10;
 }
@@ -367,10 +371,30 @@
 
 .ar {
     background-color: #0f856b;
+    fill: #0f856b;
+    stroke: #0f856b;
 }
 
 .af {
     background-color: #3399CC;
+    fill: #3399CC;
+    stroke: #3399CC;
+}
+
+.summary-percentage, .summary-tag {
+    text-anchor: middle;
+    dominant-baseline: central;
+}
+
+.reflections-tab {
+    height: 60vh;
+    overflow-y: auto;
+}
+
+.reflection-link-time {
+    fill: none;
+    stroke: #6c757d;
+    stroke-width: 1;
 }
 
 /**************************************************

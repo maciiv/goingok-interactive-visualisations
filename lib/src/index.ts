@@ -321,7 +321,7 @@ class ChartLinearAxis implements IChartAxis {
     constructor(label: string, domain: number[], range: number[], position?: string, isGoingOk: boolean = true) {
         this.label = label;
         this.scale = d3.scaleLinear()
-            .domain([0, d3.max(domain)])
+            .domain([d3.min(domain) < 0 ? d3.min(domain) : 0, d3.max(domain)])
             .range(range);
         if (position == "right") {
             this.axis = d3.axisRight(this.scale);
@@ -2092,10 +2092,67 @@ interface IReflectionAnalyticsSummary {
     percentage: number
 }
 
+// Basic class for summary chart
+class SummaryChart implements IChart {
+    id: string;
+    width: number;
+    height: number;
+    x: ChartLinearAxis;
+    y: ChartLinearAxis;
+    elements: IChartElements;
+    padding: IChartPadding;
+    click: boolean;
+    constructor(id: string, containerClass: string) {
+        this.id = id;
+        let containerDimensions = d3.select<HTMLDivElement, unknown>(`#${id} .${containerClass}`).node().getBoundingClientRect();
+        this.width = containerDimensions.width;
+        this.height = containerDimensions.height;
+        this.padding = new ChartPadding(25, 10, 0, 10);
+        this.y = new ChartLinearAxis("", [0, 1], [this.height - this.padding.xAxis - this.padding.top, 0], "left");
+        this.x = new ChartLinearAxis("", [0, 100], [0, this.width - this.padding.yAxis - this.padding.right], "bottom", false);
+        this.click = false;
+        this.elements = new ChartElements(this, containerClass);
+        this.elements.xAxis.remove();
+        this.elements.yAxis.remove();
+    }
+}
+
+// Basic class for summary chart
+class NetworkChart implements IChart {
+    id: string;
+    width: number;
+    height: number;
+    x: ChartTimeAxis;
+    y: ChartLinearAxis;
+    elements: IChartElements;
+    padding: IChartPadding;
+    click: boolean;
+    constructor(id: string, containerClass: string, domain: Date[]) {
+        this.id = id;
+        let containerDimensions = d3.select<HTMLDivElement, unknown>(`#${id} .${containerClass}`).node().getBoundingClientRect();
+        this.width = containerDimensions.width;
+        this.height = containerDimensions.height;
+        this.padding = new ChartPadding(30, 10, 10, 10);
+        this.y = new ChartLinearAxis("Reflection Point", [-15, 115], [this.height - this.padding.xAxis - this.padding.top, 0], "left");       
+        this.x = new ChartTimeAxis("", [addDays(d3.min(domain), -30), addDays(d3.max(domain), 30)], [0, this.width - this.padding.yAxis - this.padding.right]);
+        this.click = false;
+        this.elements = new ChartElements(this, containerClass);
+        this.elements.yAxis.remove();
+
+        function addDays(date: Date, days: number): Date {
+            let result = new Date(date);
+            result.setDate(result.getDate() + days)
+            return result;
+        }
+    }
+}
+
 interface IAuthorControlCharts {
     help: IHelp;
     interactions: IAuthorControlInteractions;
-    renderSummary(data: IReflectionAnalytics[]): void;
+    processSummary(data: IReflectionAnalytics[]): IReflectionAnalyticsSummary[];
+    renderSummary(chart: SummaryChart, data: IReflectionAnalyticsSummary[]): SummaryChart;
+    renderNetwork(chart: NetworkChart, data: IReflectionAnalytics[]): NetworkChart;
     renderReflections(data: IReflectionAnalytics[]): void;
 }
 
@@ -2103,7 +2160,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
     help = new Help();
     interactions = new AdminControlInteractions();
 
-    renderSummary(data: IReflectionAnalytics[]): void {
+    processSummary(data: IReflectionAnalytics[]): IReflectionAnalyticsSummary[] {
         let summary = [] as IReflectionAnalyticsSummary[]
         let reflectionsSummary = [] as IReflectionAnalyticsSummary[]
         data.forEach(c => {
@@ -2118,7 +2175,119 @@ class AuthorControlCharts implements IAuthorControlCharts {
                 "percentage": Math.round(c.count * 100 / d3.sum(summaryRaw.map(d => d.count)))
             })
         })
-        console.log(summary)
+        return summary;
+    }
+
+    renderSummary(chart: SummaryChart, data: IReflectionAnalyticsSummary[]): SummaryChart {
+        chart.elements.contentContainer.selectAll(".summary-bar")
+            .data(data)
+            .join(
+                enter => enter.append("rect")
+                    .attr("class", d => `summary-bar ${d.tag.toLowerCase()}`)
+                    .attr("id", d => `${d.tag.toLowerCase()}-summary`)
+                    .attr("x", (d, i) => chart.x.scale(i === 0 ? 0.1 : data[i - 1].percentage))
+                    .attr("width", chart.x.scale(0))
+                    .attr("height", chart.y.scale(0))
+                    .call(update => update.transition()
+                        .duration(750)
+                        .attr("width", d => chart.x.scale(d.percentage))),
+                update => update,
+                exit => exit
+            );
+        
+        chart.elements.contentContainer.selectAll(".summary-percentage")
+            .data(data)
+            .join(
+                enter => enter.append("text")
+                    .attr("class", "summary-percentage")
+                    .attr("x", (d, i) => chart.x.scale(i === 0 ? d.percentage / 2 : data[i - 1].percentage + (d.percentage / 2)))
+                    .attr("y", chart.y.scale(0.5))
+                    .text(d => `${d.percentage}%`),
+                update => update,
+                exit => exit
+            )
+        
+        chart.elements.svg.selectAll(".summary-tag")
+            .data(data)
+            .join(
+                enter => enter.append("text")
+                    .attr("class", "summary-tag")
+                    .attr("x", (d, i) => chart.x.scale(i === 0 ? d.percentage / 2 : data[i - 1].percentage + (d.percentage / 2)) + 5)
+                    .attr("y", chart.y.scale(-0.5))
+                    .text(d => d.tag),
+                update => update,
+                exit => exit
+            )
+
+        return chart;
+    }
+
+    renderNetwork(chart: NetworkChart, data: IReflectionAnalytics[]): NetworkChart {
+        const _this = this;
+
+        let timeLink = d3.line<IReflectionAnalytics>()
+            .x(d => chart.x.scale(d.timestamp))
+            .y(d => chart.y.scale(d.point))
+
+        chart.elements.contentContainer.append("path")
+            .datum(d3.sort(data, d => d.timestamp))           
+            .attr("class", "reflection-link-time")
+            .attr("d", d => timeLink(d));
+
+        let pie = d3.pie<IReflectionAnalyticsSummary>()
+            .value(d => d.count)
+
+        chart.elements.contentContainer.selectAll(".reflection-group")
+            .data(d3.sort(data, d => d.timestamp))
+            .join(
+                enter => enter.append("g")
+                    .attr("class", "reflection-group")
+                    .attr("transform", d => `translate(${chart.x.scale(d.timestamp)}, ${chart.y.scale(d.point)})`)
+                    .call(enter => enter.selectAll(".summary-pie")
+                        .data(d => pie(Array.from(d3.rollup(d.tags, d => d.length, d => d.tag), ([tag, count]) => ({tag, count}) as IReflectionAnalyticsSummary)))
+                        .enter()
+                        .append("path")
+                        .attr("class", d => `summary-pie ${d.data.tag.toLowerCase()}`)
+                        .attr("d", d3.arc<any, d3.PieArcDatum<IReflectionAnalyticsSummary>>()
+                        .innerRadius(15)
+                        .outerRadius(30)))
+            );
+        
+        chart.elements.content = chart.elements.contentContainer.selectAll(".reflection-group .summary-pie")
+
+        //Enable tooltip       
+        _this.interactions.tooltip.enableTooltip(chart, onMouseover, onMouseout);
+        function onMouseover(e: any, d: d3.PieArcDatum<IReflectionAnalyticsSummary>) {
+            const parentData = d3.select<SVGGElement, IReflectionAnalytics>(e.path[1]).datum();
+            _this.interactions.tooltip.appendTooltipContainer(chart);
+            let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.data.tag, 
+                [new TooltipValues("Count", d.value), 
+                new TooltipValues("Percentage", Math.round(d.value * 100 / parentData.tags.length))]);
+            _this.interactions.tooltip.positionTooltipContainer(chart, xTooltip(parentData.timestamp, tooltipBox), yTooltip(parentData.point, tooltipBox));
+
+            function xTooltip(x: Date, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
+                let xTooltip = chart.x.scale(x);
+                if (chart.width - chart.padding.yAxis < xTooltip + tooltipBox.node().getBBox().width) {
+                    return xTooltip - tooltipBox.node().getBBox().width;
+                }
+                return xTooltip
+            };
+
+            function yTooltip(y: number, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
+                var yTooltip = chart.y.scale(y) - tooltipBox.node().getBBox().height - 30;
+                if (yTooltip < 0) {
+                    return yTooltip + tooltipBox.node().getBBox().height + 60;
+                }
+                return yTooltip;
+            };
+        }
+        function onMouseout() {
+            chart.elements.svg.select(".tooltip-container").transition()
+                .style("opacity", 0);
+            _this.interactions.tooltip.removeTooltip(chart);
+        }
+
+        return chart;
     }
 
     renderReflections(data: IReflectionAnalytics[]) {
@@ -2603,7 +2772,14 @@ export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionA
 
     async function drawCharts(entries: IReflectionAnalytics[]) {
         let authorControlCharts = new AuthorControlCharts();
-        authorControlCharts.renderSummary(entries)
+        
+        let summaryData = authorControlCharts.processSummary(entries);
+        let summaryChart = new SummaryChart("summary", "chart-container-summary");
+        authorControlCharts.renderSummary(summaryChart, summaryData);
+
+        let networkChart = new NetworkChart("timeline", "chart-container-network", entries.map(d => d.timestamp));
+        authorControlCharts.renderNetwork(networkChart, entries);
+
         authorControlCharts.renderReflections(entries);
     }
 }
