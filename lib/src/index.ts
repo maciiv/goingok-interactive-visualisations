@@ -2089,7 +2089,8 @@ interface IReflectionAnalytics extends IReflectionAuthorEntry {
 interface IReflectionAnalyticsSummary {
     tag: string,
     count: number,
-    percentage: number
+    percentage: number,
+    timestamp?: Date
 }
 
 // Basic class for summary chart
@@ -2117,7 +2118,7 @@ class SummaryChart implements IChart {
     }
 }
 
-// Basic class for summary chart
+// Basic class for network chart
 class NetworkChart implements IChart {
     id: string;
     width: number;
@@ -2147,12 +2148,43 @@ class NetworkChart implements IChart {
     }
 }
 
+// Basic class for multi-level timeline chart
+class MultilevelTimeChart implements IChart {
+    id: string;
+    width: number;
+    height: number;
+    x: ChartTimeAxis;
+    y: ChartLinearAxis;
+    elements: IChartElements;
+    padding: IChartPadding;
+    click: boolean;
+    constructor(id: string, containerClass: string, domain: Date[], levels: number) {
+        this.id = id;
+        let containerDimensions = d3.select<HTMLDivElement, unknown>(`#${id} .${containerClass}`).node().getBoundingClientRect();
+        this.width = containerDimensions.width;
+        this.height = containerDimensions.height;
+        this.padding = new ChartPadding(0, 10, 0, 10);
+        this.y = new ChartLinearAxis("Reflection Point", [0, 100 * levels], [this.height - this.padding.xAxis - this.padding.top, 0], "left");       
+        this.x = new ChartTimeAxis("", [addDays(d3.min(domain), -30), addDays(d3.max(domain), 30)], [0, this.width - this.padding.yAxis - this.padding.right]);
+        this.click = false;
+        this.elements = new ChartElements(this, containerClass);
+        this.elements.yAxis.remove();
+
+        function addDays(date: Date, days: number): Date {
+            let result = new Date(date);
+            result.setDate(result.getDate() + days)
+            return result;
+        }
+    }
+}
+
 interface IAuthorControlCharts {
     help: IHelp;
     interactions: IAuthorControlInteractions;
     processSummary(data: IReflectionAnalytics[]): IReflectionAnalyticsSummary[];
     renderSummary(chart: SummaryChart, data: IReflectionAnalyticsSummary[]): SummaryChart;
     renderNetwork(chart: NetworkChart, data: IReflectionAnalytics[]): NetworkChart;
+    renderMultilevelTimeline(chart: MultilevelTimeChart, data: IReflectionAnalytics[], summary: IReflectionAnalyticsSummary[]): MultilevelTimeChart;
     renderReflections(data: IReflectionAnalytics[]): void;
 }
 
@@ -2185,7 +2217,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
                 enter => enter.append("rect")
                     .attr("class", d => `summary-bar ${d.tag.toLowerCase()}`)
                     .attr("id", d => `${d.tag.toLowerCase()}-summary`)
-                    .attr("x", (d, i) => chart.x.scale(i === 0 ? 0.1 : data[i - 1].percentage))
+                    .attr("x", (d, i) => chart.x.scale(i === 0 ? 0.1 : getTotalPercentage(data, i)))
                     .attr("width", chart.x.scale(0))
                     .attr("height", chart.y.scale(0))
                     .call(update => update.transition()
@@ -2195,12 +2227,20 @@ class AuthorControlCharts implements IAuthorControlCharts {
                 exit => exit
             );
         
+        function getTotalPercentage(data: IReflectionAnalyticsSummary[], i: number): number {
+            let result = 0;
+            for (var x = 0; x < i; x++) {
+                result += data[x].percentage;
+            }
+            return result;
+        }
+        
         chart.elements.contentContainer.selectAll(".summary-percentage")
             .data(data)
             .join(
                 enter => enter.append("text")
                     .attr("class", "summary-percentage")
-                    .attr("x", (d, i) => chart.x.scale(i === 0 ? d.percentage / 2 : data[i - 1].percentage + (d.percentage / 2)))
+                    .attr("x", (d, i) => chart.x.scale(i === 0 ? d.percentage / 2 : getTotalPercentage(data, i) + (d.percentage / 2)))
                     .attr("y", chart.y.scale(0.5))
                     .text(d => `${d.percentage}%`),
                 update => update,
@@ -2212,7 +2252,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
             .join(
                 enter => enter.append("text")
                     .attr("class", "summary-tag")
-                    .attr("x", (d, i) => chart.x.scale(i === 0 ? d.percentage / 2 : data[i - 1].percentage + (d.percentage / 2)) + 5)
+                    .attr("x", (d, i) => chart.x.scale(i === 0 ? d.percentage / 2 : getTotalPercentage(data, i) + (d.percentage / 2)) + 5)
                     .attr("y", chart.y.scale(-0.5))
                     .text(d => d.tag),
                 update => update,
@@ -2227,7 +2267,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
 
         let timeLink = d3.line<IReflectionAnalytics>()
             .x(d => chart.x.scale(d.timestamp))
-            .y(d => chart.y.scale(d.point))
+            .y(d => chart.y.scale(d.point));
 
         chart.elements.contentContainer.append("path")
             .datum(d3.sort(data, d => d.timestamp))           
@@ -2262,7 +2302,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
             _this.interactions.tooltip.appendTooltipContainer(chart);
             let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.data.tag, 
                 [new TooltipValues("Count", d.value), 
-                new TooltipValues("Percentage", Math.round(d.value * 100 / parentData.tags.length))]);
+                new TooltipValues("Percentage", Math.round(d.value * 100 / parentData.tags.length) + "%")]);
             _this.interactions.tooltip.positionTooltipContainer(chart, xTooltip(parentData.timestamp, tooltipBox), yTooltip(parentData.point, tooltipBox));
 
             function xTooltip(x: Date, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
@@ -2290,9 +2330,40 @@ class AuthorControlCharts implements IAuthorControlCharts {
         return chart;
     }
 
+    renderMultilevelTimeline(chart: MultilevelTimeChart, data: IReflectionAnalytics[], summary: IReflectionAnalyticsSummary[]): MultilevelTimeChart {
+        let reflectionsSummary = [] as IReflectionAnalyticsSummary[];
+        let allTags = summary.map(d => d.tag);
+        data.forEach(c => {
+            allTags.forEach(d => {
+                reflectionsSummary.push({
+                    tag: d,
+                    count: c.tags.filter(r => r.tag === d).length,
+                    percentage: Math.round(c.tags.filter(r => r.tag === d).length * 100 / c.tags.length),
+                    timestamp: c.timestamp
+                })
+            });
+        });
+        
+        chart.elements.contentContainer.selectAll(".multilevel-group")
+            .data(allTags)
+            .join(
+                enter => enter.append("g")
+                    .attr("class", "multilevel-group")
+                    .call(enter => enter.append("path")
+                        .attr("class", d => `multilevel-area ${d.toLowerCase()}`)
+                        .datum(d => d3.sort(reflectionsSummary.filter(c => c.tag === d), d => d.timestamp))
+                        .attr("d", d3.area<IReflectionAnalyticsSummary>()
+                            .x(d => chart.x.scale(d.timestamp))
+                            .y0(d => chart.y.scale(0))
+                            .y1(d => chart.y.scale(d.percentage))))
+            )
+
+        return chart;
+    }
+
     renderReflections(data: IReflectionAnalytics[]) {
         const _this = this
-        d3.select<HTMLDivElement, Date>("#reflections .card-body")
+        d3.select<HTMLDivElement, Date>("#reflections .reflections-tab")
             .selectAll(".reflection")
             .data(data)
             .enter()
@@ -2779,6 +2850,9 @@ export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionA
 
         let networkChart = new NetworkChart("timeline", "chart-container-network", entries.map(d => d.timestamp));
         authorControlCharts.renderNetwork(networkChart, entries);
+
+        let multilevelTimeChart = new MultilevelTimeChart("timeline", "chart-container-timeline", entries.map(d => d.timestamp), summaryData.length);
+        authorControlCharts.renderMultilevelTimeline(multilevelTimeChart, entries, summaryData);
 
         authorControlCharts.renderReflections(entries);
     }

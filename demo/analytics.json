@@ -7,7 +7,8 @@
             "text": "still waiting for my grades back from assignment 2, but still feeling good as other examinations have returned their grades and I am doing really well.",
             "tags": [
                 { "start_index": 1, "tag": "AR", "end_index": 4 },
-                { "start_index": 10, "tag": "AF", "end_index": 12 }
+                { "start_index": 10, "tag": "AF", "end_index": 12 },
+                { "start_index": 25, "tag": "EP", "end_index": 26 }
             ],
             "words": [
                 { "start_index": 0, "word": "still", "type": "word" },

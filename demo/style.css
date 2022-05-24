@@ -93,7 +93,11 @@
 }
 
 .chart-container-network {
-    min-height: 40vh;
+    min-height: 45vh;
+}
+
+.chart-container-timeline {
+    min-height: 15vh;
 }
 
 .chart-svg {
@@ -128,7 +132,7 @@
     overflow-x: hidden;
 }
 
-.bar, .circle, .circle-group, .histogram-rect, .zoom-circle, .legend-color, .summary-bar, .summary-pie {
+.bar, .circle, .circle-group, .histogram-rect, .zoom-circle, .legend-color, .summary-bar, .summary-pie, .multilevel-area {
     fill-opacity: 0.2;
     stroke-width: 1;
 }
@@ -379,6 +383,12 @@
     background-color: #3399CC;
     fill: #3399CC;
     stroke: #3399CC;
+}
+
+.ep {
+    background-color: #ff9900;
+    fill: #ff9900;
+    stroke: #ff9900;
 }
 
 .summary-percentage, .summary-tag {
