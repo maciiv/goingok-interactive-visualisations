@@ -93,15 +93,11 @@
 }
 
 .chart-container-network {
-    min-height: 45vh;
+    min-height: 30vh;
 }
 
 .chart-container-timeline {
-    min-height: 15vh;
-}
-
-.chart-svg {
-    margin-top: 10px;
+    min-height: 30vh;
 }
 
 .instructions {
@@ -135,6 +131,12 @@
 .bar, .circle, .circle-group, .histogram-rect, .zoom-circle, .legend-color, .summary-bar, .summary-pie, .multilevel-area {
     fill-opacity: 0.2;
     stroke-width: 1;
+}
+
+.network-node {
+    stroke-width: 1;
+    ry: 10;
+    rx: 10;
 }
 
 .circle-user {
@@ -391,9 +393,14 @@
     stroke: #ff9900;
 }
 
-.summary-percentage, .summary-tag {
+.summary-percentage, .summary-tag, .network-text {
     text-anchor: middle;
     dominant-baseline: central;
+}
+
+.network-text {
+    font-size: 75%;
+    font-weight: 500;
 }
 
 .reflections-tab {
@@ -401,7 +408,7 @@
     overflow-y: auto;
 }
 
-.reflection-link-time {
+.reflection-link-time, .network-link {
     fill: none;
     stroke: #6c757d;
     stroke-width: 1;

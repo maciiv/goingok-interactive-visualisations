@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+import { SimulationNodeDatum } from "d3";
 
 /* ------------------------------------------------
     Start data interfaces and classes 
@@ -2069,9 +2070,10 @@ class Sort implements ISort {
     Start of author control interfaces and classes 
 -------------------------------------------------- */
 
-interface ITags {
+interface ITags extends d3.SimulationNodeDatum {
     start_index: number,
     tag: string,
+    phrase: string,
     end_index: number
 }
 
@@ -2081,8 +2083,14 @@ interface IWords {
     type: string
 }
 
+interface ILinks {
+    source: number,
+    target: number
+}
+
 interface IReflectionAnalytics extends IReflectionAuthorEntry {
     tags: ITags[],
+    links: ILinks[],
     words: IWords[]
 }
 
@@ -2094,7 +2102,7 @@ interface IReflectionAnalyticsSummary {
 }
 
 // Basic class for summary chart
-class SummaryChart implements IChart {
+class ChartSummary implements IChart {
     id: string;
     width: number;
     height: number;
@@ -2118,8 +2126,8 @@ class SummaryChart implements IChart {
     }
 }
 
-// Basic class for network chart
-class NetworkChart implements IChart {
+// Basic class for reflections timeline
+class ChartReflectionsTime implements IChart {
     id: string;
     width: number;
     height: number;
@@ -2134,7 +2142,7 @@ class NetworkChart implements IChart {
         this.width = containerDimensions.width;
         this.height = containerDimensions.height;
         this.padding = new ChartPadding(30, 10, 10, 10);
-        this.y = new ChartLinearAxis("Reflection Point", [-15, 115], [this.height - this.padding.xAxis - this.padding.top, 0], "left");       
+        this.y = new ChartLinearAxis("", [-25, 125], [this.height - this.padding.xAxis - this.padding.top, 0], "left");       
         this.x = new ChartTimeAxis("", [addDays(d3.min(domain), -30), addDays(d3.max(domain), 30)], [0, this.width - this.padding.yAxis - this.padding.right]);
         this.click = false;
         this.elements = new ChartElements(this, containerClass);
@@ -2148,8 +2156,8 @@ class NetworkChart implements IChart {
     }
 }
 
-// Basic class for multi-level timeline chart
-class MultilevelTimeChart implements IChart {
+// Basic class for network chart
+class ChartNetwork implements IChart {
     id: string;
     width: number;
     height: number;
@@ -2158,17 +2166,18 @@ class MultilevelTimeChart implements IChart {
     elements: IChartElements;
     padding: IChartPadding;
     click: boolean;
-    constructor(id: string, containerClass: string, domain: Date[], levels: number) {
+    constructor(id: string, containerClass: string, domain: Date[]) {
         this.id = id;
         let containerDimensions = d3.select<HTMLDivElement, unknown>(`#${id} .${containerClass}`).node().getBoundingClientRect();
         this.width = containerDimensions.width;
         this.height = containerDimensions.height;
-        this.padding = new ChartPadding(0, 10, 0, 10);
-        this.y = new ChartLinearAxis("Reflection Point", [0, 100 * levels], [this.height - this.padding.xAxis - this.padding.top, 0], "left");       
+        this.padding = new ChartPadding(30, 10, 10, 10);
+        this.y = new ChartLinearAxis("", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left");       
         this.x = new ChartTimeAxis("", [addDays(d3.min(domain), -30), addDays(d3.max(domain), 30)], [0, this.width - this.padding.yAxis - this.padding.right]);
         this.click = false;
         this.elements = new ChartElements(this, containerClass);
         this.elements.yAxis.remove();
+        this.elements.xAxis.remove();
 
         function addDays(date: Date, days: number): Date {
             let result = new Date(date);
@@ -2182,9 +2191,9 @@ interface IAuthorControlCharts {
     help: IHelp;
     interactions: IAuthorControlInteractions;
     processSummary(data: IReflectionAnalytics[]): IReflectionAnalyticsSummary[];
-    renderSummary(chart: SummaryChart, data: IReflectionAnalyticsSummary[]): SummaryChart;
-    renderNetwork(chart: NetworkChart, data: IReflectionAnalytics[]): NetworkChart;
-    renderMultilevelTimeline(chart: MultilevelTimeChart, data: IReflectionAnalytics[], summary: IReflectionAnalyticsSummary[]): MultilevelTimeChart;
+    renderSummary(chart: ChartSummary, data: IReflectionAnalyticsSummary[]): ChartSummary;
+    renderReflectionsTimeline(chart: ChartReflectionsTime, data: IReflectionAnalytics[]): ChartReflectionsTime;
+    renderNetwork(chart: ChartNetwork, data: IReflectionAnalytics[]): ChartNetwork;
     renderReflections(data: IReflectionAnalytics[]): void;
 }
 
@@ -2210,7 +2219,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
         return summary;
     }
 
-    renderSummary(chart: SummaryChart, data: IReflectionAnalyticsSummary[]): SummaryChart {
+    renderSummary(chart: ChartSummary, data: IReflectionAnalyticsSummary[]): ChartSummary {
         chart.elements.contentContainer.selectAll(".summary-bar")
             .data(data)
             .join(
@@ -2253,7 +2262,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
                 enter => enter.append("text")
                     .attr("class", "summary-tag")
                     .attr("x", (d, i) => chart.x.scale(i === 0 ? d.percentage / 2 : getTotalPercentage(data, i) + (d.percentage / 2)) + 5)
-                    .attr("y", chart.y.scale(-0.5))
+                    .attr("y", chart.y.scale(0) + 10)
                     .text(d => d.tag),
                 update => update,
                 exit => exit
@@ -2262,7 +2271,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
         return chart;
     }
 
-    renderNetwork(chart: NetworkChart, data: IReflectionAnalytics[]): NetworkChart {
+    renderReflectionsTimeline(chart: ChartReflectionsTime, data: IReflectionAnalytics[]): ChartReflectionsTime {
         const _this = this;
 
         let timeLink = d3.line<IReflectionAnalytics>()
@@ -2330,35 +2339,68 @@ class AuthorControlCharts implements IAuthorControlCharts {
         return chart;
     }
 
-    renderMultilevelTimeline(chart: MultilevelTimeChart, data: IReflectionAnalytics[], summary: IReflectionAnalyticsSummary[]): MultilevelTimeChart {
-        let reflectionsSummary = [] as IReflectionAnalyticsSummary[];
-        let allTags = summary.map(d => d.tag);
-        data.forEach(c => {
-            allTags.forEach(d => {
-                reflectionsSummary.push({
-                    tag: d,
-                    count: c.tags.filter(r => r.tag === d).length,
-                    percentage: Math.round(c.tags.filter(r => r.tag === d).length * 100 / c.tags.length),
-                    timestamp: c.timestamp
-                })
-            });
-        });
-        
-        chart.elements.contentContainer.selectAll(".multilevel-group")
-            .data(allTags)
+    renderNetwork(chart: ChartNetwork, data: IReflectionAnalytics[]): ChartNetwork {
+        function ticked(g: d3.Selection<SVGGElement, IReflectionAnalytics, SVGGElement, unknown>) {
+            g.selectAll<SVGLineElement, any>(".network-link").transition()
+                .duration(750)
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+            
+            g.selectAll<SVGTextElement, any>(".network-text")
+                .attr("id", d => `text-${d.index}`)
+                .transition()
+                .duration(750)
+                .attr("x", d => d.x)
+                .attr("y", d => d.y);
+            
+            g.selectAll<SVGRectElement, any>(".network-node").transition()
+                .duration(750)
+                .attr("x", d => d.x - ((g.selectAll<SVGTextElement, any>(`#text-${d.index}`).node().getBoundingClientRect().width + 10) / 2))
+                .attr("y", d => d.y - ((g.selectAll<SVGTextElement, any>(`#text-${d.index}`).node().getBoundingClientRect().height + 5) / 2))
+                .attr("width", d => g.selectAll<SVGTextElement, any>(`#text-${d.index}`).node().getBoundingClientRect().width + 10)
+                .attr("height", d => g.selectAll<SVGTextElement, any>(`#text-${d.index}`).node().getBoundingClientRect().height + 5);
+        }
+
+        function applyForce(d: IReflectionAnalytics, g: d3.Selection<SVGGElement, IReflectionAnalytics, SVGGElement, unknown>) {
+            d3.forceSimulation<ITags, undefined>(d.tags)
+                .force("link", d3.forceLink()
+                    .id(d => d.index)
+                    .distance(100)
+                    .links(d.links))
+                .force("charge", d3.forceManyBody().strength(-25))
+                .force("collide", d3.forceCollide().radius(30))
+                .on("end", function () { ticked(g) })
+        }
+
+        chart.elements.contentContainer.selectAll(".network-group")
+            .data(data)
             .join(
                 enter => enter.append("g")
-                    .attr("class", "multilevel-group")
-                    .attr("transform", (d, i) => `translate (0, -${chart.y.scale(100 * (i + 1))})`)
-                    .call(enter => enter.append("path")
-                        .attr("class", d => `multilevel-area ${d.toLowerCase()}`)
-                        .datum(d => d3.sort(reflectionsSummary.filter(c => c.tag === d), d => d.timestamp))
-                        .attr("d", d3.area<IReflectionAnalyticsSummary>()
-                            .x(d => chart.x.scale(d.timestamp))
-                            .y0(d => chart.y.scale(0))
-                            .y1(d => chart.y.scale(d.percentage))))
+                    .attr("class", "network-group")
+                    .attr("transform", d => `translate(${chart.x.scale(d.timestamp)}, ${chart.y.scale(50)})`)
+                    .call(enter => enter.selectAll(".network-link")
+                        .data(d => d.links)
+                        .enter()
+                        .append("line")
+                        .attr("class", "network-link"))
+                    .call(enter => enter.selectAll(".network-node")
+                        .data(d => d.tags)
+                        .enter()
+                        .append("rect")
+                        .attr("class", d => `network-node ${d.tag.toLowerCase()}`))
+                    .call(enter => enter.selectAll(".network-text")
+                        .data(d => d.tags)
+                        .enter()
+                        .append("text")
+                        .attr("class", "network-text")
+                        .text(d => d.phrase))
             )
-
+        
+        chart.elements.contentContainer.selectAll<SVGGElement, IReflectionAnalytics>(".network-group")
+            .each((d, i, g) => applyForce(d, d3.select(g[i])))
+        
         return chart;
     }
 
@@ -2837,7 +2879,7 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalytics
 
 export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionAnalytics[]) {
     let loading = new Loading();
-    const entries = entriesRaw.map(d => { return {"timestamp": new Date(d.timestamp), "pseudonym": d.pseudonym, "point": d.point, "text": d.text, "tags": d.tags, "words": d.words } as IReflectionAnalytics});
+    const entries = entriesRaw.map(d => { return {"timestamp": new Date(d.timestamp), "pseudonym": d.pseudonym, "point": d.point, "text": d.text, "tags": d.tags, "links": d.links, "words": d.words } as IReflectionAnalytics});
     await drawCharts(entries);
     loading.isLoading = false;
     loading.removeDiv();
@@ -2846,14 +2888,14 @@ export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionA
         let authorControlCharts = new AuthorControlCharts();
         
         let summaryData = authorControlCharts.processSummary(entries);
-        let summaryChart = new SummaryChart("summary", "chart-container-summary");
+        let summaryChart = new ChartSummary("summary", "chart-container-summary");
         authorControlCharts.renderSummary(summaryChart, summaryData);
 
-        let networkChart = new NetworkChart("timeline", "chart-container-network", entries.map(d => d.timestamp));
-        authorControlCharts.renderNetwork(networkChart, entries);
+        let reflectionTimelineChart = new ChartReflectionsTime("timeline", "chart-container-timeline", entries.map(d => d.timestamp));
+        authorControlCharts.renderReflectionsTimeline(reflectionTimelineChart, entries);
 
-        let multilevelTimeChart = new MultilevelTimeChart("timeline", "chart-container-timeline", entries.map(d => d.timestamp), summaryData.length);
-        authorControlCharts.renderMultilevelTimeline(multilevelTimeChart, entries, summaryData);
+        let networkChart = new ChartNetwork("timeline", "chart-container-network", entries.map(d => d.timestamp));
+        authorControlCharts.renderNetwork(networkChart, entries);
 
         authorControlCharts.renderReflections(entries);
     }

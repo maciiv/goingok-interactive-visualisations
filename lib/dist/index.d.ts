@@ -1,3 +1,4 @@
+import * as d3 from "d3";
 interface IReflectionAuthorEntryRaw {
     timestamp: string;
     pseudonym: string;
@@ -34,9 +35,10 @@ declare class AnalyticsChartsData implements IAnalyticsChartsData {
     constructor(group: string, value: IReflectionAuthorEntry[], createDate?: Date, colour?: string, selected?: boolean);
     getUsersData(): AnalyticsChartsData;
 }
-interface ITags {
+interface ITags extends d3.SimulationNodeDatum {
     start_index: number;
     tag: string;
+    phrase: string;
     end_index: number;
 }
 interface IWords {
@@ -44,8 +46,13 @@ interface IWords {
     word: string;
     type: string;
 }
+interface ILinks {
+    source: number;
+    target: number;
+}
 interface IReflectionAnalytics extends IReflectionAuthorEntry {
     tags: ITags[];
+    links: ILinks[];
     words: IWords[];
 }
 export declare function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]): Promise<void>;
