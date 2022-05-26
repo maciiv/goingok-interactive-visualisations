@@ -2083,8 +2083,7 @@ interface IWords {
 }
 
 interface ILinks extends d3.SimulationLinkDatum<ITags> {
-    source: number,
-    target: number
+    isReflection?: boolean
 }
 
 interface IReflectionAnalytics extends IReflectionAuthorEntry {
@@ -2327,7 +2326,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
             if (!data.tags.map(d => d.phrase).includes(refTag.phrase)) {
                 let newTagsL = data.tags.push(refTag);
                 for (var i = 0; i < c.tagsLength; i++) {
-                    data.links.push({ "source": newTagsL - 1, "target": startIndex + i})
+                    data.links.push({ "source": newTagsL - 1, "target": startIndex + i, "isReflection": true })
                 }
                 startIndex += c.tagsLength
             }          
@@ -2361,8 +2360,10 @@ class AuthorControlCharts implements IAuthorControlCharts {
         })
 
         function ticked(chart: ChartReflectionsTime) {
-            chart.elements.contentContainer.selectAll<SVGLineElement, any>(".network-link").transition()
-                .duration(750)
+            chart.elements.contentContainer.selectAll<SVGLineElement, any>(".network-link")
+                .classed("reflection-link", d => d.isReflection)
+                .transition()
+                .duration(750)               
                 .attr("x1", d => d.source.x)
                 .attr("y1", d => d.source.y)
                 .attr("x2", d => d.target.x)

@@ -46,8 +46,7 @@ interface IWords {
     type: string;
 }
 interface ILinks extends d3.SimulationLinkDatum<ITags> {
-    source: number;
-    target: number;
+    isReflection?: boolean;
 }
 interface IReflectionAnalytics extends IReflectionAuthorEntry {
     tags: ITags[];
