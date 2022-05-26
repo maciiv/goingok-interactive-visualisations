@@ -2078,20 +2078,23 @@ interface ITags extends d3.SimulationNodeDatum {
 }
 
 interface IWords {
-    start_index: number,
     word: string,
     type: string
 }
 
-interface ILinks {
+interface ILinks extends d3.SimulationLinkDatum<ITags> {
     source: number,
     target: number
 }
 
 interface IReflectionAnalytics extends IReflectionAuthorEntry {
     tags: ITags[],
-    links: ILinks[],
     words: IWords[]
+}
+
+interface INetworkData {
+    tags: ITags[],
+    links: ILinks[]
 }
 
 interface IReflectionAnalyticsSummary {
@@ -2136,6 +2139,7 @@ class ChartReflectionsTime implements IChart {
     elements: IChartElements;
     padding: IChartPadding;
     click: boolean;
+    simulation: d3.Simulation<ITags, undefined>;
     constructor(id: string, containerClass: string, domain: Date[]) {
         this.id = id;
         let containerDimensions = d3.select<HTMLDivElement, unknown>(`#${id} .${containerClass}`).node().getBoundingClientRect();
@@ -2156,45 +2160,15 @@ class ChartReflectionsTime implements IChart {
     }
 }
 
-// Basic class for network chart
-class ChartNetwork implements IChart {
-    id: string;
-    width: number;
-    height: number;
-    x: ChartTimeAxis;
-    y: ChartLinearAxis;
-    elements: IChartElements;
-    padding: IChartPadding;
-    click: boolean;
-    constructor(id: string, containerClass: string, domain: Date[]) {
-        this.id = id;
-        let containerDimensions = d3.select<HTMLDivElement, unknown>(`#${id} .${containerClass}`).node().getBoundingClientRect();
-        this.width = containerDimensions.width;
-        this.height = containerDimensions.height;
-        this.padding = new ChartPadding(30, 10, 10, 10);
-        this.y = new ChartLinearAxis("", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left");       
-        this.x = new ChartTimeAxis("", [addDays(d3.min(domain), -30), addDays(d3.max(domain), 30)], [0, this.width - this.padding.yAxis - this.padding.right]);
-        this.click = false;
-        this.elements = new ChartElements(this, containerClass);
-        this.elements.yAxis.remove();
-        this.elements.xAxis.remove();
-
-        function addDays(date: Date, days: number): Date {
-            let result = new Date(date);
-            result.setDate(result.getDate() + days)
-            return result;
-        }
-    }
-}
-
 interface IAuthorControlCharts {
     help: IHelp;
     interactions: IAuthorControlInteractions;
     processSummary(data: IReflectionAnalytics[]): IReflectionAnalyticsSummary[];
     renderSummary(chart: ChartSummary, data: IReflectionAnalyticsSummary[]): ChartSummary;
     renderReflectionsTimeline(chart: ChartReflectionsTime, data: IReflectionAnalytics[]): ChartReflectionsTime;
-    renderNetwork(chart: ChartNetwork, data: IReflectionAnalytics[]): ChartNetwork;
+    renderNetwork(chart: ChartReflectionsTime, entries: IReflectionAnalytics[], data: INetworkData): ChartReflectionsTime;
     renderReflections(data: IReflectionAnalytics[]): void;
+    handleTimelineButtons(chart: ChartReflectionsTime, entries: IReflectionAnalytics[], data: INetworkData, func?: Function): void
 }
 
 class AuthorControlCharts implements IAuthorControlCharts {
@@ -2274,6 +2248,10 @@ class AuthorControlCharts implements IAuthorControlCharts {
     renderReflectionsTimeline(chart: ChartReflectionsTime, data: IReflectionAnalytics[]): ChartReflectionsTime {
         const _this = this;
 
+        chart.elements.contentContainer.selectAll(".network-link").remove();
+        chart.elements.contentContainer.selectAll(".network-text").remove();
+        chart.elements.contentContainer.selectAll(".network-node").remove();
+        
         let timeLink = d3.line<IReflectionAnalytics>()
             .x(d => chart.x.scale(d.timestamp))
             .y(d => chart.y.scale(d.point));
@@ -2299,7 +2277,9 @@ class AuthorControlCharts implements IAuthorControlCharts {
                         .attr("class", d => `summary-pie ${d.data.tag.toLowerCase()}`)
                         .attr("d", d3.arc<any, d3.PieArcDatum<IReflectionAnalyticsSummary>>()
                         .innerRadius(15)
-                        .outerRadius(30)))
+                        .outerRadius(30))),
+                update => update,
+                exit => exit.remove()
             );
         
         chart.elements.content = chart.elements.contentContainer.selectAll(".reflection-group .summary-pie")
@@ -2339,68 +2319,116 @@ class AuthorControlCharts implements IAuthorControlCharts {
         return chart;
     }
 
-    renderNetwork(chart: ChartNetwork, data: IReflectionAnalytics[]): ChartNetwork {
-        function ticked(g: d3.Selection<SVGGElement, IReflectionAnalytics, SVGGElement, unknown>) {
-            g.selectAll<SVGLineElement, any>(".network-link").transition()
+    preProcessNetwork(chart: ChartReflectionsTime, entries: IReflectionAnalytics[], data: INetworkData): INetworkData {
+        let reflections = entries.map(d => { return { "timestamp": d.timestamp, "tagsLength": d.tags.length } });
+        let startIndex = 0
+        reflections.forEach(c => {
+            let refTag = { "tag": "ref", "phrase": c.timestamp.toDateString(), "start_index": startIndex, "end_index": startIndex + c.tagsLength - 1, "fx": chart.x.scale(c.timestamp) } as ITags
+            if (!data.tags.map(d => d.phrase).includes(refTag.phrase)) {
+                let newTagsL = data.tags.push(refTag);
+                for (var i = 0; i < c.tagsLength; i++) {
+                    data.links.push({ "source": newTagsL - 1, "target": startIndex + i})
+                }
+                startIndex += c.tagsLength
+            }          
+        });
+        chart.simulation = d3.forceSimulation<ITags, undefined>(data.tags)
+            .force("link", d3.forceLink()
+                .id(d => d.index)
+                .distance(100)
+                .links(data.links))
+            .force("charge", d3.forceManyBody().strength(-25))
+            .force("collide", d3.forceCollide().radius(30))
+            .force("center", d3.forceCenter((chart.width -chart.padding.yAxis - chart.padding.right - 10) / 2, (chart.height - chart.padding.top - chart.padding.xAxis + 5) / 2))
+        return data;
+    }
+
+    renderNetwork(chart: ChartReflectionsTime, entries: IReflectionAnalytics[], data: INetworkData): ChartReflectionsTime {
+        chart.elements.contentContainer.selectAll(".reflection-link-time").remove();
+        chart.elements.contentContainer.selectAll(".reflection-group").remove();
+
+        let reflections = entries.map(d => { return { "timestamp": d.timestamp, "tagsLength": d.tags.length } });
+        let startIndex = 0
+        reflections.forEach(c => {
+            let refTag = { "tag": "ref", "phrase": c.timestamp.toDateString(), "start_index": startIndex, "end_index": startIndex + c.tagsLength - 1, "fx": chart.x.scale(c.timestamp) } as ITags
+            if (!data.tags.map(d => d.phrase).includes(refTag.phrase)) {
+                let newTagsL = data.tags.push(refTag);
+                for (var i = 0; i < c.tagsLength; i++) {
+                    data.links.push({ "source": newTagsL - 1, "target": startIndex + i})
+                }
+                startIndex += c.tagsLength
+            }          
+        })
+
+        function ticked(chart: ChartReflectionsTime) {
+            chart.elements.contentContainer.selectAll<SVGLineElement, any>(".network-link").transition()
                 .duration(750)
                 .attr("x1", d => d.source.x)
                 .attr("y1", d => d.source.y)
                 .attr("x2", d => d.target.x)
                 .attr("y2", d => d.target.y);
             
-            g.selectAll<SVGTextElement, any>(".network-text")
+            chart.elements.contentContainer.selectAll<SVGTextElement, ITags>(".network-text")
                 .attr("id", d => `text-${d.index}`)
                 .transition()
                 .duration(750)
                 .attr("x", d => d.x)
                 .attr("y", d => d.y);
             
-            g.selectAll<SVGRectElement, any>(".network-node").transition()
+            chart.elements.contentContainer.selectAll<SVGRectElement, ITags>(".network-node").transition()
                 .duration(750)
-                .attr("x", d => d.x - ((g.selectAll<SVGTextElement, any>(`#text-${d.index}`).node().getBoundingClientRect().width + 10) / 2))
-                .attr("y", d => d.y - ((g.selectAll<SVGTextElement, any>(`#text-${d.index}`).node().getBoundingClientRect().height + 5) / 2))
-                .attr("width", d => g.selectAll<SVGTextElement, any>(`#text-${d.index}`).node().getBoundingClientRect().width + 10)
-                .attr("height", d => g.selectAll<SVGTextElement, any>(`#text-${d.index}`).node().getBoundingClientRect().height + 5);
+                .attr("x", d => d.x - ((chart.elements.contentContainer.selectAll<SVGTextElement, any>(`#text-${d.index}`).node().getBoundingClientRect().width + 10) / 2))
+                .attr("y", d => d.y - ((chart.elements.contentContainer.selectAll<SVGTextElement, any>(`#text-${d.index}`).node().getBoundingClientRect().height + 5) / 2))
+                .attr("width", d => chart.elements.contentContainer.selectAll<SVGTextElement, any>(`#text-${d.index}`).node().getBoundingClientRect().width + 10)
+                .attr("height", d => chart.elements.contentContainer.selectAll<SVGTextElement, any>(`#text-${d.index}`).node().getBoundingClientRect().height + 5);
         }
 
-        function applyForce(d: IReflectionAnalytics, g: d3.Selection<SVGGElement, IReflectionAnalytics, SVGGElement, unknown>) {
-            d3.forceSimulation<ITags, undefined>(d.tags)
-                .force("link", d3.forceLink()
-                    .id(d => d.index)
-                    .distance(100)
-                    .links(d.links))
-                .force("charge", d3.forceManyBody().strength(-25))
-                .force("collide", d3.forceCollide().radius(30))
-                .on("end", function () { ticked(g) })
+        function applyForce(d: INetworkData, chart: ChartReflectionsTime) {
+            if (chart.simulation === undefined  || chart.simulation.nodes() !== d.tags) {
+                chart.simulation = d3.forceSimulation<ITags, undefined>(d.tags)
+                    .force("link", d3.forceLink()
+                        .id(d => d.index)
+                        .distance(100)
+                        .links(d.links))
+                    .force("charge", d3.forceManyBody().strength(-25))
+                    .force("collide", d3.forceCollide().radius(30))
+                    .force("center", d3.forceCenter((chart.width -chart.padding.yAxis - chart.padding.right - 10) / 2, (chart.height - chart.padding.top - chart.padding.xAxis + 5) / 2))
+                    .on("end", function () { ticked(chart) })
+            } else {
+                ticked(chart);
+            }
         }
 
-        chart.elements.contentContainer.selectAll(".network-group")
-            .data(data)
+        chart.elements.contentContainer.selectAll(".network-link")
+            .data(data.links)
             .join(
-                enter => enter.append("g")
-                    .attr("class", "network-group")
-                    .attr("transform", d => `translate(${chart.x.scale(d.timestamp)}, ${chart.y.scale(50)})`)
-                    .call(enter => enter.selectAll(".network-link")
-                        .data(d => d.links)
-                        .enter()
-                        .append("line")
-                        .attr("class", "network-link"))
-                    .call(enter => enter.selectAll(".network-node")
-                        .data(d => d.tags)
-                        .enter()
-                        .append("rect")
-                        .attr("class", d => `network-node ${d.tag.toLowerCase()}`))
-                    .call(enter => enter.selectAll(".network-text")
-                        .data(d => d.tags)
-                        .enter()
-                        .append("text")
-                        .attr("class", "network-text")
-                        .text(d => d.phrase))
+                enter => enter.append("line")
+                        .attr("class", "network-link"),
+                update => update,
+                exit => exit.remove()
             )
         
-        chart.elements.contentContainer.selectAll<SVGGElement, IReflectionAnalytics>(".network-group")
-            .each((d, i, g) => applyForce(d, d3.select(g[i])))
+        chart.elements.contentContainer.selectAll(".network-node")
+            .data(data.tags)
+            .join(
+                enter => enter.append("rect")
+                    .attr("class", d => `network-node ${d.tag.toLowerCase()}`),
+                update => update,
+                exit => exit.remove()
+            )
         
+        chart.elements.contentContainer.selectAll(".network-text")
+            .data(data.tags)
+            .join(
+                enter => enter.append("text")
+                    .attr("class", "network-text")
+                    .text(d => d.phrase),
+                update => update,
+                exit => exit.remove()
+            )
+        
+        applyForce(data, chart);
+
         return chart;
     }
 
@@ -2408,7 +2436,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
         const _this = this
         d3.select<HTMLDivElement, Date>("#reflections .reflections-tab")
             .selectAll(".reflection")
-            .data(data)
+            .data(d3.sort(data, d => d.timestamp))
             .enter()
             .append("div")
             .attr("class", "reflection")
@@ -2424,8 +2452,8 @@ class AuthorControlCharts implements IAuthorControlCharts {
         for (var i = 0; i <= words.length; i++) {
             if (words[i] === undefined) continue;
             let currentWord = words[i];
-            const isOpenTag = tags.find(c => c.start_index === currentWord.start_index);
-            const isCloseTag = tags.find(c => c.end_index === currentWord.start_index);
+            const isOpenTag = tags.find(c => c.start_index === i);
+            const isCloseTag = tags.find(c => c.end_index === i);
             if (isOpenTag !== undefined && isCloseTag !== undefined) {
                 html += `<span class="badge badge-pill ${isOpenTag.tag.toLowerCase()}">${currentWord.word}</span> `
             } else if (isOpenTag !== undefined) {
@@ -2441,6 +2469,22 @@ class AuthorControlCharts implements IAuthorControlCharts {
         }     
         return html;
     }
+
+    handleTimelineButtons(chart: ChartReflectionsTime, entries: IReflectionAnalytics[], data: INetworkData, func?: Function): void {
+        let _this = this
+        d3.select(`#${chart.id} #timeline-plot`).on("click", func != undefined ? (e: any) => func(e) : (e: any) => {
+            var selectedOption = e.target.control.value;
+            if (selectedOption == "timeline") {
+                _this.renderReflectionsTimeline(chart, entries);
+            }
+            if (selectedOption == "network") {
+                _this.renderNetwork(chart, entries, data);
+            }
+            if (!d3.select(`#${chart.id}-help`).empty()) {
+                _this.help.removeHelp(chart);
+            }
+        });
+    };
 }
 
 interface IAuthorControlTransitions extends ITransitions {
@@ -2877,14 +2921,15 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalytics
     }
 }
 
-export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionAnalytics[]) {
+export async function buildControlAuthorAnalyticsCharts(analyticsRaw: IReflectionAnalytics[], networkRaw: INetworkData) {
     let loading = new Loading();
-    const entries = entriesRaw.map(d => { return {"timestamp": new Date(d.timestamp), "pseudonym": d.pseudonym, "point": d.point, "text": d.text, "tags": d.tags, "links": d.links, "words": d.words } as IReflectionAnalytics});
-    await drawCharts(entries);
+    const entries = analyticsRaw.map(d => { return {"timestamp": new Date(d.timestamp), "pseudonym": d.pseudonym, "point": d.point, "text": d.text, "tags": d.tags, "words": d.words } as IReflectionAnalytics });
+    const network = { "tags": networkRaw.tags, "links": networkRaw.links } as INetworkData
+    await drawCharts(entries, network);
     loading.isLoading = false;
     loading.removeDiv();
 
-    async function drawCharts(entries: IReflectionAnalytics[]) {
+    async function drawCharts(entries: IReflectionAnalytics[], network: INetworkData) {
         let authorControlCharts = new AuthorControlCharts();
         
         let summaryData = authorControlCharts.processSummary(entries);
@@ -2893,9 +2938,8 @@ export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionA
 
         let reflectionTimelineChart = new ChartReflectionsTime("timeline", "chart-container-timeline", entries.map(d => d.timestamp));
         authorControlCharts.renderReflectionsTimeline(reflectionTimelineChart, entries);
-
-        let networkChart = new ChartNetwork("timeline", "chart-container-network", entries.map(d => d.timestamp));
-        authorControlCharts.renderNetwork(networkChart, entries);
+        let processedNetworkData = authorControlCharts.preProcessNetwork(reflectionTimelineChart, entries, network);
+        authorControlCharts.handleTimelineButtons(reflectionTimelineChart, entries, processedNetworkData);
 
         authorControlCharts.renderReflections(entries);
     }

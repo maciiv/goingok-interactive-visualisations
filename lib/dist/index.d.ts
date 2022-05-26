@@ -42,20 +42,22 @@ interface ITags extends d3.SimulationNodeDatum {
     end_index: number;
 }
 interface IWords {
-    start_index: number;
     word: string;
     type: string;
 }
-interface ILinks {
+interface ILinks extends d3.SimulationLinkDatum<ITags> {
     source: number;
     target: number;
 }
 interface IReflectionAnalytics extends IReflectionAuthorEntry {
     tags: ITags[];
-    links: ILinks[];
     words: IWords[];
+}
+interface INetworkData {
+    tags: ITags[];
+    links: ILinks[];
 }
 export declare function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]): Promise<void>;
 export declare function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]): Promise<void>;
-export declare function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionAnalytics[]): Promise<void>;
+export declare function buildControlAuthorAnalyticsCharts(analyticsRaw: IReflectionAnalytics[], networkRaw: INetworkData): Promise<void>;
 export {};

@@ -39,9 +39,16 @@
                                         </h5>
                                         <h6 class="card-subtitle mb-2 instructions"></h6>
                                         <div class="row mt-3">
+                                            <div id="timeline-plot" class="btn-group btn-group-toggle mx-auto" data-toggle="buttons">
+                                                <label class="btn btn-light active">
+                                                    <input type="radio" name="plot" value="timeline" checked>Timeline
+                                                </label>
+                                                <label class="btn btn-light">
+                                                    <input type="radio" name="plot" value="network">Network
+                                                </label>
+                                            </div>
                                         </div>
                                         <div class="chart-container-timeline"></div>
-                                        <div class="chart-container-network"></div>
                                     </div>
                                 </div>
                             </div>
@@ -72,7 +79,7 @@
         <script src="../lib/dist/index.js"></script>
         <script>
             d3.json("analytics.json").then(function (c) {  
-                buildControlAuthorAnalyticsCharts(c["reflections"]);
+                buildControlAuthorAnalyticsCharts(c["data"]["reflections"], c["data"]["network"]);
             });
         </script>
     </body>
