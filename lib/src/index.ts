@@ -1444,7 +1444,7 @@ interface IZoom {
 
 // Class for zoom interaction
 class Zoom implements IZoom {
-    enableZoom(chart: ChartTime, zoomed: any): void {
+    enableZoom(chart: ChartTime | ChartReflectionsTime, zoomed: any): void {
         chart.elements.svg.selectAll(".zoom-rect")
             .attr("class", "zoom-rect active");
 
@@ -2163,9 +2163,10 @@ interface IAuthorControlCharts {
     help: IHelp;
     interactions: IAuthorControlInteractions;
     processSummary(data: IReflectionAnalytics[]): IReflectionAnalyticsSummary[];
+    preProcessNetwork(chart: ChartReflectionsTime, entries: IReflectionAnalytics[], data: INetworkData): INetworkData;
     renderSummary(chart: ChartSummary, data: IReflectionAnalyticsSummary[]): ChartSummary;
     renderReflectionsTimeline(chart: ChartReflectionsTime, data: IReflectionAnalytics[]): ChartReflectionsTime;
-    renderNetwork(chart: ChartReflectionsTime, entries: IReflectionAnalytics[], data: INetworkData): ChartReflectionsTime;
+    renderNetwork(chart: ChartReflectionsTime, data: INetworkData): ChartReflectionsTime;
     renderReflections(data: IReflectionAnalytics[]): void;
     handleTimelineButtons(chart: ChartReflectionsTime, entries: IReflectionAnalytics[], data: INetworkData, func?: Function): void
 }
@@ -2248,8 +2249,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
         const _this = this;
 
         chart.elements.contentContainer.selectAll(".network-link").remove();
-        chart.elements.contentContainer.selectAll(".network-text").remove();
-        chart.elements.contentContainer.selectAll(".network-node").remove();
+        chart.elements.contentContainer.selectAll(".network-node-group").remove();
         
         let timeLink = d3.line<IReflectionAnalytics>()
             .x(d => chart.x.scale(d.timestamp))
@@ -2315,6 +2315,29 @@ class AuthorControlCharts implements IAuthorControlCharts {
             _this.interactions.tooltip.removeTooltip(chart);
         }
 
+        //Enable zoom
+        _this.interactions.zoom.enableZoom(chart, zoomed);
+        function zoomed(e: any) {
+            let newChartRange = [0, chart.width - chart.padding.yAxis].map(d => e.transform.applyX(d));
+            chart.x.scale.rangeRound(newChartRange);
+            let newTimeLink = d3.line<IReflectionAuthorEntry>()
+                .x(d => chart.x.scale(d.timestamp))
+                .y(d => chart.y.scale(d.point));
+
+            chart.elements.contentContainer.selectAll<SVGGElement, IReflectionAnalytics>(".reflection-group")
+                .attr("transform", d => `translate(${chart.x.scale(d.timestamp)}, ${chart.y.scale(d.point)})`);
+
+            chart.elements.contentContainer.selectAll<SVGLineElement, IReflectionAnalytics[]>(".reflection-link-time")
+                .attr("d", d => newTimeLink(d));
+
+            chart.elements.contentContainer.selectAll<SVGRectElement, IReflectionAuthorEntry>(".click-container")
+                .attr("transform", d => `translate(${chart.x.scale(d.timestamp)}, ${chart.y.scale(d.point)})`);
+
+            chart.x.axis.ticks(newChartRange[1] / 75);
+            chart.elements.xAxis.call(chart.x.axis);
+            _this.help.removeHelp(chart);
+        }
+
         return chart;
     }
 
@@ -2342,46 +2365,56 @@ class AuthorControlCharts implements IAuthorControlCharts {
         return data;
     }
 
-    renderNetwork(chart: ChartReflectionsTime, entries: IReflectionAnalytics[], data: INetworkData): ChartReflectionsTime {
+    renderNetwork(chart: ChartReflectionsTime, data: INetworkData): ChartReflectionsTime {
+        const _this = this;
+
         chart.elements.contentContainer.selectAll(".reflection-link-time").remove();
         chart.elements.contentContainer.selectAll(".reflection-group").remove();
 
-        let reflections = entries.map(d => { return { "timestamp": d.timestamp, "tagsLength": d.tags.length } });
-        let startIndex = 0
-        reflections.forEach(c => {
-            let refTag = { "tag": "ref", "phrase": c.timestamp.toDateString(), "start_index": startIndex, "end_index": startIndex + c.tagsLength - 1, "fx": chart.x.scale(c.timestamp) } as ITags
-            if (!data.tags.map(d => d.phrase).includes(refTag.phrase)) {
-                let newTagsL = data.tags.push(refTag);
-                for (var i = 0; i < c.tagsLength; i++) {
-                    data.links.push({ "source": newTagsL - 1, "target": startIndex + i})
-                }
-                startIndex += c.tagsLength
-            }          
-        })
-
         function ticked(chart: ChartReflectionsTime) {
-            chart.elements.contentContainer.selectAll<SVGLineElement, any>(".network-link")
-                .classed("reflection-link", d => d.isReflection)
-                .transition()
-                .duration(750)               
-                .attr("x1", d => d.source.x)
-                .attr("y1", d => d.source.y)
-                .attr("x2", d => d.target.x)
-                .attr("y2", d => d.target.y);
+            chart.elements.contentContainer.selectAll(".network-link")
+                .data(data.links)
+                .join(
+                    enter => enter.append("line")
+                        .attr("class", "network-link")
+                        .classed("reflection-link", d => d.isReflection)
+                        .attr("x1", chart.width / 2)
+                        .attr("y1", chart.height / 2)
+                        .attr("x2", chart.width / 2)
+                        .attr("y2", chart.height / 2)
+                        .call(enter => enter.transition()
+                            .duration(750)               
+                            .attr("x1", d => (d.source as ITags).x)
+                            .attr("y1", d => (d.source as ITags).y)
+                            .attr("x2", d => (d.target as ITags).x)
+                            .attr("y2", d => (d.target as ITags).y)),
+                    update => update,
+                    exit => exit.remove()
+                );
             
-            chart.elements.contentContainer.selectAll<SVGTextElement, ITags>(".network-text")
-                .attr("id", d => `text-${d.index}`)
-                .transition()
-                .duration(750)
-                .attr("x", d => d.x)
-                .attr("y", d => d.y);
-            
-            chart.elements.contentContainer.selectAll<SVGRectElement, ITags>(".network-node").transition()
-                .duration(750)
-                .attr("x", d => d.x - ((chart.elements.contentContainer.selectAll<SVGTextElement, any>(`#text-${d.index}`).node().getBoundingClientRect().width + 10) / 2))
-                .attr("y", d => d.y - ((chart.elements.contentContainer.selectAll<SVGTextElement, any>(`#text-${d.index}`).node().getBoundingClientRect().height + 5) / 2))
-                .attr("width", d => chart.elements.contentContainer.selectAll<SVGTextElement, any>(`#text-${d.index}`).node().getBoundingClientRect().width + 10)
-                .attr("height", d => chart.elements.contentContainer.selectAll<SVGTextElement, any>(`#text-${d.index}`).node().getBoundingClientRect().height + 5);
+            chart.elements.contentContainer.selectAll(".network-node-group")
+                .data(data.tags)
+                .join(
+                    enter => enter.append("g")
+                        .attr("class", "network-node-group")
+                        .attr("transform", `translate(${chart.width / 2}, ${chart.height / 2})`)
+                        .call(enter => enter.append("rect")
+                            .attr("class", d => `network-node ${d.tag.toLowerCase()}`))
+                        .call(enter => enter.append("text")
+                            .attr("id", d => `text-${d.index}`)
+                            .attr("class", "network-text")
+                            .text(d => d.phrase))
+                        .call(enter => enter.select("rect")
+                            .attr("x", d => -(enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().width + 10) / 2)
+                            .attr("y", d => -(enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().height + 5) / 2)
+                            .attr("width", d => enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().width + 10)
+                            .attr("height", d => enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().height + 5))
+                        .call(enter => enter.transition()
+                            .duration(750)
+                            .attr("transform", d => `translate(${d.x}, ${d.y})`)),
+                    update => update,
+                    exit => exit.remove()
+                );
         }
 
         function applyForce(d: INetworkData, chart: ChartReflectionsTime) {
@@ -2399,36 +2432,26 @@ class AuthorControlCharts implements IAuthorControlCharts {
                 ticked(chart);
             }
         }
-
-        chart.elements.contentContainer.selectAll(".network-link")
-            .data(data.links)
-            .join(
-                enter => enter.append("line")
-                        .attr("class", "network-link"),
-                update => update,
-                exit => exit.remove()
-            )
-        
-        chart.elements.contentContainer.selectAll(".network-node")
-            .data(data.tags)
-            .join(
-                enter => enter.append("rect")
-                    .attr("class", d => `network-node ${d.tag.toLowerCase()}`),
-                update => update,
-                exit => exit.remove()
-            )
-        
-        chart.elements.contentContainer.selectAll(".network-text")
-            .data(data.tags)
-            .join(
-                enter => enter.append("text")
-                    .attr("class", "network-text")
-                    .text(d => d.phrase),
-                update => update,
-                exit => exit.remove()
-            )
         
         applyForce(data, chart);
+
+        //Enable zoom
+        _this.interactions.zoom.enableZoom(chart, zoomed);
+        function zoomed(e: d3.D3ZoomEvent<SVGRectElement, unknown>) {
+            let newChartRange = [0, chart.width - chart.padding.yAxis].map(d => e.transform.applyX(d));
+            chart.x.scale.rangeRound(newChartRange);
+
+            chart.elements.contentContainer.selectAll<SVGLineElement, any>(".network-link")
+                .attr("x1", d => e.transform.applyX(d.source.x))
+                .attr("x2", d => e.transform.applyX(d.target.x));
+
+            chart.elements.contentContainer.selectAll<SVGGElement, ITags>(".network-node-group")
+                .attr("transform", (d, i, g) => `translate(${e.transform.applyX(d.x)}, ${d.y})`);
+
+            chart.x.axis.ticks(newChartRange[1] / 75);
+            chart.elements.xAxis.call(chart.x.axis);
+            _this.help.removeHelp(chart);
+        }
 
         return chart;
     }
@@ -2479,7 +2502,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
                 _this.renderReflectionsTimeline(chart, entries);
             }
             if (selectedOption == "network") {
-                _this.renderNetwork(chart, entries, data);
+                _this.renderNetwork(chart, data);
             }
             if (!d3.select(`#${chart.id}-help`).empty()) {
                 _this.help.removeHelp(chart);
