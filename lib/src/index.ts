@@ -2146,16 +2146,21 @@ class ChartReflectionsTime implements IChart {
         this.height = containerDimensions.height;
         this.padding = new ChartPadding(30, 10, 10, 10);
         this.y = new ChartLinearAxis("", [-25, 125], [this.height - this.padding.xAxis - this.padding.top, 0], "left");       
-        this.x = new ChartTimeAxis("", [addDays(d3.min(domain), -30), addDays(d3.max(domain), 30)], [0, this.width - this.padding.yAxis - this.padding.right]);
+        this.x = new ChartTimeAxis("", [this.addDays(d3.min(domain), -30), this.addDays(d3.max(domain), 30)], [0, this.width - this.padding.yAxis - this.padding.right]);
         this.click = false;
         this.elements = new ChartElements(this, containerClass);
         this.elements.yAxis.remove();
-
-        function addDays(date: Date, days: number): Date {
-            let result = new Date(date);
-            result.setDate(result.getDate() + days)
-            return result;
-        }
+    }
+    resetTimeRange(): void {
+        this.x.scale.range([0, this.width - this.padding.yAxis - this.padding.right]);
+        d3.zoom().transform( this.elements.contentContainer.select(".zoom-rect"), d3.zoomIdentity);
+        this.x.axis.ticks((this.width - this.padding.yAxis - this.padding.right) / 75);
+        this.elements.xAxis.transition().duration(750).call(this.x.axis);
+    }
+    addDays(date: Date, days: number): Date {
+        let result = new Date(date);
+        result.setDate(result.getDate() + days)
+        return result;
     }
 }
 
@@ -2258,7 +2263,11 @@ class AuthorControlCharts implements IAuthorControlCharts {
         chart.elements.contentContainer.append("path")
             .datum(d3.sort(data, d => d.timestamp))           
             .attr("class", "reflection-link-time")
-            .attr("d", d => timeLink(d));
+            .attr("d", d => timeLink(d))
+            .style("opacity", 0)
+            .transition()
+            .duration(750)
+            .style("opacity", 1)
 
         let pie = d3.pie<IReflectionAnalyticsSummary>()
             .value(d => d.count)
@@ -2268,7 +2277,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
             .join(
                 enter => enter.append("g")
                     .attr("class", "reflection-group")
-                    .attr("transform", d => `translate(${chart.x.scale(d.timestamp)}, ${chart.y.scale(d.point)})`)
+                    .attr("transform",`translate(${chart.width / 2}, ${chart.height / 2})`)
                     .call(enter => enter.selectAll(".summary-pie")
                         .data(d => pie(Array.from(d3.rollup(d.tags, d => d.length, d => d.tag), ([tag, count]) => ({tag, count}) as IReflectionAnalyticsSummary)))
                         .enter()
@@ -2276,7 +2285,10 @@ class AuthorControlCharts implements IAuthorControlCharts {
                         .attr("class", d => `summary-pie ${d.data.tag.toLowerCase()}`)
                         .attr("d", d3.arc<any, d3.PieArcDatum<IReflectionAnalyticsSummary>>()
                         .innerRadius(15)
-                        .outerRadius(30))),
+                        .outerRadius(30)))
+                    .call(enter => enter.transition()
+                        .duration(750)
+                        .attr("transform", d => `translate(${chart.x.scale(d.timestamp)}, ${chart.y.scale(d.point)})`)),
                 update => update,
                 exit => exit.remove()
             );
@@ -2317,8 +2329,8 @@ class AuthorControlCharts implements IAuthorControlCharts {
 
         //Enable zoom
         _this.interactions.zoom.enableZoom(chart, zoomed);
-        function zoomed(e: any) {
-            let newChartRange = [0, chart.width - chart.padding.yAxis].map(d => e.transform.applyX(d));
+        function zoomed(e: d3.D3ZoomEvent<SVGRectElement, unknown>) {
+            let newChartRange = [0, chart.width - chart.padding.yAxis - chart.padding.right].map(d => e.transform.applyX(d));
             chart.x.scale.rangeRound(newChartRange);
             let newTimeLink = d3.line<IReflectionAuthorEntry>()
                 .x(d => chart.x.scale(d.timestamp))
@@ -2438,7 +2450,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
         //Enable zoom
         _this.interactions.zoom.enableZoom(chart, zoomed);
         function zoomed(e: d3.D3ZoomEvent<SVGRectElement, unknown>) {
-            let newChartRange = [0, chart.width - chart.padding.yAxis].map(d => e.transform.applyX(d));
+            let newChartRange = [0, chart.width - chart.padding.yAxis - chart.padding.right].map(d => e.transform.applyX(d));
             chart.x.scale.rangeRound(newChartRange);
 
             chart.elements.contentContainer.selectAll<SVGLineElement, any>(".network-link")
@@ -2499,10 +2511,16 @@ class AuthorControlCharts implements IAuthorControlCharts {
         d3.select(`#${chart.id} #timeline-plot`).on("click", func != undefined ? (e: any) => func(e) : (e: any) => {
             var selectedOption = e.target.control.value;
             if (selectedOption == "timeline") {
-                _this.renderReflectionsTimeline(chart, entries);
+                if(chart.elements.contentContainer.selectAll(".reflection-group").empty()) { 
+                    chart.resetTimeRange();
+                    _this.renderReflectionsTimeline(chart, entries) 
+                };
             }
             if (selectedOption == "network") {
-                _this.renderNetwork(chart, data);
+                if(chart.elements.contentContainer.selectAll(".network-node-group").empty()) {
+                    chart.resetTimeRange();
+                    _this.renderNetwork(chart, data)
+                };
             }
             if (!d3.select(`#${chart.id}-help`).empty()) {
                 _this.help.removeHelp(chart);
