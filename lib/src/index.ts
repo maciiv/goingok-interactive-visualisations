@@ -650,7 +650,13 @@ class Help implements IHelp {
             popover.append("div")
                 .attr("class", "popover-body")
                 .html(content);
-            popover.style("left", `${button.node().getBoundingClientRect().left - popover.node().getBoundingClientRect().width}px`);
+            if (button.node().getBoundingClientRect().left - popover.node().getBoundingClientRect().width > 0) {
+                popover.style("left", `${button.node().getBoundingClientRect().left - popover.node().getBoundingClientRect().width}px`);
+            } else {
+                popover.style("left", `${button.node().getBoundingClientRect().right}px`);
+                popover.attr("class", "popover fade bs-popover-right show")
+            }
+            
             button.select("i")
                 .attr("class", "fas fa-window-close")
             return true;
@@ -2286,6 +2292,9 @@ class AuthorControlCharts implements IAuthorControlCharts {
                         .attr("d", d3.arc<any, d3.PieArcDatum<IReflectionAnalyticsSummary>>()
                         .innerRadius(15)
                         .outerRadius(30)))
+                    .call(enter => enter.append("circle")
+                        .attr("class", "summary-pie ref")
+                        .attr("r", 15))
                     .call(enter => enter.transition()
                         .duration(750)
                         .attr("transform", d => `translate(${chart.x.scale(d.timestamp)}, ${chart.y.scale(d.point)})`)),
@@ -2297,12 +2306,14 @@ class AuthorControlCharts implements IAuthorControlCharts {
 
         //Enable tooltip       
         _this.interactions.tooltip.enableTooltip(chart, onMouseover, onMouseout);
-        function onMouseover(e: any, d: d3.PieArcDatum<IReflectionAnalyticsSummary>) {
+        function onMouseover(e: any, d: d3.PieArcDatum<IReflectionAnalyticsSummary> | IReflectionAnalytics) {
             const parentData = d3.select<SVGGElement, IReflectionAnalytics>(e.path[1]).datum();
+            const isRef = d3.select(this).attr("class").includes("ref");
             _this.interactions.tooltip.appendTooltipContainer(chart);
-            let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.data.tag, 
-                [new TooltipValues("Count", d.value), 
-                new TooltipValues("Percentage", Math.round(d.value * 100 / parentData.tags.length) + "%")]);
+            let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, isRef ? (d as IReflectionAnalytics).timestamp.toDateString() : (d as d3.PieArcDatum<IReflectionAnalyticsSummary>).data.tag, 
+                isRef ? [new TooltipValues("Point", (d as IReflectionAnalytics).point)] : 
+                    [new TooltipValues("Count", (d as d3.PieArcDatum<IReflectionAnalyticsSummary>).value), 
+                    new TooltipValues("Percentage", Math.round((d as d3.PieArcDatum<IReflectionAnalyticsSummary>).value * 100 / parentData.tags.length) + "%")]);
             _this.interactions.tooltip.positionTooltipContainer(chart, xTooltip(parentData.timestamp, tooltipBox), yTooltip(parentData.point, tooltipBox));
 
             function xTooltip(x: Date, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
@@ -2417,6 +2428,12 @@ class AuthorControlCharts implements IAuthorControlCharts {
                             .attr("class", "network-text")
                             .text(d => d.phrase))
                         .call(enter => enter.select("rect")
+                            .attr("x", d => -(enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().width + 10) / 2)
+                            .attr("y", d => -(enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().height + 5) / 2)
+                            .attr("width", d => enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().width + 10)
+                            .attr("height", d => enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().height + 5))
+                        .call(enter => enter.append("rect")
+                            .attr("class", "network-node hover")
                             .attr("x", d => -(enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().width + 10) / 2)
                             .attr("y", d => -(enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().height + 5) / 2)
                             .attr("width", d => enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().width + 10)
@@ -2983,6 +3000,28 @@ export async function buildControlAuthorAnalyticsCharts(analyticsRaw: IReflectio
         let processedNetworkData = authorControlCharts.preProcessNetwork(reflectionTimelineChart, entries, network);
         authorControlCharts.handleTimelineButtons(reflectionTimelineChart, entries, processedNetworkData);
 
+        //Handle timeline chart help
+        d3.select("#timeline .card-title button")
+            .on("click", function (e: Event) {
+                authorControlCharts.help.helpPopover(d3.select("#timeline #timeline-plot"), `${reflectionTimelineChart.id}-help-button`, "<u><i>click</i></u> me to change chart type");
+                authorControlCharts.help.helpPopover(d3.select("#timeline .zoom-rect.active"), `${reflectionTimelineChart.id}-help-zoom`, "use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move");
+                if (!reflectionTimelineChart.elements.contentContainer.select(".reflection-group").empty()) {
+                    authorControlCharts.help.helpPopover(d3.select(this), `${reflectionTimelineChart.id}-help`, "<b>Timeline</b><br>A timeline that shows the reflections tags percentages<br>The data represented are your <i>reflections over time</i>");
+                    let showDataHelp = authorControlCharts.help.helpPopover(reflectionTimelineChart.elements.contentContainer.select(".reflection-group"), `${reflectionTimelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
+                    if (showDataHelp) {
+                        d3.select(`#${reflectionTimelineChart.id}-help-data`).style("top", parseInt(d3.select(`#${reflectionTimelineChart.id}-help-data`).style("top")) - 14 + "px");
+                    }
+                } else {
+                    authorControlCharts.help.helpPopover(d3.select(this), `${reflectionTimelineChart.id}-help`, "<b>Network diagram</b><br>A network diagram that shows the phrases and tags associated to your reflections<br>The data represented are your <i>reflections over time</i>");
+                }
+            });
+
         authorControlCharts.renderReflections(entries);
+
+        //Handle users histogram chart help
+        d3.select("#reflections .card-title button")
+            .on("click", function (e: Event) {
+                authorControlCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Reflections</b><br>Your reflections are shown sorted by time. The words with associated tags have a different background colour");
+            });
     }
 }

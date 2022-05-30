@@ -124,7 +124,7 @@
     overflow-x: hidden;
 }
 
-.bar, .circle, .circle-group, .histogram-rect, .zoom-circle, .legend-color, .summary-bar, .summary-pie, .multilevel-area {
+.bar, .circle, .circle-group, .histogram-rect, .zoom-circle, .legend-color, .summary-bar, .summary-pie {
     fill-opacity: 0.2;
     stroke-width: 1;
 }
@@ -311,19 +311,6 @@
     font-size: 0.75rem;
 }
 
-.y-label-container.sort:hover {
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.sort-arrow {
-    fill: #f2f2f2;
-}
-
-.sort-arrow.active {
-    fill: #333;
-}
-
 .zoom-bar-content {
     fill-opacity: 0.2;
     fill:  #3399CC;
@@ -392,6 +379,10 @@
 .ref {
     background-color: #f2f2f2;
     fill: #f2f2f2;
+}
+
+.hover {
+    opacity: 0;
 }
 
 .summary-percentage, .summary-tag, .network-text {
@@ -567,15 +558,4 @@ Tutorial CSS
     position: inherit;
     width: 200px;
     display: flex;
-}
-
-.arrow {
-    stroke: #ffffff;
-    stroke-width: 3px;
-    fill: none;
-}
-
-.arrow-head {
-    stroke: #ffffff;
-    fill: #ffffff;
 }
