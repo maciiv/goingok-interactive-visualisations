@@ -1,62 +1,51 @@
 import * as d3 from "d3";
-interface IReflectionAuthorEntryRaw {
+interface IReflectionAuthorRaw {
     timestamp: string;
     pseudonym: string;
     point: string;
     text: string;
-    transformData(): IReflectionAuthorEntry;
+    transformData(): IReflectionAuthor;
 }
-interface IAnalyticsChartsDataRaw {
+interface IAdminAnalyticsDataRaw {
     group: string;
-    value: IReflectionAuthorEntryRaw[];
+    value: IReflectionAuthorRaw[];
     createDate: string;
-    transformData(): AnalyticsChartsData;
+    transformData(): AdminAnalyticsData;
 }
-interface IReflectionAuthorEntry {
+interface IReflectionAuthor {
     timestamp: Date;
     pseudonym: string;
     point: number;
     text: string;
 }
-interface IAnalyticsChartsData {
+interface IAdminAnalyticsData {
     group: string;
-    value: IReflectionAuthorEntry[];
+    value: IReflectionAuthor[];
     creteDate: Date;
     colour: string;
     selected: boolean;
-    getUsersData(): AnalyticsChartsData;
+    getUsersData(): AdminAnalyticsData;
 }
-declare class AnalyticsChartsData implements IAnalyticsChartsData {
+declare class AdminAnalyticsData implements IAdminAnalyticsData {
     group: string;
-    value: IReflectionAuthorEntry[];
+    value: IReflectionAuthor[];
     creteDate: Date;
     colour: string;
     selected: boolean;
-    constructor(group: string, value: IReflectionAuthorEntry[], createDate?: Date, colour?: string, selected?: boolean);
-    getUsersData(): AnalyticsChartsData;
+    constructor(group: string, value: IReflectionAuthor[], createDate?: Date, colour?: string, selected?: boolean);
+    getUsersData(): AdminAnalyticsData;
 }
 interface ITags extends d3.SimulationNodeDatum {
-    start_index: number;
+    start_index?: number;
     tag: string;
     phrase: string;
-    end_index: number;
+    end_index?: number;
 }
-interface IWords {
-    word: string;
-    type: string;
-}
-interface ILinks extends d3.SimulationLinkDatum<ITags> {
-    isReflection?: boolean;
-}
-interface IReflectionAnalytics extends IReflectionAuthorEntry {
+interface IReflectionAnalytics {
     tags: ITags[];
-    words: IWords[];
+    matrix: number[][];
 }
-interface INetworkData {
-    tags: ITags[];
-    links: ILinks[];
-}
-export declare function buildControlAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]): Promise<void>;
-export declare function buildExperimentAdminAnalyticsCharts(entriesRaw: IAnalyticsChartsDataRaw[]): Promise<void>;
-export declare function buildControlAuthorAnalyticsCharts(analyticsRaw: IReflectionAnalytics[], networkRaw: INetworkData): Promise<void>;
+export declare function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyticsDataRaw[]): Promise<void>;
+export declare function buildExperimentAdminAnalyticsCharts(entriesRaw: IAdminAnalyticsDataRaw[]): Promise<void>;
+export declare function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionAuthor[], analyticsRaw: IReflectionAnalytics[]): Promise<void>;
 export {};

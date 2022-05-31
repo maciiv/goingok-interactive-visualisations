@@ -93,7 +93,12 @@
 }
 
 .chart-container-timeline {
-    min-height: 60vh;
+    min-height: 80vh;
+}
+
+.reflections-tab {
+    height: 80vh;
+    overflow-y: auto;
 }
 
 .instructions {
@@ -124,7 +129,7 @@
     overflow-x: hidden;
 }
 
-.bar, .circle, .circle-group, .histogram-rect, .zoom-circle, .legend-color, .summary-bar, .summary-pie {
+.bar, .circle, .circle-group, .histogram-rect, .zoom-circle, .legend-color {
     fill-opacity: 0.2;
     stroke-width: 1;
 }
@@ -162,7 +167,7 @@
     stroke-width: 1;
 }
 
-.bar:hover, .arc:hover, .histogram-rect:hover, .circle:hover, .summary-bar:hover, .summary-pie:hover {
+.bar:hover, .arc:hover, .histogram-rect:hover, .circle:hover {
     fill-opacity: 0.4;
     r: 10;
 }
@@ -385,22 +390,14 @@
     opacity: 0;
 }
 
-.summary-percentage, .summary-tag, .network-text {
+.network-text {
     text-anchor: middle;
     dominant-baseline: central;
-}
-
-.network-text {
     font-size: 75%;
     font-weight: 500;
 }
 
-.reflections-tab {
-    height: 60vh;
-    overflow-y: auto;
-}
-
-.reflection-link-time, .network-link, .reflection-link {
+.network-link, .reflection-link {
     fill: none;
     stroke: #6c757d;
     stroke-width: 1;

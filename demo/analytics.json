@@ -5,185 +5,61 @@
                 "timestamp": "2019-09-26T07:31:33.082585",
                 "pseudonym": "texbux99",
                 "point": 100,
-                "text": "still waiting for my grades back from assignment 2, but still feeling good as other examinations have returned their grades and I am doing really well.",
-                "tags": [
-                    { "start_index": 1, "tag": "AR", "phrase": "waiting for my grades", "end_index": 4 },
-                    { "start_index": 10, "tag": "AF", "phrase": "but still feeling", "end_index": 12 },
-                    { "start_index": 25, "tag": "EP", "phrase": "really well", "end_index": 26 }
-                ],
-                "words": [
-                    { "word": "still", "type": "word" },
-                    { "word": "waiting", "type": "word" },
-                    { "word": "for", "type": "word" },
-                    { "word": "my", "type": "word" },
-                    { "word": "grades", "type": "word" },
-                    { "word": "back", "type": "word" },
-                    { "word": "from", "type": "word" },
-                    { "word": "assignment", "type": "word" },
-                    { "word": "2", "type": "word" },
-                    { "word": ",", "type": "punctuation" },
-                    { "word": "but", "type": "word" },
-                    { "word": "still", "type": "word" },
-                    { "word": "feeling", "type": "word" },
-                    { "word": "good", "type": "word" },
-                    { "word": "as", "type": "word" },
-                    { "word": "other", "type": "word" },
-                    { "word": "examinations", "type": "word" },
-                    { "word": "have", "type": "word" },
-                    { "word": "returned", "type": "word" },
-                    { "word": "their", "type": "word" },
-                    { "word": "grades", "type": "word" },
-                    { "word": "and", "type": "word" },
-                    { "word": "I", "type": "word" },
-                    { "word": "am", "type": "word" },
-                    { "word": "doing", "type": "word" },
-                    { "word": "really", "type": "word" },
-                    { "word": "well", "type": "word" },
-                    { "word": ".", "type": "punctuation" }
-                ]
+                "text": "still waiting for my grades back from assignment 2, but still feeling good as other examinations have returned their grades and I am doing really well."
             },
             {
                 "timestamp": "2020-03-10T05:34:14.108458",
                 "pseudonym": "texbux99",
                 "point": 0,
-                "text": "Weeks 1 and 2 have been ok with the content delivered. Week 3 will be more stressful due to the amount of assessment released. Luckily things have settled and I and stable with the new place I moved into.",
-                "tags": [
-                    { "start_index": 4, "tag": "AR", "phrase": "have been", "end_index": 5 },
-                    { "start_index": 17, "tag": "AF", "phrase": "stressfull", "end_index": 17 },
-                    { "start_index": 26, "tag": "AF", "phrase": "luckily things have", "end_index": 28 },
-                    { "start_index": 38, "tag": "AF", "phrase": "i moved into", "end_index": 40 }
-                ],
-                "words": [
-                    { "word": "weeks", "type": "word" },
-                    { "word": "1", "type": "word" },
-                    { "word": "and", "type": "word" },
-                    { "word": "2", "type": "word" },
-                    { "word": "have", "type": "word" },
-                    { "word": "been", "type": "word" },
-                    { "word": "ok", "type": "word" },
-                    { "word": "with", "type": "word" },
-                    { "word": "the", "type": "word" },
-                    { "word": "content", "type": "word" },
-                    { "word": "delivered", "type": "word" },
-                    { "word": ".", "type": "punctuation" },
-                    { "word": "week", "type": "word" },
-                    { "word": "3", "type": "word" },
-                    { "word": "will", "type": "word" },
-                    { "word": "be", "type": "word" },
-                    { "word": "more", "type": "word" },
-                    { "word": "stressful", "type": "word" },
-                    { "word": "due", "type": "word" },
-                    { "word": "to", "type": "word" },
-                    { "word": "the", "type": "word" },
-                    { "word": "amount", "type": "word" },
-                    { "word": "of", "type": "word" },
-                    { "word": "assessment", "type": "word" },
-                    { "word": "released", "type": "word" },
-                    { "word": ".", "type": "punctuation" },
-                    { "word": "luckily", "type": "word" },
-                    { "word": "things", "type": "word" },
-                    { "word": "have", "type": "word" },
-                    { "word": "settled", "type": "word" },
-                    { "word": "and", "type": "word" },
-                    { "word": "I", "type": "word" },
-                    { "word": "and", "type": "word" },
-                    { "word": "stable", "type": "word" },
-                    { "word": "with", "type": "word" },
-                    { "word": "the", "type": "word" },
-                    { "word": "new", "type": "word" },
-                    { "word": "place", "type": "word" },
-                    { "word": "I", "type": "word" },
-                    { "word": "moved", "type": "word" },
-                    { "word": "into", "type": "word" },
-                    { "word": ".", "type": "punctuation" }
-                ]
+                "text": "Weeks 1 and 2 have been ok with the content delivered. Week 3 will be more stressful due to the amount of assessment released. Luckily things have settled and I and stable with the new place I moved into."
             },
             {
                 "timestamp": "2019-10-17T23:07:50.824921",
                 "pseudonym": "texbux99",
                 "point": 73,
-                "text": "Have not had the time to advance the third assignment more, two major assignments were due before this one so I have been focusing om them since one of them is a group assignment and another one is the biggest assignment of the most challenging unit this semester.",
-                "tags": [
-                    { "start_index": 0, "tag": "AR", "phrase": "have not had", "end_index": 2 },
-                    { "start_index": 15, "tag": "EP", "phrase": "were due before", "end_index": 17 },
-                    { "start_index": 21, "tag": "AF", "phrase": "i have been", "end_index": 23 }
-                ],
-                "words": [
-                    { "word": "Have" , "type": "word" },
-                    { "word": "not" , "type": "word" },
-                    { "word": "had" , "type": "word" },
-                    { "word": "the" , "type": "word" },
-                    { "word": "time" , "type": "word" },
-                    { "word": "to" , "type": "word" },
-                    { "word": "advance" , "type": "word" },
-                    { "word": "the" , "type": "word" },
-                    { "word": "third" , "type": "word" },
-                    { "word": "assignment" , "type": "word" },
-                    { "word": "more" , "type": "word" },
-                    { "word": "," , "type": "punctuation" },
-                    { "word": "two" , "type": "word" },
-                    { "word": "major" , "type": "word" },
-                    { "word": "assignments" , "type": "word" },
-                    { "word": "were" , "type": "word" },
-                    { "word": "due" , "type": "word" },
-                    { "word": "before" , "type": "word" },
-                    { "word": "this" , "type": "word" },
-                    { "word": "one" , "type": "word" },
-                    { "word": "so" , "type": "word" },
-                    { "word": "I" , "type": "word" },
-                    { "word": "have" , "type": "word" },
-                    { "word": "been" , "type": "word" },
-                    { "word": "focusing" , "type": "word" },
-                    { "word": "om" , "type": "word" },
-                    { "word": "them" , "type": "word" },
-                    { "word": "since" , "type": "word" },
-                    { "word": "one" , "type": "word" },
-                    { "word": "of" , "type": "word" },
-                    { "word": "them" , "type": "word" },
-                    { "word": "is" , "type": "word" },
-                    { "word": "a" , "type": "word" },
-                    { "word": "group" , "type": "word" },
-                    { "word": "assignment" , "type": "word" },
-                    { "word": "and" , "type": "word" },
-                    { "word": "another" , "type": "word" },
-                    { "word": "one" , "type": "word" },
-                    { "word": "is" , "type": "word" },
-                    { "word": "the" , "type": "word" },
-                    { "word": "biggest" , "type": "word" },
-                    { "word": "assignment" , "type": "word" },
-                    { "word": "of" , "type": "word" },
-                    { "word": "the" , "type": "word" },
-                    { "word": "most" , "type": "word" },
-                    { "word": "challenging" , "type": "word" },
-                    { "word": "unit" , "type": "word" },
-                    { "word": "this" , "type": "word" },
-                    { "word": "semester" , "type": "word" },
-                    { "word": "." , "type": "punctuation" }
-                ]
+                "text": "Have not had the time to advance the third assignment more, two major assignments were due before this one so I have been focusing om them since one of them is a group assignment and another one is the biggest assignment of the most challenging unit this semester."
             }
         ],
-        "network": {
-            "tags": [
-                { "tag": "AR", "phrase": "waiting for my grades" },
-                { "tag": "AF", "phrase": "but still feeling" },
-                { "tag": "EP", "phrase": "really well" },
-                { "tag": "AR", "phrase": "have been" },
-                { "tag": "AF", "phrase": "stressfull" },
-                { "tag": "AF", "phrase": "luckily things have" },
-                { "tag": "AF", "phrase": "i moved into" },
-                { "tag": "AR", "phrase": "have not had" },
-                { "tag": "EP", "phrase": "were due before" },
-                { "tag": "AF", "phrase": "i have been" }
-            ],
-            "links": [
-                { "source": 0, "target": 1 },
-                { "source": 0, "target": 2 },
-                { "source": 3, "target": 4 },
-                { "source": 4, "target": 5 },
-                { "source": 5, "target": 3 },
-                { "source": 7, "target": 8 },
-                { "source": 8, "target": 9 }
-            ]
-        }
+        "analytics": [
+            {
+                "tags": [
+                    { "start_index": 6, "tag": "AR", "phrase": "waiting for my grades", "end_index": 26 },
+                    { "start_index": 52, "tag": "AF", "phrase": "but still feeling", "end_index": 68 },
+                    { "start_index": 139, "tag": "EP", "phrase": "really well", "end_index": 149 }
+                ],
+                "matrix": [
+                    [0, 1, 1],
+                    [0, 0, 0],
+                    [0, 0, 0]
+                ]
+            },
+            {
+                "tags": [
+                    { "start_index": 14, "tag": "AR", "phrase": "have been", "end_index": 22 },
+                    { "start_index": 75, "tag": "AF", "phrase": "stressfull", "end_index": 83 },
+                    { "start_index": 127, "tag": "AF", "phrase": "luckily things have", "end_index": 145 },
+                    { "start_index": 191, "tag": "AF", "phrase": "i moved into", "end_index": 202 }
+                ],
+                "matrix": [
+                    [0, 1, 1, 0],
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0]
+                ]
+            },
+            {
+                "tags": [
+                    { "start_index": 0, "tag": "AR", "phrase": "have not had", "end_index": 11 },
+                    { "start_index": 82, "tag": "EP", "phrase": "were due before", "end_index": 96 },
+                    { "start_index": 110, "tag": "AF", "phrase": "i have been", "end_index": 120 }
+                ],
+                "matrix": [
+                    [0, 1, 0],
+                    [0, 0, 1],
+                    [0, 0, 0]
+                ]
+            }
+
+        ]
     }
 }

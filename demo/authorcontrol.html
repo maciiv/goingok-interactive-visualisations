@@ -18,36 +18,16 @@
                 <div class="content-wrapper">
                     <div class="container-fluid">            
                         <div class="row" id="analytics-charts">
-                            <div class="col-md-12" id="summary">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5 class="card-title mb-2 d-flex">
-                                            <span class="mx-auto">Your summary</span>
-                                        </h5>
-                                        <div class="chart-container-summary"></div>
-                                    </div>
-                                </div>
-                            </div>
                             <div class="col-md-8 mt-3" id="timeline">
                                 <div class="card">
                                     <div class="card-body">
                                         <h5 class="card-title">
-                                            <span>Your reflections over time</span>
+                                            <span>Your reflections network</span>
                                             <button type="button" class="btn btn-light btn-sm float-right">
                                                 <i class="fas fa-question-circle"></i>
                                             </button>
                                         </h5>
                                         <h6 class="card-subtitle mb-2 instructions"></h6>
-                                        <div class="row mt-3">
-                                            <div id="timeline-plot" class="btn-group btn-group-toggle mx-auto" data-toggle="buttons">
-                                                <label class="btn btn-light active">
-                                                    <input type="radio" name="plot" value="timeline" checked>Timeline
-                                                </label>
-                                                <label class="btn btn-light">
-                                                    <input type="radio" name="plot" value="network">Network
-                                                </label>
-                                            </div>
-                                        </div>
                                         <div class="chart-container-timeline"></div>
                                     </div>
                                 </div>
@@ -79,7 +59,7 @@
         <script src="../lib/dist/index.js"></script>
         <script>
             d3.json("analytics.json").then(function (c) {  
-                buildControlAuthorAnalyticsCharts(c["data"]["reflections"], c["data"]["network"]);
+                buildControlAuthorAnalyticsCharts(c["data"]["reflections"], c["data"]["analytics"]);
             });
         </script>
     </body>
