@@ -84,6 +84,10 @@
     }
 }
 
+/**************************************************
+Admin CSS
+***************************************************/
+
 .chart-container {
     min-height: 30vh;
 }
@@ -92,7 +96,7 @@
     min-height: 7vh;
 }
 
-.chart-container-timeline {
+.chart-container-network {
     min-height: 80vh;
 }
 
@@ -361,6 +365,41 @@
 
 .bin-name.goingok {
     color: #2eb82e;
+}
+
+/**************************************************
+Author CSS
+***************************************************/
+
+.hardline {
+    fill: none;
+    stroke: #bbeeff;
+    stroke-width: 2px;
+    stroke-opacity: 0.6;
+}
+
+.softline {
+    fill: none;
+    stroke: #cc0000;
+    stroke-width: 2px;
+}
+
+.meanline {
+    fill: none;
+    stroke: #ffff00;
+    stroke-width: 10px;
+    stroke-opacity: 0.3;
+}
+
+.point {
+    fill: #0000FF;
+    stroke: none;
+    stroke-width: 0px;
+    opacity: 0.5;
+}
+
+.point:hover {
+    r: 10;
 }
 
 .ar {

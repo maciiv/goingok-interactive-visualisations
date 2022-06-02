@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+import { timeDays } from "d3";
 
 /* ------------------------------------------------
     Start data interfaces and classes 
@@ -336,7 +337,7 @@ class ChartTimeAxis implements IChartAxis {
     constructor(label: string, domain: Date[], range: number[]) {
         this.label = label;
         this.scale = d3.scaleTime()
-            .domain(domain)
+            .domain(d3.extent(domain))
             .range(range);
         this.axis = d3.axisBottom(this.scale)
     };
@@ -2100,17 +2101,11 @@ class ChartNetwork implements IChart {
         this.width = containerDimensions.width;
         this.height = containerDimensions.height;
         this.padding = new ChartPadding(30, 10, 10, 10);
-        this.y = new ChartLinearAxis("", [-25, 125], [this.height - this.padding.xAxis - this.padding.top, 0], "left");       
+        this.y = new ChartLinearAxis("", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left");       
         this.x = new ChartTimeAxis("", [this.addDays(d3.min(domain), -30), this.addDays(d3.max(domain), 30)], [0, this.width - this.padding.yAxis - this.padding.right]);
         this.click = false;
         this.elements = new ChartElements(this, containerClass);
         this.elements.yAxis.remove();
-    }
-    resetTimeRange(): void {
-        this.x.scale.range([0, this.width - this.padding.yAxis - this.padding.right]);
-        d3.zoom().transform( this.elements.contentContainer.select(".zoom-rect"), d3.zoomIdentity);
-        this.x.axis.ticks((this.width - this.padding.yAxis - this.padding.right) / 75);
-        this.elements.xAxis.transition().duration(750).call(this.x.axis);
     }
     addDays(date: Date, days: number): Date {
         let result = new Date(date);
@@ -2124,6 +2119,7 @@ interface IAuthorControlCharts {
     interactions: IAuthorControlInteractions;
     processNetworkData(chart: ChartNetwork, entries: IRelfectionAuthorAnalytics[]): INetworkData;
     processSimulation(chart: ChartNetwork, data: INetworkData): void;
+    renderTimeline(chart: ChartTime, data: IReflectionAuthor[]): ChartTime;
     renderNetwork(chart: ChartNetwork, data: INetworkData): ChartNetwork;
     renderReflections(data: IReflectionAuthor[]): void;
 }
@@ -2158,6 +2154,98 @@ class AuthorControlCharts implements IAuthorControlCharts {
             .force("collide", d3.forceCollide().radius(30).iterations(5))
             .force("center", d3.forceCenter((chart.width -chart.padding.yAxis - chart.padding.right - 10) / 2, (chart.height - chart.padding.top - chart.padding.xAxis + 5) / 2))
             .tick(300);
+    }
+
+    renderTimeline(chart: ChartTime, data: IReflectionAuthor[]): ChartTime {
+        const _this = this;
+
+        const hardLine = d3.line<IReflectionAuthor>()
+            .x(d => chart.x.scale(d.timestamp))
+            .y(d => chart.y.scale(d.point))
+            .curve(d3.curveMonotoneX);
+
+        const softLine = d3.line<IReflectionAuthor>()
+            .x(d => chart.x.scale(d.timestamp))
+            .y(d => chart.y.scale(d.point))
+            .curve(d3.curveBasis);
+        
+        const avg = d3.mean(data, d => chart.y.scale(d.point));
+        const meanLine = d3.line<IReflectionAuthor>()
+            .x(d => chart.x.scale(d.timestamp))
+            .y(avg);
+
+        chart.elements.contentContainer.append("path")
+            .datum(d3.sort(data, d => d.timestamp))
+            .attr("class", "hardline")
+            .attr("d", d => hardLine(d));
+
+        chart.elements.contentContainer.append("path")
+            .datum(d3.sort(data, d => d.timestamp))
+            .attr("class", "softline")
+            .attr("d", d => softLine(d));
+        
+        chart.elements.contentContainer.append("path")
+            .datum(d3.sort(data, d => d.timestamp))
+            .attr("class", "meanline")
+            .attr("d", d => meanLine(d));
+
+        chart.elements.contentContainer.selectAll(".point")
+            .data(data)
+            .join(
+                enter => enter.append("circle")
+                    .attr("class", "point")
+                    .attr("cx", d => chart.x.scale(d.timestamp))
+                    .attr("cy", chart.y.scale(0))
+                    .call(enter => enter.transition()
+                        .duration(750)
+                        .attr("r", 5)
+                        .attr("cy", d => chart.y.scale(d.point))),
+                update => update.call(update => update.transition()
+                    .duration(750)
+                    .attr("cx", d => chart.x.scale(d.timestamp))
+                    .attr("cy", d => chart.y.scale(d.point))),
+                exit => exit.remove()
+            )
+        
+        chart.elements.content = chart.elements.contentContainer.selectAll(".point");
+
+        //Enable tooltip       
+        _this.interactions.tooltip.enableTooltip(chart, onMouseover, onMouseout);
+        function onMouseover(e: Event, d: IReflectionAuthor) {
+            if (d3.select(this).attr("class").includes("clicked")) {
+                return;
+            }
+            _this.interactions.tooltip.appendTooltipContainer(chart);
+            let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.timestamp.toDateString(), 
+                [new TooltipValues("Point", d.point)]);
+            _this.interactions.tooltip.positionTooltipContainer(chart, xTooltip(d.timestamp, tooltipBox), yTooltip(d.point, tooltipBox));
+
+            function xTooltip(x: Date, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
+                let xTooltip = chart.x.scale(x);
+                if (chart.width - chart.padding.yAxis < xTooltip + tooltipBox.node().getBBox().width) {
+                    return xTooltip - tooltipBox.node().getBBox().width;
+                }
+                return xTooltip
+            };
+
+            function yTooltip(y: number, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
+                var yTooltip = chart.y.scale(y) - tooltipBox.node().getBBox().height - 10;
+                if (yTooltip < 0) {
+                    return yTooltip + tooltipBox.node().getBBox().height + 20;
+                }
+                return yTooltip;
+            };
+
+            _this.interactions.tooltip.appendLine(chart, 0, chart.y.scale(d.point), chart.x.scale(d.timestamp), chart.y.scale(d.point), "#0000FF");
+            _this.interactions.tooltip.appendLine(chart, chart.x.scale(d.timestamp), chart.y.scale(0), chart.x.scale(d.timestamp), chart.y.scale(d.point), "#0000FF");
+        }
+        function onMouseout() {
+            chart.elements.svg.select(".tooltip-container").transition()
+                .style("opacity", 0);
+            _this.interactions.tooltip.removeTooltip(chart);
+        }
+
+        return chart;
     }
 
     renderNetwork(chart: ChartNetwork, data: INetworkData): ChartNetwork {
@@ -2202,19 +2290,12 @@ class AuthorControlCharts implements IAuthorControlCharts {
                         .attr("class", d => `network-node ${d.tag.toLowerCase()}`))
                     .call(enter => enter.append("text")
                         .attr("id", d => `text-${d.index}`)
-                        .attr("class", "network-text")
-                        .text(d => d.phrase))
+                        .attr("class", "network-text"))
                     .call(enter => enter.select("rect")
-                        .attr("x", d => -(enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().width + 10) / 2)
-                        .attr("y", d => -(enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().height + 5) / 2)
-                        .attr("width", d => enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().width + 10)
-                        .attr("height", d => enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().height + 5))
-                    .call(enter => enter.append("rect")
-                        .attr("class", "network-node hover")
-                        .attr("x", d => -(enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().width + 10) / 2)
-                        .attr("y", d => -(enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().height + 5) / 2)
-                        .attr("width", d => enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().width + 10)
-                        .attr("height", d => enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().height + 5))
+                        .attr("x", -5)
+                        .attr("y", -5)
+                        .attr("width", 10)
+                        .attr("height", 10))
                     .call(enter => enter.transition()
                         .duration(750)
                         .attr("transform", d => `translate(${d.x}, ${d.y})`)),
@@ -2223,6 +2304,63 @@ class AuthorControlCharts implements IAuthorControlCharts {
                     .attr("transform", d => `translate(${d.x}, ${d.y})`)),
                 exit => exit.remove()
             );
+        
+        chart.elements.content = chart.elements.contentContainer.selectAll(".network-node-group");
+
+        //Enable tooltip       
+        _this.interactions.tooltip.enableTooltip(chart, onMouseover, onMouseout);
+        function onMouseover(e: Event, d: ITags) {
+            if (d3.select(this).attr("class").includes("clicked")) {
+                return;
+            }
+
+            let links = data.links.filter(d => d.source === d3.select<SVGGElement, ITags>(this).datum()).map(d => d.target);
+            links = links.concat(data.links.filter(d => d.target === d3.select<SVGGElement, ITags>(this).datum()).map(d => d.source));
+            links.push(d3.select<SVGGElement, ITags>(this).datum());
+
+            d3.selectAll<SVGGElement, ITags>(".network-node-group")
+                .filter(d => links.includes(d))
+                .call(enter => enter.select("text")
+                    .text(d => d.phrase)
+                    .style("opacity", 0)
+                    .transition()
+                    .duration(750)
+                    .style("opacity", "1"))
+                .call(enter => enter.select(".network-node")
+                    .transition()
+                    .duration(750)
+                    .attr("x", d => -(enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().width + 10) / 2)
+                    .attr("y", d => -(enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().height + 5) / 2)
+                    .attr("width", d => enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().width + 10)
+                    .attr("height", d => enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().height + 5))
+
+            if (d.tag === "ref") {
+                _this.interactions.tooltip.appendLine(chart, chart.x.scale(new Date(d.phrase)), chart.y.scale(0), chart.x.scale(new Date(d.phrase)), d3.select<SVGGElement, ITags>(this).datum().y + 10, "black");
+            }
+        }
+        function onMouseout() {
+            let links = data.links.filter(d => d.source === d3.select<SVGGElement, ITags>(this).datum()).map(d => d.target);
+            links = links.concat(data.links.filter(d => d.target === d3.select<SVGGElement, ITags>(this).datum()).map(d => d.source));
+            links.push(d3.select<SVGGElement, ITags>(this).datum());
+
+            d3.selectAll<SVGGElement, ITags>(".network-node-group")
+                .filter(d => links.includes(d))
+                .call(enter => enter.select("text")
+                    .text(null)
+                    .style("opacity", 0)
+                    .transition()
+                    .duration(750)
+                    .style("opacity", "1"))
+                .call(enter => enter.select(".network-node")
+                    .transition()
+                    .duration(750)
+                    .attr("x", -5)
+                    .attr("y", -5)
+                    .attr("width", 10)
+                    .attr("height", 10))
+            
+            _this.interactions.tooltip.removeTooltip(chart);
+        }
 
         //Enable zoom
         _this.interactions.zoom.enableZoom(chart, zoomed);
@@ -2721,7 +2859,10 @@ export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionA
     async function drawCharts(entries: IRelfectionAuthorAnalytics[]) {
         let authorControlCharts = new AuthorControlCharts();
 
-        let networkChart = new ChartNetwork("timeline", "chart-container-timeline", entries.map(d => d.timestamp));
+        let timelineChart = new ChartTime("timeline", entries.map(d => d.timestamp));
+        authorControlCharts.renderTimeline(timelineChart, entries);
+
+        let networkChart = new ChartNetwork("network", "chart-container-network", entries.map(d => d.timestamp));
         let networkData = authorControlCharts.processNetworkData(networkChart, entries);
         authorControlCharts.processSimulation(networkChart, networkData)
         authorControlCharts.renderNetwork(networkChart, networkData);
@@ -2730,14 +2871,10 @@ export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionA
         d3.select("#timeline .card-title button")
             .on("click", function (e: Event) {
                 authorControlCharts.help.helpPopover(d3.select("#timeline .zoom-rect.active"), `${networkChart.id}-help-zoom`, "use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move");
-                if (!networkChart.elements.contentContainer.select(".reflection-group").empty()) {
-                    authorControlCharts.help.helpPopover(d3.select(this), `${networkChart.id}-help`, "<b>Timeline</b><br>A timeline that shows the reflections tags percentages<br>The data represented are your <i>reflections over time</i>");
-                    let showDataHelp = authorControlCharts.help.helpPopover(networkChart.elements.contentContainer.select(".reflection-group"), `${networkChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
-                    if (showDataHelp) {
-                        d3.select(`#${networkChart.id}-help-data`).style("top", parseInt(d3.select(`#${networkChart.id}-help-data`).style("top")) - 14 + "px");
-                    }
-                } else {
-                    authorControlCharts.help.helpPopover(d3.select(this), `${networkChart.id}-help`, "<b>Network diagram</b><br>A network diagram that shows the phrases and tags associated to your reflections<br>The data represented are your <i>reflections over time</i>");
+                authorControlCharts.help.helpPopover(d3.select(this), `${networkChart.id}-help`, "<b>Network diagram</b><br>A network diagram that shows the phrases and tags associated to your reflections<br>The data represented are your <i>reflections over time</i>");
+                let showDataHelp = authorControlCharts.help.helpPopover(networkChart.elements.contentContainer.select(".network-node-group"), `${networkChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
+                if (showDataHelp) {
+                    d3.select(`#${networkChart.id}-help-data`).style("top", parseInt(d3.select(`#${networkChart.id}-help-data`).style("top")) - 14 + "px");
                 }
             });
 
