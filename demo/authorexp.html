@@ -6,7 +6,7 @@
         <link rel="stylesheet" type="text/css" href="style.css" />
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" />
-        <title>Author Control</title>
+        <title>Author Experiment</title>
         <script src="https://d3js.org/d3.v6.min.js"></script>        
     </head>
     <body>            
@@ -44,12 +44,29 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-12 mt-3">
+                            <div class="col-md-8 mt-3">
                                 <div class="card">
                                     <div class="card-body">
                                         <h6 class="card-subtitle d-flex">
                                             <span class="my-auto">Your tags:</span>
                                             <ul id="tags" class="list-unstyled d-flex m-0"></ul>
+                                        </h6>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mt-3" id="sort">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-subtitle d-flex">
+                                            <span class="my-auto">Sort reflections by:</span>
+                                            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                                <label class="btn btn-light active">
+                                                    <input type="radio" name="sort" value="date" checked>Date
+                                                </label>
+                                                <label class="btn btn-light">
+                                                    <input type="radio" name="sort" value="point">Point
+                                                </label>
+                                            </div>
                                         </h6>
                                     </div>
                                 </div>
@@ -95,7 +112,7 @@
         <script src="../lib/dist/index.js"></script>
         <script>
             d3.json("analytics.json").then(function (c) {  
-                buildControlAuthorAnalyticsCharts(c["data"]["reflections"], c["data"]["analytics"]);
+                buildExperimentAuthorAnalyticsCharts(c["data"]["reflections"], c["data"]["analytics"]);
             });
         </script>
     </body>

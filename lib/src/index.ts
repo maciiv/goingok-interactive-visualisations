@@ -185,12 +185,12 @@ class ChartTime implements IChart {
     help: IHelp;
     padding: IChartPadding;
     click: boolean;
-    constructor(id: string, domain: Date[]) {
+    constructor(id: string, domain: Date[], chartPadding?: ChartPadding) {
         this.id = id;
         let containerDimensions = d3.select<HTMLDivElement, unknown>(`#${id} .chart-container`).node().getBoundingClientRect();
         this.width = containerDimensions.width;
         this.height = containerDimensions.height;
-        this.padding = new ChartPadding(75, 75, 5);
+        this.padding = chartPadding !== undefined ? chartPadding : new ChartPadding(75, 75, 5);
         this.help = new Help();
         this.y = new ChartLinearAxis("Reflection Point", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left");
         this.x = new ChartTimeAxis("Time", domain, [0, this.width - this.padding.yAxis]);
@@ -1538,7 +1538,7 @@ class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperi
     };
     handleGroupsSort(): void {
         let _this = this;
-        d3.select("#sort").on("click", (e: any) => {
+        d3.select("#sort .btn-group-toggle").on("click", (e: any) => {
             var selectedOption = e.target.control.value;
             _this.allEntries = _this.allEntries.sort(function (a, b) {
                 if (selectedOption == "date") {
@@ -1849,7 +1849,7 @@ interface IAdminExperimentalInteractions extends IAdminControlInteractions {
 }
 
 class AdminExperimentalInteractions extends AdminControlInteractions implements IAdminExperimentalInteractions {
-    click = new Click();
+    click = new ClickAdmin();
     sort = new Sort();
 }
 
@@ -1857,6 +1857,9 @@ class AdminExperimentalInteractions extends AdminControlInteractions implements 
 interface IClick {
     enableClick(chart: IChart, onClick: any): void;
     removeClick(chart: IChart): void;
+}
+
+interface IClickAdmin {
     appendScatterText(chart: IChart, d: IReflectionAuthor, title: string, values: ITooltipValues[]): void;
     positionClickContainer(chart: ChartTime, box: any, text: any, d: IReflectionAuthor): string;
     appendGroupsText(chart: ChartSeries, data: IAdminAnalyticsDataStats[], clickData: IAdminAnalyticsDataStats): void;
@@ -1876,6 +1879,9 @@ class Click implements IClick {
         chart.elements.content.classed("clicked", false);
         chart.elements.content.classed("main", false);
     };
+}
+
+class ClickAdmin extends Click implements IClickAdmin {
     appendScatterText(chart: ChartTime, d: IReflectionAuthor, title: string, values: ITooltipValues[] = null): void {
         let container = chart.elements.contentContainer.append("g")
             .datum(d)
@@ -2062,7 +2068,9 @@ interface ITags extends d3.SimulationNodeDatum {
     start_index?: number,
     tag: string,
     phrase: string,
-    end_index?: number
+    colour?: string,
+    end_index?: number,
+    selected?: boolean
 }
 
 interface ILinks<T> extends d3.SimulationLinkDatum<T> {
@@ -2080,7 +2088,7 @@ interface IRelfectionAuthorAnalytics extends IReflectionAuthor, IReflectionAnaly
 }
 
 interface INetworkData {
-    tags: ITags[],
+    nodes: ITags[],
     links: ILinks<ITags>[]
 }
 
@@ -2117,6 +2125,7 @@ class ChartNetwork implements IChart {
 interface IAuthorControlCharts {
     help: IHelp;
     interactions: IAuthorControlInteractions;
+    preloadTags(entries: IRelfectionAuthorAnalytics[], enable?: boolean): ITags[];
     processNetworkData(chart: ChartNetwork, entries: IRelfectionAuthorAnalytics[]): INetworkData;
     processSimulation(chart: ChartNetwork, data: INetworkData): void;
     renderTimeline(chart: ChartTime, data: IReflectionAuthor[]): ChartTime;
@@ -2126,14 +2135,46 @@ interface IAuthorControlCharts {
 
 class AuthorControlCharts implements IAuthorControlCharts {
     help = new Help();
-    interactions = new AdminControlInteractions();
+    interactions = new AuthorControlInteractions();
+
+    preloadTags(entries: IRelfectionAuthorAnalytics[], enable: boolean = false): ITags[] {
+        let allTags = [] as ITags[];
+        entries.forEach(c => {
+            allTags = allTags.concat(c.tags.map(d => { { return { "tag": d.tag, "colour": d.colour } as ITags}}))
+        })
+        let groupTags = Array.from(d3.rollup(allTags, d => d.map(r => r.colour)[0], d => d.tag), ([tag, colour]) => ({tag, colour}));
+        let uniqueTags = groupTags.map(d => { return {"tag": d.tag, "colour": d.colour, "selected": true } }) as ITags[]
+
+        d3.select("#tags").selectAll("li")
+            .data(uniqueTags)
+            .enter()
+            .append("li")
+            .append("div")
+            .attr("class", "input-group")
+            .call(div => div.append("input")
+                .attr("type", "text")
+                .attr("class", "form-control tag-row")
+                .attr("value", d => d.tag)
+                .property("disabled", true))
+            .call(div => div.append("div")
+                .attr("class", "input-group-append")
+                .append("div")
+                .attr("class", "input-group-text tag-row")
+                .append("input")
+                .attr("id", d => `colour-${d.tag}`)
+                .attr("type", "color")
+                .attr("value", d => d.colour)
+                .property("disabled", !enable));
+        
+        return uniqueTags
+    }
 
     processNetworkData(chart: ChartNetwork, entries: IRelfectionAuthorAnalytics[]): INetworkData {
-        let networkData = { "tags": [] as ITags[], "links": [] as ILinks<ITags>[] } as INetworkData
+        let networkData = { "nodes": [] as ITags[], "links": [] as ILinks<ITags>[] } as INetworkData;
         entries.forEach(c => {
-            networkData.tags = networkData.tags.concat(c.tags);
-            let refTag = { "tag": "ref", "phrase": c.timestamp.toDateString(), "fx": chart.x.scale(c.timestamp) } as ITags;
-            networkData.tags.push(refTag);
+            networkData.nodes = networkData.nodes.concat(c.tags);
+            let refTag = { "tag": "ref", "phrase": c.timestamp.toDateString(), "colour": "#f2f2f2", "fx": chart.x.scale(c.timestamp) } as ITags;
+            networkData.nodes.push(refTag);
             c.matrix.forEach((r, i) => {
                 for (var x = 0; x < r.length; x++) {
                     if (r[x] !== 0) networkData.links.push({ "source": c.tags[i], "target": c.tags[x], "weight": r[x] })
@@ -2141,11 +2182,12 @@ class AuthorControlCharts implements IAuthorControlCharts {
                 networkData.links.push({ "source": refTag, "target": c.tags[i], "weight": 1, "isReflection": true });
             })
         })
+
         return networkData;
     }
 
     processSimulation(chart: ChartNetwork, data: INetworkData): void {
-        return d3.forceSimulation<ITags, undefined>(data.tags)
+        return d3.forceSimulation<ITags, undefined>(data.nodes)
             .force("link", d3.forceLink()
                 .id(d => d.index)
                 .distance(100)
@@ -2156,21 +2198,21 @@ class AuthorControlCharts implements IAuthorControlCharts {
             .tick(300);
     }
 
-    renderTimeline(chart: ChartTime, data: IReflectionAuthor[]): ChartTime {
+    renderTimeline(chart: ChartTime, data: IRelfectionAuthorAnalytics[]): ChartTime {
         const _this = this;
 
-        const hardLine = d3.line<IReflectionAuthor>()
+        const hardLine = d3.line<IRelfectionAuthorAnalytics>()
             .x(d => chart.x.scale(d.timestamp))
             .y(d => chart.y.scale(d.point))
             .curve(d3.curveMonotoneX);
 
-        const softLine = d3.line<IReflectionAuthor>()
+        const softLine = d3.line<IRelfectionAuthorAnalytics>()
             .x(d => chart.x.scale(d.timestamp))
             .y(d => chart.y.scale(d.point))
             .curve(d3.curveBasis);
         
         const avg = d3.mean(data, d => chart.y.scale(d.point));
-        const meanLine = d3.line<IReflectionAuthor>()
+        const meanLine = d3.line<IRelfectionAuthorAnalytics>()
             .x(d => chart.x.scale(d.timestamp))
             .y(avg);
 
@@ -2211,13 +2253,14 @@ class AuthorControlCharts implements IAuthorControlCharts {
 
         //Enable tooltip       
         _this.interactions.tooltip.enableTooltip(chart, onMouseover, onMouseout);
-        function onMouseover(e: Event, d: IReflectionAuthor) {
+        function onMouseover(e: Event, d: IRelfectionAuthorAnalytics) {
             if (d3.select(this).attr("class").includes("clicked")) {
                 return;
             }
             _this.interactions.tooltip.appendTooltipContainer(chart);
             let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.timestamp.toDateString(), 
-                [new TooltipValues("Point", d.point)]);
+                [new TooltipValues("Point", d.point),
+                new TooltipValues("Tags", d.tags.length)]);
             _this.interactions.tooltip.positionTooltipContainer(chart, xTooltip(d.timestamp, tooltipBox), yTooltip(d.point, tooltipBox));
 
             function xTooltip(x: Date, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
@@ -2251,7 +2294,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
     renderNetwork(chart: ChartNetwork, data: INetworkData): ChartNetwork {
         const _this = this;
 
-        if (data.tags.map(d => d.x).filter(d => d !== undefined).length === 0) {
+        if (data.nodes.map(d => d.x).filter(d => d !== undefined).length === 0) {
             _this.processSimulation(chart, data);
         }
 
@@ -2271,7 +2314,8 @@ class AuthorControlCharts implements IAuthorControlCharts {
                         .attr("y1", d => (d.source as ITags).y)
                         .attr("x2", d => (d.target as ITags).x)
                         .attr("y2", d => (d.target as ITags).y)),
-                update => update  .call(update => update.transition()
+                update => update.call(update => update.classed("reflection-link", d => d.isReflection)
+                    .transition()
                     .duration(750)               
                     .attr("x1", d => (d.source as ITags).x)
                     .attr("y1", d => (d.source as ITags).y)
@@ -2281,13 +2325,15 @@ class AuthorControlCharts implements IAuthorControlCharts {
             );
         
         chart.elements.contentContainer.selectAll(".network-node-group")
-            .data(data.tags)
+            .data(data.nodes)
             .join(
                 enter => enter.append("g")
                     .attr("class", "network-node-group")
                     .attr("transform", `translate(${chart.width / 2}, ${chart.height / 2})`)
                     .call(enter => enter.append("rect")
-                        .attr("class", d => `network-node ${d.tag.toLowerCase()}`))
+                        .attr("class", "network-node")
+                        .style("fill", d => d.colour)
+                        .style("stroke", d => d.colour))
                     .call(enter => enter.append("text")
                         .attr("id", d => `text-${d.index}`)
                         .attr("class", "network-text"))
@@ -2301,7 +2347,12 @@ class AuthorControlCharts implements IAuthorControlCharts {
                         .attr("transform", d => `translate(${d.x}, ${d.y})`)),
                 update => update.call(update => update.transition()
                     .duration(750)
-                    .attr("transform", d => `translate(${d.x}, ${d.y})`)),
+                    .attr("transform", d => `translate(${d.x}, ${d.y})`))
+                    .call(update => update.select("rect")
+                        .style("fill", d => d.colour)
+                        .style("stroke", d => d.colour))
+                    .call(update => update.select("text")
+                        .attr("id", d => `text-${d.index}`)),
                 exit => exit.remove()
             );
         
@@ -2324,11 +2375,11 @@ class AuthorControlCharts implements IAuthorControlCharts {
                     .text(d => d.phrase)
                     .style("opacity", 0)
                     .transition()
-                    .duration(750)
+                    .duration(500)
                     .style("opacity", "1"))
                 .call(enter => enter.select(".network-node")
                     .transition()
-                    .duration(750)
+                    .duration(500)
                     .attr("x", d => -(enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().width + 10) / 2)
                     .attr("y", d => -(enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().height + 5) / 2)
                     .attr("width", d => enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().width + 10)
@@ -2349,11 +2400,11 @@ class AuthorControlCharts implements IAuthorControlCharts {
                     .text(null)
                     .style("opacity", 0)
                     .transition()
-                    .duration(750)
+                    .duration(500)
                     .style("opacity", "1"))
                 .call(enter => enter.select(".network-node")
                     .transition()
-                    .duration(750)
+                    .duration(500)
                     .attr("x", -5)
                     .attr("y", -5)
                     .attr("width", 10)
@@ -2387,24 +2438,27 @@ class AuthorControlCharts implements IAuthorControlCharts {
         const _this = this
         d3.select<HTMLDivElement, Date>("#reflections .reflections-tab")
             .selectAll(".reflection")
-            .data(d3.sort(data, d => d.timestamp))
-            .enter()
-            .append("div")
-            .attr("class", "reflection")
-            .call(div => div.append("p")
-                .attr("class", "mb-0")
-                .html(d => `<i>${d.timestamp.toDateString()} | Point: ${d.point}`))
-            .call(div => div.append("p")
-                .html(d => _this.processReflectionsText(d)))
+            .data(data)
+            .join(
+                enter => enter.append("div")
+                .attr("class", "reflection")
+                .call(div => div.append("p")
+                    .attr("class", "reflection-text")
+                    .html(d => _this.processReflectionsText(d))),
+                update => update.select<HTMLParagraphElement>("p")
+                    .html(d => _this.processReflectionsText(d)),
+                exit => exit.remove()
+            )
+           
     }
 
     processReflectionsText(data: IRelfectionAuthorAnalytics): string {
-        let html = "";
+        let html = `<i>${data.timestamp.toDateString()} | Point: ${data.point}</i><br>`;
         for (var i = 0; i < data.text.length; i++) {
             const isOpenTag = data.tags.find(c => c.start_index === i);
             const isCloseTag = data.tags.find(c => c.end_index === i);
             if (isOpenTag !== undefined) {
-                html += `<span class="badge badge-pill ${isOpenTag.tag.toLocaleLowerCase()}">${data.text[i]}`
+                html += `<span class="badge badge-pill" style="background-color: ${isOpenTag.colour}">${data.text[i]}`
             } else if (isCloseTag !== undefined) {
                 html += `${data.text[i]}</span>`
             } else {
@@ -2436,6 +2490,145 @@ class AuthorControlInteractions extends AuthorControlTransitions implements IAut
 /* ------------------------------------------------
     End of author control interfaces and classes 
 -------------------------------------------------- */
+
+
+/* ------------------------------------------------
+    Start of author experimental interfaces and classes 
+-------------------------------------------------- */
+
+interface IAuthorExperimentalCharts extends IAuthorControlCharts {
+    interactions: IAuthorExperimentalInteractions;
+    allEntries: IRelfectionAuthorAnalytics[];
+    allNetworkData: INetworkData;
+    allTags: ITags[];
+    networkChart: ChartNetwork;
+    sorted: string;
+    handleTags(): void;
+    handleTagsColours(): void;
+    handleReflectionsSort(): void;
+}
+
+class AuthorExperimentalCharts extends AuthorControlCharts implements IAuthorExperimentalCharts {
+    interactions = new AuthorExperimentalInteractions();
+    allEntries: IRelfectionAuthorAnalytics[];
+    allNetworkData: INetworkData;
+    allTags: ITags[];
+    networkChart: ChartNetwork;
+    sorted = "date";
+
+    preloadTags(entries: IRelfectionAuthorAnalytics[], enable?: boolean): ITags[] {
+        let tags = super.preloadTags(entries, true);
+        this.allEntries = entries;
+        this.allTags = tags;
+
+        d3.select("#tags").selectAll<HTMLLIElement, ITags>("li").select("div")
+            .insert("div", "input")
+            .attr("class", "input-group-prepend")
+            .append("div")
+            .attr("class", "input-group-text tag-row")
+            .append("input")
+            .attr("type", "checkbox")
+            .attr("value", d => d.tag)
+            .attr("checked", true)
+
+        return tags;
+    }
+
+    handleTags(): void {
+        let _this = this;
+        d3.selectAll("#tags input[type=checkbox]").on("change", (e: Event) => {
+            let target = e.target as HTMLInputElement;
+            if (target.checked) {
+                _this.allTags.find(d => d.tag == target.value).selected = true;
+            } else {
+                _this.allTags.find(d => d.tag == target.value).selected = false;
+            }
+
+            let entries = _this.getUpdatedEntriesData();
+            let networkData = _this.getUpdatedNetworkData();
+            _this.renderNetwork(_this.networkChart, networkData);
+            _this.renderReflections(entries);
+        });
+    };
+
+    handleTagsColours(): void {
+        const _this = this;
+        d3.selectAll("#tags input[type=color]").on("change", (e: Event) => {
+            let target = e.target as HTMLInputElement;
+            let tag = target.id.replace("colour-", "");
+            _this.allEntries = _this.allEntries.map(c => { 
+                let tags = c.tags.filter(d => d.tag === tag);
+                for(var i = 0; i < tags.length; i++) {
+                    c.tags.find(d => d === tags[i]).colour = target.value;
+                }
+                return c
+            });
+            
+            let nodes = _this.allNetworkData.nodes.filter(d => d.tag === tag);
+            for(var i = 0; i < nodes.length; i++) {
+                nodes[i].colour = target.value;
+            }
+
+            _this.renderNetwork(_this.networkChart, _this.allNetworkData);
+            _this.renderReflections(_this.allEntries);
+        });
+    };
+
+    handleReflectionsSort(): void {
+        const _this = this;
+        d3.select("#sort .btn-group-toggle").on("click", (e: any) => {
+            var selectedOption = e.target.control.value;
+            _this.allEntries = _this.allEntries.sort(function (a, b) {
+                if (selectedOption == "date") {
+                    return _this.interactions.sort.sortData(a.timestamp, b.timestamp, _this.sorted == "date" ? true : false);
+                } else if (selectedOption == "point") {
+                    return _this.interactions.sort.sortData(a.point, b.point, _this.sorted == "point" ? true : false);
+                }
+            });
+            _this.sorted = _this.interactions.sort.setSorted(_this.sorted, selectedOption);
+            _this.renderReflections(_this.allEntries);
+        });
+    };
+
+    private getUpdatedEntriesData(): IRelfectionAuthorAnalytics[] {
+        const _this = this;
+        return _this.allEntries.map(c => { 
+            let tags = c.tags.filter(d => _this.allTags.filter(c => c.selected).map(r => r.tag).includes(d.tag));
+            return { "timestamp": c.timestamp, "pseudonym": c.pseudonym, "point": c.point, "text": c.text, "tags": tags, "matrix": c.matrix }
+        });
+    }
+
+    private getUpdatedNetworkData(): INetworkData {
+        const _this = this;
+        let nodes = _this.allNetworkData.nodes.filter(d => { 
+            return _this.allTags.filter(c => c.selected).map(r => r.tag).includes(d.tag) || d.tag === "ref"
+        });
+        let links = _this.allNetworkData.links.filter(d => { 
+            return (_this.allTags.filter(c => c.selected).map(r => r.tag).includes((d.source as ITags).tag) &&
+                _this.allTags.filter(c => c.selected).map(r => r.tag).includes((d.target as ITags).tag)) ||
+                ((d.source as ITags).tag === "ref"  && 
+                _this.allTags.filter(c => c.selected).map(r => r.tag).includes((d.target as ITags).tag))
+        });
+        return { "nodes": nodes, "links": links }
+    }
+
+
+}
+
+interface IAuthorExperimentalInteractions extends IAuthorControlInteractions {
+    click: IClick;
+    sort: ISort;
+}
+
+class AuthorExperimentalInteractions extends AuthorControlInteractions implements IAuthorExperimentalInteractions {
+    click = new Click();
+    sort = new Sort();
+}
+
+/* ------------------------------------------------
+    End of author experimental interfaces and classes 
+-------------------------------------------------- */
+
 
 /* ------------------------------------------------
     Start utils interfaces and classes 
@@ -2851,26 +3044,42 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAdminAnal
 
 export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionAuthor[], analyticsRaw: IReflectionAnalytics[]) {
     let loading = new Loading();
-    const entries = entriesRaw.map((d, i) => { return {"timestamp": new Date(d.timestamp), "pseudonym": d.pseudonym, "point": d.point, "text": d.text, "tags": analyticsRaw[i].tags, "matrix": analyticsRaw[i].matrix } as IRelfectionAuthorAnalytics });
+    const colourScale = d3.scaleOrdinal(d3.schemeCategory10);
+    const entries = d3.sort(entriesRaw.map((d, i) => { return {"timestamp": new Date(d.timestamp), "pseudonym": d.pseudonym, "point": d.point, "text": d.text, "tags": analyticsRaw[i].tags.map(d => processColour(d)), "matrix": analyticsRaw[i].matrix } as IRelfectionAuthorAnalytics }), d => d.timestamp);
     await drawCharts(entries);
     loading.isLoading = false;
     loading.removeDiv();
 
+    function processColour(tag: ITags): ITags {
+        if (tag.colour === undefined) {
+            return {"start_index": tag.start_index, "tag": tag.tag, "phrase": tag.phrase, "colour": colourScale(tag.tag), "end_index": tag.end_index}
+        }
+        return tag;
+    }
+
     async function drawCharts(entries: IRelfectionAuthorAnalytics[]) {
         let authorControlCharts = new AuthorControlCharts();
+        authorControlCharts.preloadTags(entries);
 
-        let timelineChart = new ChartTime("timeline", entries.map(d => d.timestamp));
+        let timelineChart = new ChartTime("timeline", entries.map(d => d.timestamp), new ChartPadding(40, 75, 10, 10));
         authorControlCharts.renderTimeline(timelineChart, entries);
-
-        let networkChart = new ChartNetwork("network", "chart-container-network", entries.map(d => d.timestamp));
-        let networkData = authorControlCharts.processNetworkData(networkChart, entries);
-        authorControlCharts.processSimulation(networkChart, networkData)
-        authorControlCharts.renderNetwork(networkChart, networkData);
 
         //Handle timeline chart help
         d3.select("#timeline .card-title button")
             .on("click", function (e: Event) {
-                authorControlCharts.help.helpPopover(d3.select("#timeline .zoom-rect.active"), `${networkChart.id}-help-zoom`, "use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move");
+                authorControlCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Timeline</b><br>Your reflections are shown sorted by time");
+                authorControlCharts.help.helpPopover(timelineChart.elements.contentContainer.select(".point"), `${timelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
+            });
+
+        let networkChart = new ChartNetwork("network", "chart-container-network", entries.map(d => d.timestamp));
+        let networkData = authorControlCharts.processNetworkData(networkChart, entries);
+        authorControlCharts.processSimulation(networkChart, networkData);
+        authorControlCharts.renderNetwork(networkChart, networkData);
+
+        //Handle timeline chart help
+        d3.select("#network .card-title button")
+            .on("click", function (e: Event) {
+                authorControlCharts.help.helpPopover(d3.select("#network .zoom-rect.active"), `${networkChart.id}-help-zoom`, "use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move");
                 authorControlCharts.help.helpPopover(d3.select(this), `${networkChart.id}-help`, "<b>Network diagram</b><br>A network diagram that shows the phrases and tags associated to your reflections<br>The data represented are your <i>reflections over time</i>");
                 let showDataHelp = authorControlCharts.help.helpPopover(networkChart.elements.contentContainer.select(".network-node-group"), `${networkChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
                 if (showDataHelp) {
@@ -2885,5 +3094,64 @@ export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionA
             .on("click", function (e: Event) {
                 authorControlCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Reflections</b><br>Your reflections are shown sorted by time. The words with associated tags have a different background colour");
             });
+    }
+}
+
+export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflectionAuthor[], analyticsRaw: IReflectionAnalytics[]) {
+    let loading = new Loading();
+    const colourScale = d3.scaleOrdinal(d3.schemeCategory10);
+    const entries = d3.sort(entriesRaw.map((d, i) => { return {"timestamp": new Date(d.timestamp), "pseudonym": d.pseudonym, "point": d.point, "text": d.text, "tags": analyticsRaw[i].tags.map(d => processColour(d)), "matrix": analyticsRaw[i].matrix } as IRelfectionAuthorAnalytics }), d => d.timestamp);
+    await drawCharts(entries);
+    loading.isLoading = false;
+    loading.removeDiv();
+
+    function processColour(tag: ITags): ITags {
+        if (tag.colour === undefined) {
+            return {"start_index": tag.start_index, "tag": tag.tag, "phrase": tag.phrase, "colour": colourScale(tag.tag), "end_index": tag.end_index}
+        }
+        return tag;
+    }
+
+    async function drawCharts(entries: IRelfectionAuthorAnalytics[]) {
+        let authorExperimentalCharts = new AuthorExperimentalCharts();
+        authorExperimentalCharts.preloadTags(entries, true)
+
+        let timelineChart = new ChartTime("timeline", entries.map(d => d.timestamp), new ChartPadding(40, 75, 10, 10));
+        authorExperimentalCharts.renderTimeline(timelineChart, entries);
+
+        //Handle timeline chart help
+        d3.select("#timeline .card-title button")
+            .on("click", function (e: Event) {
+                authorExperimentalCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Timeline</b><br>Your reflections are shown sorted by time");
+                authorExperimentalCharts.help.helpPopover(timelineChart.elements.contentContainer.select(".point"), `${timelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
+            });
+
+        authorExperimentalCharts.networkChart = new ChartNetwork("network", "chart-container-network", entries.map(d => d.timestamp));
+        authorExperimentalCharts.allNetworkData = authorExperimentalCharts.processNetworkData(authorExperimentalCharts.networkChart, entries);
+        authorExperimentalCharts.processSimulation(authorExperimentalCharts.networkChart, authorExperimentalCharts.allNetworkData);
+        authorExperimentalCharts.renderNetwork(authorExperimentalCharts.networkChart, authorExperimentalCharts.allNetworkData);
+
+        //Handle timeline chart help
+        d3.select("#network .card-title button")
+            .on("click", function (e: Event) {
+                authorExperimentalCharts.help.helpPopover(d3.select("#network .zoom-rect.active"), `${authorExperimentalCharts.networkChart.id}-help-zoom`, "use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move");
+                authorExperimentalCharts.help.helpPopover(d3.select(this), `${authorExperimentalCharts.networkChart.id}-help`, "<b>Network diagram</b><br>A network diagram that shows the phrases and tags associated to your reflections<br>The data represented are your <i>reflections over time</i>");
+                let showDataHelp = authorExperimentalCharts.help.helpPopover(authorExperimentalCharts.networkChart.elements.contentContainer.select(".network-node-group"), `${authorExperimentalCharts.networkChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
+                if (showDataHelp) {
+                    d3.select(`#${authorExperimentalCharts.networkChart.id}-help-data`).style("top", parseInt(d3.select(`#${authorExperimentalCharts.networkChart.id}-help-data`).style("top")) - 14 + "px");
+                }
+            });
+
+            authorExperimentalCharts.renderReflections(entries);
+
+        //Handle users histogram chart help
+        d3.select("#reflections .card-title button")
+            .on("click", function (e: Event) {
+                authorExperimentalCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Reflections</b><br>Your reflections are shown sorted by time. The words with associated tags have a different background colour");
+            });
+
+        authorExperimentalCharts.handleTags();
+        authorExperimentalCharts.handleTagsColours();
+        authorExperimentalCharts.handleReflectionsSort();
     }
 }
