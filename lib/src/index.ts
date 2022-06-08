@@ -2120,6 +2120,12 @@ class ChartNetwork implements IChart {
         result.setDate(result.getDate() + days)
         return result;
     }
+    resetZoomRange(): void {
+        this.x.scale.range([0, this.width - this.padding.yAxis - this.padding.right]);
+        d3.zoom().transform(this.elements.contentContainer.select(".zoom-rect"), d3.zoomIdentity);
+        this.x.axis.ticks((this.width - this.padding.yAxis - this.padding.right) / 75);
+        this.elements.xAxis.transition().duration(750).call(this.x.axis);
+    }
 }
 
 interface IAuthorControlCharts {
@@ -2149,6 +2155,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
             .data(uniqueTags)
             .enter()
             .append("li")
+            .attr("class", "mx-3")
             .append("div")
             .attr("class", "input-group")
             .call(div => div.append("input")
@@ -2298,6 +2305,10 @@ class AuthorControlCharts implements IAuthorControlCharts {
             _this.processSimulation(chart, data);
         }
 
+        d3.select(`#${chart.id} .card-subtitle`)
+            .html(data.nodes.filter(d => d.tag === "ref").length == 1 ? `Filtering by <span class="badge badge-pill badge-info">${chart.x.scale.invert(data.nodes.find(d => d.tag === "ref").fx).toDateString()} <i class="fas fa-window-close"></i></span>`:
+                "");
+
         chart.elements.contentContainer.selectAll(".network-link")
             .data(data.links)
             .join(
@@ -2436,6 +2447,11 @@ class AuthorControlCharts implements IAuthorControlCharts {
 
     renderReflections(data: IRelfectionAuthorAnalytics[]) {
         const _this = this
+        
+        d3.select("#reflections .card-subtitle")
+        .html(data.length == 1 ? `Filtering by <span class="badge badge-pill badge-info">${data[0].timestamp.toDateString()} <i class="fas fa-window-close"></i></span>`:
+            "");
+
         d3.select<HTMLDivElement, Date>("#reflections .reflections-tab")
             .selectAll(".reflection")
             .data(data)
@@ -2501,6 +2517,7 @@ interface IAuthorExperimentalCharts extends IAuthorControlCharts {
     allEntries: IRelfectionAuthorAnalytics[];
     allNetworkData: INetworkData;
     allTags: ITags[];
+    timelineChart: ChartTime;
     networkChart: ChartNetwork;
     sorted: string;
     handleTags(): void;
@@ -2513,6 +2530,7 @@ class AuthorExperimentalCharts extends AuthorControlCharts implements IAuthorExp
     allEntries: IRelfectionAuthorAnalytics[];
     allNetworkData: INetworkData;
     allTags: ITags[];
+    timelineChart: ChartTime;
     networkChart: ChartNetwork;
     sorted = "date";
 
@@ -2546,6 +2564,7 @@ class AuthorExperimentalCharts extends AuthorControlCharts implements IAuthorExp
 
             let entries = _this.getUpdatedEntriesData();
             let networkData = _this.getUpdatedNetworkData();
+            _this.networkChart.resetZoomRange();
             _this.renderNetwork(_this.networkChart, networkData);
             _this.renderReflections(entries);
         });
@@ -2569,8 +2588,11 @@ class AuthorExperimentalCharts extends AuthorControlCharts implements IAuthorExp
                 nodes[i].colour = target.value;
             }
 
-            _this.renderNetwork(_this.networkChart, _this.allNetworkData);
-            _this.renderReflections(_this.allEntries);
+            let entries = _this.getUpdatedEntriesData();
+            let networkData = _this.getUpdatedNetworkData();
+            _this.networkChart.resetZoomRange();
+            _this.renderNetwork(_this.networkChart, networkData);
+            _this.renderReflections(entries);
         });
     };
 
@@ -2586,8 +2608,17 @@ class AuthorExperimentalCharts extends AuthorControlCharts implements IAuthorExp
                 }
             });
             _this.sorted = _this.interactions.sort.setSorted(_this.sorted, selectedOption);
-            _this.renderReflections(_this.allEntries);
+            let entries = _this.getUpdatedEntriesData();
+            _this.renderReflections(entries);
         });
+    };
+
+    handleFilterButton(): void {
+        this.interactions.click.removeClick(this.timelineChart);
+        let entries = this.getUpdatedEntriesData();
+        let networkData = this.getUpdatedNetworkData();
+        this.renderNetwork(this.networkChart, networkData);
+        this.renderReflections(entries);
     };
 
     private getUpdatedEntriesData(): IRelfectionAuthorAnalytics[] {
@@ -2598,21 +2629,82 @@ class AuthorExperimentalCharts extends AuthorControlCharts implements IAuthorExp
         });
     }
 
-    private getUpdatedNetworkData(): INetworkData {
+    private getUpdatedNetworkData(networkData?: INetworkData): INetworkData {
         const _this = this;
-        let nodes = _this.allNetworkData.nodes.filter(d => { 
+        let data = networkData === undefined ? _this.allNetworkData : networkData;
+        let nodes = data.nodes.filter(d => { 
             return _this.allTags.filter(c => c.selected).map(r => r.tag).includes(d.tag) || d.tag === "ref"
         });
-        let links = _this.allNetworkData.links.filter(d => { 
+        let links = data.links.filter(d => { 
             return (_this.allTags.filter(c => c.selected).map(r => r.tag).includes((d.source as ITags).tag) &&
                 _this.allTags.filter(c => c.selected).map(r => r.tag).includes((d.target as ITags).tag)) ||
                 ((d.source as ITags).tag === "ref"  && 
                 _this.allTags.filter(c => c.selected).map(r => r.tag).includes((d.target as ITags).tag))
         });
+
         return { "nodes": nodes, "links": links }
     }
 
+    private getClickData(): INetworkData {
 
+    }
+
+    renderTimeline(chart: ChartTime, data: IRelfectionAuthorAnalytics[]): ChartTime {
+        chart = super.renderTimeline(chart, data);    
+
+        const _this = this
+        _this.interactions.click.enableClick(chart, onClick);
+
+        chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
+            _this.interactions.click.removeClick(chart);
+            let entries = _this.getUpdatedEntriesData();
+            let networkData = _this.getUpdatedNetworkData();
+            _this.renderNetwork(_this.networkChart, networkData);
+            _this.renderReflections(entries);
+        });
+
+        function onClick(e: Event, d: IRelfectionAuthorAnalytics) {
+            if (d3.select(this).attr("class").includes("clicked")) {
+                _this.interactions.click.removeClick(chart);
+                let networkData = _this.getUpdatedNetworkData();
+                _this.renderNetwork(_this.networkChart, networkData)
+                _this.renderReflections(data);
+                return;
+            }
+            _this.interactions.click.removeClick(chart);
+            chart.click = true;
+            d3.select(this).classed("clicked", true);
+            let nodes = _this.allNetworkData.nodes.filter(c => {
+                return d.tags.includes(c) || c.fx === _this.networkChart.x.scale(d.timestamp)
+            });
+            let links = _this.allNetworkData.links.filter(c => {
+                return nodes.includes(c.source as ITags) || nodes.includes(c.target as ITags)
+            })
+            let networkData = _this.getUpdatedNetworkData({"nodes": nodes, "links": links});
+            _this.renderNetwork(_this.networkChart, networkData);
+            _this.renderReflections([d]);
+        }
+
+        return chart;
+    }
+
+    renderNetwork(chart: ChartNetwork, data: INetworkData): ChartNetwork {
+        chart = super.renderNetwork(chart, data);
+
+        const _this = this;
+
+        d3.select(`#${chart.id} .badge`).on("click", () => _this.handleFilterButton());
+
+        return chart
+    }
+
+    renderReflections(data: IRelfectionAuthorAnalytics[]): void {
+        super.renderReflections(data)
+
+        const _this = this;
+
+        d3.select(`#reflections .badge`).on("click", () => _this.handleFilterButton());
+    }
 }
 
 interface IAuthorExperimentalInteractions extends IAuthorControlInteractions {
@@ -3116,14 +3208,14 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflecti
         let authorExperimentalCharts = new AuthorExperimentalCharts();
         authorExperimentalCharts.preloadTags(entries, true)
 
-        let timelineChart = new ChartTime("timeline", entries.map(d => d.timestamp), new ChartPadding(40, 75, 10, 10));
-        authorExperimentalCharts.renderTimeline(timelineChart, entries);
+        authorExperimentalCharts.timelineChart = new ChartTime("timeline", entries.map(d => d.timestamp), new ChartPadding(40, 75, 10, 10));
+        authorExperimentalCharts.renderTimeline(authorExperimentalCharts.timelineChart, entries);
 
         //Handle timeline chart help
         d3.select("#timeline .card-title button")
             .on("click", function (e: Event) {
                 authorExperimentalCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Timeline</b><br>Your reflections are shown sorted by time");
-                authorExperimentalCharts.help.helpPopover(timelineChart.elements.contentContainer.select(".point"), `${timelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
+                authorExperimentalCharts.help.helpPopover(authorExperimentalCharts.timelineChart.elements.contentContainer.select(".point"), `${authorExperimentalCharts.timelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
             });
 
         authorExperimentalCharts.networkChart = new ChartNetwork("network", "chart-container-network", entries.map(d => d.timestamp));

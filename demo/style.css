@@ -356,6 +356,7 @@ Author CSS
     border-top: none !important;
     border-left: none !important;
     border-right: none !important;
+    text-align: center;
 }
 
 .hardline {
