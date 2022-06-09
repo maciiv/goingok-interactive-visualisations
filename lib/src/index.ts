@@ -2205,6 +2205,14 @@ class AuthorControlCharts implements IAuthorControlCharts {
             .tick(300);
     }
 
+    processTimelineSimulation(centerX: number, centerY: number, nodes: ITags[]): void {
+        return d3.forceSimulation<ITags, undefined>(nodes)
+            .force("charge", d3.forceManyBody().strength(10))
+            .force("collide", d3.forceCollide().radius(15))
+            .force("center", d3.forceCenter(centerX, centerY))
+            .tick(300);
+    }
+
     renderTimeline(chart: ChartTime, data: IRelfectionAuthorAnalytics[]): ChartTime {
         const _this = this;
 
@@ -2213,46 +2221,40 @@ class AuthorControlCharts implements IAuthorControlCharts {
             .y(d => chart.y.scale(d.point))
             .curve(d3.curveMonotoneX);
 
-        const softLine = d3.line<IRelfectionAuthorAnalytics>()
-            .x(d => chart.x.scale(d.timestamp))
-            .y(d => chart.y.scale(d.point))
-            .curve(d3.curveBasis);
-        
-        const avg = d3.mean(data, d => chart.y.scale(d.point));
-        const meanLine = d3.line<IRelfectionAuthorAnalytics>()
-            .x(d => chart.x.scale(d.timestamp))
-            .y(avg);
-
         chart.elements.contentContainer.append("path")
             .datum(d3.sort(data, d => d.timestamp))
             .attr("class", "hardline")
             .attr("d", d => hardLine(d));
 
-        chart.elements.contentContainer.append("path")
-            .datum(d3.sort(data, d => d.timestamp))
-            .attr("class", "softline")
-            .attr("d", d => softLine(d));
-        
-        chart.elements.contentContainer.append("path")
-            .datum(d3.sort(data, d => d.timestamp))
-            .attr("class", "meanline")
-            .attr("d", d => meanLine(d));
-
-        chart.elements.contentContainer.selectAll(".point")
+        chart.elements.contentContainer.selectAll(".circle-tag-container")
             .data(data)
             .join(
-                enter => enter.append("circle")
-                    .attr("class", "point")
-                    .attr("cx", d => chart.x.scale(d.timestamp))
-                    .attr("cy", chart.y.scale(0))
+                enter => enter.append("g")
+                    .attr("class", "circle-tag-container")
+                    .call(enter => enter.append("circle")
+                        .attr("class", "circle")
+                        .attr("r", 5)
+                        .style("fill", "#f2f2f2")
+                        .style("stroke", "#f2f2f2"))
+                    .call(enter => enter.selectAll(".circle-tag")
+                        .data(d => d.tags)
+                        .enter()
+                        .append("circle")
+                        .attr("class", "circle-tag")
+                        .attr("cx", d => d.x)
+                        .attr("cy", d => d.y)
+                        .attr("r", 5)
+                        .style("fill", d => d.colour)
+                        .style("stroke", d => d.colour))
                     .call(enter => enter.transition()
                         .duration(750)
-                        .attr("r", 5)
-                        .attr("cy", d => chart.y.scale(d.point))),
+                        .attr("transform", d => `translate (${chart.x.scale(d.timestamp)}, ${chart.y.scale(d.point)})`)),
                 update => update.call(update => update.transition()
                     .duration(750)
                     .attr("cx", d => chart.x.scale(d.timestamp))
-                    .attr("cy", d => chart.y.scale(d.point))),
+                    .attr("cy", d => chart.y.scale(d.point))
+                    .style("fill", "#f2f2f2")
+                    .style("stroke", "#f2f2f2")),
                 exit => exit.remove()
             )
         
@@ -2643,10 +2645,6 @@ class AuthorExperimentalCharts extends AuthorControlCharts implements IAuthorExp
         });
 
         return { "nodes": nodes, "links": links }
-    }
-
-    private getClickData(): INetworkData {
-
     }
 
     renderTimeline(chart: ChartTime, data: IRelfectionAuthorAnalytics[]): ChartTime {
@@ -3153,16 +3151,6 @@ export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionA
         let authorControlCharts = new AuthorControlCharts();
         authorControlCharts.preloadTags(entries);
 
-        let timelineChart = new ChartTime("timeline", entries.map(d => d.timestamp), new ChartPadding(40, 75, 10, 10));
-        authorControlCharts.renderTimeline(timelineChart, entries);
-
-        //Handle timeline chart help
-        d3.select("#timeline .card-title button")
-            .on("click", function (e: Event) {
-                authorControlCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Timeline</b><br>Your reflections are shown sorted by time");
-                authorControlCharts.help.helpPopover(timelineChart.elements.contentContainer.select(".point"), `${timelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
-            });
-
         let networkChart = new ChartNetwork("network", "chart-container-network", entries.map(d => d.timestamp));
         let networkData = authorControlCharts.processNetworkData(networkChart, entries);
         authorControlCharts.processSimulation(networkChart, networkData);
@@ -3177,6 +3165,17 @@ export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionA
                 if (showDataHelp) {
                     d3.select(`#${networkChart.id}-help-data`).style("top", parseInt(d3.select(`#${networkChart.id}-help-data`).style("top")) - 14 + "px");
                 }
+            });
+        
+        let timelineChart = new ChartTime("timeline", entries.map(d => d.timestamp), new ChartPadding(40, 75, 10, 10));
+        entries.forEach(c => authorControlCharts.processTimelineSimulation(timelineChart.x.scale(c.timestamp), timelineChart.y.scale(c.point), c.tags));
+        authorControlCharts.renderTimeline(timelineChart, entries);
+
+        //Handle timeline chart help
+        d3.select("#timeline .card-title button")
+            .on("click", function (e: Event) {
+                authorControlCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Timeline</b><br>Your reflections are shown sorted by time");
+                authorControlCharts.help.helpPopover(timelineChart.elements.contentContainer.select(".point"), `${timelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
             });
 
         authorControlCharts.renderReflections(entries);
