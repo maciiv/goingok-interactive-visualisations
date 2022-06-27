@@ -2092,6 +2092,19 @@ interface INetworkData {
     links: ILinks<ITags>[]
 }
 
+class ChartTimeNetwork extends ChartTime {
+    constructor(id: string, domain: Date[], chartPadding: ChartPadding){
+        super(id, domain, chartPadding);
+        this.x.scale.domain([this.addDays(d3.min(domain), -30), this.addDays(d3.max(domain), 30)]);
+        this.elements.xAxis.call(this.x.axis);
+    }
+    addDays(date: Date, days: number): Date {
+        let result = new Date(date);
+        result.setDate(result.getDate() + days)
+        return result;
+    }
+}
+
 // Basic class for network chart timeline
 class ChartNetwork implements IChart {
     id: string;
@@ -2134,7 +2147,8 @@ interface IAuthorControlCharts {
     preloadTags(entries: IRelfectionAuthorAnalytics[], enable?: boolean): ITags[];
     processNetworkData(chart: ChartNetwork, entries: IRelfectionAuthorAnalytics[]): INetworkData;
     processSimulation(chart: ChartNetwork, data: INetworkData): void;
-    renderTimeline(chart: ChartTime, data: IReflectionAuthor[]): ChartTime;
+    processTimelineSimulation(chart: ChartTimeNetwork, centerX: number, centerY: number, nodes: ITags[]): void;
+    renderTimeline(chart: ChartTimeNetwork, data: IReflectionAuthor[]): ChartTimeNetwork;
     renderNetwork(chart: ChartNetwork, data: INetworkData): ChartNetwork;
     renderReflections(data: IReflectionAuthor[]): void;
 }
@@ -2179,14 +2193,15 @@ class AuthorControlCharts implements IAuthorControlCharts {
     processNetworkData(chart: ChartNetwork, entries: IRelfectionAuthorAnalytics[]): INetworkData {
         let networkData = { "nodes": [] as ITags[], "links": [] as ILinks<ITags>[] } as INetworkData;
         entries.forEach(c => {
-            networkData.nodes = networkData.nodes.concat(c.tags);
+            let tags = c.tags.map(d => { return {...d} });
+            networkData.nodes = networkData.nodes.concat(tags);
             let refTag = { "tag": "ref", "phrase": c.timestamp.toDateString(), "colour": "#f2f2f2", "fx": chart.x.scale(c.timestamp) } as ITags;
             networkData.nodes.push(refTag);
             c.matrix.forEach((r, i) => {
                 for (var x = 0; x < r.length; x++) {
-                    if (r[x] !== 0) networkData.links.push({ "source": c.tags[i], "target": c.tags[x], "weight": r[x] })
+                    if (r[x] !== 0) networkData.links.push({ "source": tags[i], "target": tags[x], "weight": r[x] })
                 }
-                networkData.links.push({ "source": refTag, "target": c.tags[i], "weight": 1, "isReflection": true });
+                networkData.links.push({ "source": refTag, "target": tags[i], "weight": 1, "isReflection": true });
             })
         })
 
@@ -2205,15 +2220,26 @@ class AuthorControlCharts implements IAuthorControlCharts {
             .tick(300);
     }
 
-    processTimelineSimulation(centerX: number, centerY: number, nodes: ITags[]): void {
-        return d3.forceSimulation<ITags, undefined>(nodes)
-            .force("charge", d3.forceManyBody().strength(10))
-            .force("collide", d3.forceCollide().radius(15))
-            .force("center", d3.forceCenter(centerX, centerY))
-            .tick(300);
+    processTimelineSimulation(chart: ChartTime, centerX: number, centerY: number, nodes: ITags[]): void {
+        let simulation = d3.forceSimulation<ITags, undefined>(nodes)
+            .force("collide", d3.forceCollide().radius(10))
+            .force("forceRadial", d3.forceRadial(0, 0).radius(15));
+        if (centerY < 20) {
+            simulation.force("forceY", d3.forceY(20).strength(0.25))
+        }
+        if (chart.height - chart.padding.top - chart.padding.xAxis - 20 < centerY) {
+            simulation.force("forceY", d3.forceY(-20).strength(0.25))
+        }
+        if (centerX < 20) {
+            simulation.force("forceX", d3.forceX(20).strength(0.25))
+        }
+        if (chart.width - chart.padding.yAxis - chart.padding.right - 20 < centerX) {
+            simulation.force("forceX", d3.forceX(-20).strength(0.25))
+        }
+        return simulation.tick(300);
     }
 
-    renderTimeline(chart: ChartTime, data: IRelfectionAuthorAnalytics[]): ChartTime {
+    renderTimeline(chart: ChartTimeNetwork, data: IRelfectionAuthorAnalytics[]): ChartTimeNetwork {
         const _this = this;
 
         const hardLine = d3.line<IRelfectionAuthorAnalytics>()
@@ -2234,8 +2260,8 @@ class AuthorControlCharts implements IAuthorControlCharts {
                     .call(enter => enter.append("circle")
                         .attr("class", "circle")
                         .attr("r", 5)
-                        .style("fill", "#f2f2f2")
-                        .style("stroke", "#f2f2f2"))
+                        .style("fill", "#999999")
+                        .style("stroke", "#999999"))
                     .call(enter => enter.selectAll(".circle-tag")
                         .data(d => d.tags)
                         .enter()
@@ -2253,12 +2279,12 @@ class AuthorControlCharts implements IAuthorControlCharts {
                     .duration(750)
                     .attr("cx", d => chart.x.scale(d.timestamp))
                     .attr("cy", d => chart.y.scale(d.point))
-                    .style("fill", "#f2f2f2")
-                    .style("stroke", "#f2f2f2")),
+                    .style("fill", "#999999")
+                    .style("stroke", "#999999")),
                 exit => exit.remove()
             )
         
-        chart.elements.content = chart.elements.contentContainer.selectAll(".point");
+        chart.elements.content = chart.elements.contentContainer.selectAll(".circle");
 
         //Enable tooltip       
         _this.interactions.tooltip.enableTooltip(chart, onMouseover, onMouseout);
@@ -2268,8 +2294,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
             }
             _this.interactions.tooltip.appendTooltipContainer(chart);
             let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.timestamp.toDateString(), 
-                [new TooltipValues("Point", d.point),
-                new TooltipValues("Tags", d.tags.length)]);
+                [new TooltipValues("Point", d.point)]);
             _this.interactions.tooltip.positionTooltipContainer(chart, xTooltip(d.timestamp, tooltipBox), yTooltip(d.point, tooltipBox));
 
             function xTooltip(x: Date, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
@@ -2288,8 +2313,8 @@ class AuthorControlCharts implements IAuthorControlCharts {
                 return yTooltip;
             };
 
-            _this.interactions.tooltip.appendLine(chart, 0, chart.y.scale(d.point), chart.x.scale(d.timestamp), chart.y.scale(d.point), "#0000FF");
-            _this.interactions.tooltip.appendLine(chart, chart.x.scale(d.timestamp), chart.y.scale(0), chart.x.scale(d.timestamp), chart.y.scale(d.point), "#0000FF");
+            _this.interactions.tooltip.appendLine(chart, 0, chart.y.scale(d.point), chart.x.scale(d.timestamp), chart.y.scale(d.point), "#999999");
+            _this.interactions.tooltip.appendLine(chart, chart.x.scale(d.timestamp), chart.y.scale(0), chart.x.scale(d.timestamp), chart.y.scale(d.point), "#999999");
         }
         function onMouseout() {
             chart.elements.svg.select(".tooltip-container").transition()
@@ -2519,7 +2544,7 @@ interface IAuthorExperimentalCharts extends IAuthorControlCharts {
     allEntries: IRelfectionAuthorAnalytics[];
     allNetworkData: INetworkData;
     allTags: ITags[];
-    timelineChart: ChartTime;
+    timelineChart: ChartTimeNetwork;
     networkChart: ChartNetwork;
     sorted: string;
     handleTags(): void;
@@ -2532,7 +2557,7 @@ class AuthorExperimentalCharts extends AuthorControlCharts implements IAuthorExp
     allEntries: IRelfectionAuthorAnalytics[];
     allNetworkData: INetworkData;
     allTags: ITags[];
-    timelineChart: ChartTime;
+    timelineChart: ChartTimeNetwork;
     networkChart: ChartNetwork;
     sorted = "date";
 
@@ -2647,7 +2672,7 @@ class AuthorExperimentalCharts extends AuthorControlCharts implements IAuthorExp
         return { "nodes": nodes, "links": links }
     }
 
-    renderTimeline(chart: ChartTime, data: IRelfectionAuthorAnalytics[]): ChartTime {
+    renderTimeline(chart: ChartTimeNetwork, data: IRelfectionAuthorAnalytics[]): ChartTimeNetwork {
         chart = super.renderTimeline(chart, data);    
 
         const _this = this
@@ -3167,8 +3192,8 @@ export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionA
                 }
             });
         
-        let timelineChart = new ChartTime("timeline", entries.map(d => d.timestamp), new ChartPadding(40, 75, 10, 10));
-        entries.forEach(c => authorControlCharts.processTimelineSimulation(timelineChart.x.scale(c.timestamp), timelineChart.y.scale(c.point), c.tags));
+        let timelineChart = new ChartTimeNetwork("timeline", entries.map(d => d.timestamp), new ChartPadding(40, 75, 10, 10));
+        entries.forEach(c => authorControlCharts.processTimelineSimulation(timelineChart, timelineChart.x.scale(c.timestamp), timelineChart.y.scale(c.point), c.tags));
         authorControlCharts.renderTimeline(timelineChart, entries);
 
         //Handle timeline chart help
@@ -3207,7 +3232,7 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflecti
         let authorExperimentalCharts = new AuthorExperimentalCharts();
         authorExperimentalCharts.preloadTags(entries, true)
 
-        authorExperimentalCharts.timelineChart = new ChartTime("timeline", entries.map(d => d.timestamp), new ChartPadding(40, 75, 10, 10));
+        authorExperimentalCharts.timelineChart = new ChartTimeNetwork("timeline", entries.map(d => d.timestamp), new ChartPadding(40, 75, 10, 10));
         authorExperimentalCharts.renderTimeline(authorExperimentalCharts.timelineChart, entries);
 
         //Handle timeline chart help
