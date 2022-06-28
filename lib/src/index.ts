@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { timeDays } from "d3";
+import { D3DragEvent, timeDays } from "d3";
 
 /* ------------------------------------------------
     Start data interfaces and classes 
@@ -2127,6 +2127,7 @@ class ChartNetwork implements IChart {
         this.click = false;
         this.elements = new ChartElements(this, containerClass);
         this.elements.yAxis.remove();
+        this.elements.xAxis.remove();
     }
     addDays(date: Date, days: number): Date {
         let result = new Date(date);
@@ -2208,7 +2209,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
         return networkData;
     }
 
-    processSimulation(chart: ChartNetwork, data: INetworkData): void {
+    processSimulation(chart: ChartNetwork, data: INetworkData): d3.Simulation<ITags, undefined> {
         return d3.forceSimulation<ITags, undefined>(data.nodes)
             .force("link", d3.forceLink()
                 .id(d => d.index)
@@ -2216,11 +2217,10 @@ class AuthorControlCharts implements IAuthorControlCharts {
                 .links(data.links))
             .force("charge", d3.forceManyBody().strength(-25))
             .force("collide", d3.forceCollide().radius(30).iterations(5))
-            .force("center", d3.forceCenter((chart.width -chart.padding.yAxis - chart.padding.right - 10) / 2, (chart.height - chart.padding.top - chart.padding.xAxis + 5) / 2))
-            .tick(300);
+            .force("center", d3.forceCenter((chart.width -chart.padding.yAxis - chart.padding.right - 10) / 2, (chart.height - chart.padding.top - chart.padding.xAxis + 5) / 2));
     }
 
-    processTimelineSimulation(chart: ChartTime, centerX: number, centerY: number, nodes: ITags[]): void {
+    processTimelineSimulation(chart: ChartTimeNetwork, centerX: number, centerY: number, nodes: ITags[]): void {
         let simulation = d3.forceSimulation<ITags, undefined>(nodes)
             .force("collide", d3.forceCollide().radius(10))
             .force("forceRadial", d3.forceRadial(0, 0).radius(15));
@@ -2247,11 +2247,13 @@ class AuthorControlCharts implements IAuthorControlCharts {
             .y(d => chart.y.scale(d.point))
             .curve(d3.curveMonotoneX);
 
-        chart.elements.contentContainer.append("path")
-            .datum(d3.sort(data, d => d.timestamp))
-            .attr("class", "hardline")
-            .attr("d", d => hardLine(d));
-
+        if (chart.elements.contentContainer.select(".hardline").empty()) {
+            chart.elements.contentContainer.append("path")
+                .datum(d3.sort(data, d => d.timestamp))
+                .attr("class", "hardline")
+                .attr("d", d => hardLine(d));
+        }
+        
         chart.elements.contentContainer.selectAll(".circle-tag-container")
             .data(data)
             .join(
@@ -2262,16 +2264,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
                         .attr("r", 5)
                         .style("fill", "#999999")
                         .style("stroke", "#999999"))
-                    .call(enter => enter.selectAll(".circle-tag")
-                        .data(d => d.tags)
-                        .enter()
-                        .append("circle")
-                        .attr("class", "circle-tag")
-                        .attr("cx", d => d.x)
-                        .attr("cy", d => d.y)
-                        .attr("r", 5)
-                        .style("fill", d => d.colour)
-                        .style("stroke", d => d.colour))
+                    .call(enter => renderTimelineNetwork(enter))
                     .call(enter => enter.transition()
                         .duration(750)
                         .attr("transform", d => `translate (${chart.x.scale(d.timestamp)}, ${chart.y.scale(d.point)})`)),
@@ -2280,9 +2273,32 @@ class AuthorControlCharts implements IAuthorControlCharts {
                     .attr("cx", d => chart.x.scale(d.timestamp))
                     .attr("cy", d => chart.y.scale(d.point))
                     .style("fill", "#999999")
-                    .style("stroke", "#999999")),
+                    .style("stroke", "#999999"))
+                    .call(update => renderTimelineNetwork(update)),
                 exit => exit.remove()
-            )
+            );
+        
+        function renderTimelineNetwork(enter: d3.Selection<SVGGElement | d3.BaseType, IRelfectionAuthorAnalytics, SVGGElement, unknown>) {
+            enter.selectAll(".circle-tag")
+                .data(d => d.tags)
+                .join(
+                    enter => enter.append("circle")
+                        .attr("class", "circle-tag")
+                        .attr("cx", d => d.x)
+                        .attr("cy", d => d.y)
+                        .attr("r", 5)
+                        .style("fill", d => d.colour)
+                        .style("stroke", d => d.colour),
+                    update => update.call(update => update.transition()
+                        .duration(750)
+                        .attr("cx", d => d.x)
+                        .attr("cy", d => d.y)
+                        .style("fill", d => d.colour)
+                        .style("stroke", d => d.colour)),
+                    exit => exit.remove()
+                )
+               
+        }
         
         chart.elements.content = chart.elements.contentContainer.selectAll(".circle");
 
@@ -2293,8 +2309,12 @@ class AuthorControlCharts implements IAuthorControlCharts {
                 return;
             }
             _this.interactions.tooltip.appendTooltipContainer(chart);
-            let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.timestamp.toDateString(), 
-                [new TooltipValues("Point", d.point)]);
+            let tooltipValues = [new TooltipValues("Point", d.point)];
+            let tags = Array.from(d3.rollup(d.tags, d => d.length, d  => d.tag), ([tag, total]) => ({tag, total}));
+            tags.forEach(c => {
+                tooltipValues.push(new TooltipValues(c.tag, c.total));
+            })
+            let tooltipBox = _this.interactions.tooltip.appendTooltipText(chart, d.timestamp.toDateString(), tooltipValues);
             _this.interactions.tooltip.positionTooltipContainer(chart, xTooltip(d.timestamp, tooltipBox), yTooltip(d.point, tooltipBox));
 
             function xTooltip(x: Date, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
@@ -2327,10 +2347,6 @@ class AuthorControlCharts implements IAuthorControlCharts {
 
     renderNetwork(chart: ChartNetwork, data: INetworkData): ChartNetwork {
         const _this = this;
-
-        if (data.nodes.map(d => d.x).filter(d => d !== undefined).length === 0) {
-            _this.processSimulation(chart, data);
-        }
 
         d3.select(`#${chart.id} .card-subtitle`)
             .html(data.nodes.filter(d => d.tag === "ref").length == 1 ? `Filtering by <span class="badge badge-pill badge-info">${chart.x.scale.invert(data.nodes.find(d => d.tag === "ref").fx).toDateString()} <i class="fas fa-window-close"></i></span>`:
@@ -2422,11 +2438,8 @@ class AuthorControlCharts implements IAuthorControlCharts {
                     .attr("y", d => -(enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().height + 5) / 2)
                     .attr("width", d => enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().width + 10)
                     .attr("height", d => enter.select<SVGTextElement>(`#text-${d.index}`).node().getBoundingClientRect().height + 5))
-
-            if (d.tag === "ref") {
-                _this.interactions.tooltip.appendLine(chart, chart.x.scale(new Date(d.phrase)), chart.y.scale(0), chart.x.scale(new Date(d.phrase)), d3.select<SVGGElement, ITags>(this).datum().y + 10, "black");
-            }
         }
+
         function onMouseout() {
             let links = data.links.filter(d => d.source === d3.select<SVGGElement, ITags>(this).datum()).map(d => d.target);
             links = links.concat(data.links.filter(d => d.target === d3.select<SVGGElement, ITags>(this).datum()).map(d => d.source));
@@ -2594,6 +2607,7 @@ class AuthorExperimentalCharts extends AuthorControlCharts implements IAuthorExp
             _this.networkChart.resetZoomRange();
             _this.renderNetwork(_this.networkChart, networkData);
             _this.renderReflections(entries);
+            _this.renderTimeline(_this.timelineChart, entries);
         });
     };
 
@@ -2620,6 +2634,7 @@ class AuthorExperimentalCharts extends AuthorControlCharts implements IAuthorExp
             _this.networkChart.resetZoomRange();
             _this.renderNetwork(_this.networkChart, networkData);
             _this.renderReflections(entries);
+            _this.renderTimeline(_this.timelineChart, entries);
         });
     };
 
@@ -2646,6 +2661,7 @@ class AuthorExperimentalCharts extends AuthorControlCharts implements IAuthorExp
         let networkData = this.getUpdatedNetworkData();
         this.renderNetwork(this.networkChart, networkData);
         this.renderReflections(entries);
+        this.renderTimeline(this.timelineChart, entries);
     };
 
     private getUpdatedEntriesData(): IRelfectionAuthorAnalytics[] {
@@ -2717,6 +2733,32 @@ class AuthorExperimentalCharts extends AuthorControlCharts implements IAuthorExp
         const _this = this;
 
         d3.select(`#${chart.id} .badge`).on("click", () => _this.handleFilterButton());
+
+        chart.elements.content
+            .call(d3.drag()
+                .on("start", dragStart)
+                .on("drag", dragging)
+                .on("end", dragEnd));
+
+        function dragStart(e: d3.D3DragEvent<SVGGElement, ITags, ITags>) {
+            if (!e.active) _this.networkChart.simulation.alphaTarget(0.3).restart();
+            e.subject.fx = e.subject.x;
+            e.subject.fy = e.subject.y;
+            d3.select(this).attr("transform", `translate(${e.subject.fx}, ${e.subject.fy})`);
+        }
+          
+          function dragging(e: d3.D3DragEvent<SVGGElement, ITags, ITags>) {
+            e.subject.fx = e.x;
+            e.subject.fy = e.y;
+            d3.select(this).attr("transform", `translate(${e.subject.fx}, ${e.subject.fy})`);
+        }
+          
+          function dragEnd(e: d3.D3DragEvent<SVGGElement, ITags, ITags>) {
+            if (!e.active) _this.networkChart.simulation.alphaTarget(0);
+            e.subject.fx = null;
+            e.subject.fy = null;
+            d3.select(this).attr("transform", `translate(${e.subject.x}, ${e.subject.y})`);
+        }
 
         return chart
     }
@@ -3178,7 +3220,8 @@ export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionA
 
         let networkChart = new ChartNetwork("network", "chart-container-network", entries.map(d => d.timestamp));
         let networkData = authorControlCharts.processNetworkData(networkChart, entries);
-        authorControlCharts.processSimulation(networkChart, networkData);
+        networkChart.simulation = authorControlCharts.processSimulation(networkChart, networkData);
+        networkChart.simulation.tick(300);
         authorControlCharts.renderNetwork(networkChart, networkData);
 
         //Handle timeline chart help
@@ -3232,19 +3275,10 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflecti
         let authorExperimentalCharts = new AuthorExperimentalCharts();
         authorExperimentalCharts.preloadTags(entries, true)
 
-        authorExperimentalCharts.timelineChart = new ChartTimeNetwork("timeline", entries.map(d => d.timestamp), new ChartPadding(40, 75, 10, 10));
-        authorExperimentalCharts.renderTimeline(authorExperimentalCharts.timelineChart, entries);
-
-        //Handle timeline chart help
-        d3.select("#timeline .card-title button")
-            .on("click", function (e: Event) {
-                authorExperimentalCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Timeline</b><br>Your reflections are shown sorted by time");
-                authorExperimentalCharts.help.helpPopover(authorExperimentalCharts.timelineChart.elements.contentContainer.select(".point"), `${authorExperimentalCharts.timelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
-            });
-
         authorExperimentalCharts.networkChart = new ChartNetwork("network", "chart-container-network", entries.map(d => d.timestamp));
         authorExperimentalCharts.allNetworkData = authorExperimentalCharts.processNetworkData(authorExperimentalCharts.networkChart, entries);
-        authorExperimentalCharts.processSimulation(authorExperimentalCharts.networkChart, authorExperimentalCharts.allNetworkData);
+        authorExperimentalCharts.networkChart.simulation = authorExperimentalCharts.processSimulation(authorExperimentalCharts.networkChart, authorExperimentalCharts.allNetworkData);
+        authorExperimentalCharts.networkChart.simulation.tick(300);
         authorExperimentalCharts.renderNetwork(authorExperimentalCharts.networkChart, authorExperimentalCharts.allNetworkData);
 
         //Handle timeline chart help
@@ -3258,7 +3292,18 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflecti
                 }
             });
 
-            authorExperimentalCharts.renderReflections(entries);
+        authorExperimentalCharts.timelineChart = new ChartTimeNetwork("timeline", entries.map(d => d.timestamp), new ChartPadding(40, 75, 10, 10));
+        entries.forEach(c => authorExperimentalCharts.processTimelineSimulation(authorExperimentalCharts.timelineChart, authorExperimentalCharts.timelineChart.x.scale(c.timestamp), authorExperimentalCharts.timelineChart.y.scale(c.point), c.tags));
+        authorExperimentalCharts.renderTimeline(authorExperimentalCharts.timelineChart, entries);
+
+        //Handle timeline chart help
+        d3.select("#timeline .card-title button")
+            .on("click", function (e: Event) {
+                authorExperimentalCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Timeline</b><br>Your reflections are shown sorted by time");
+                authorExperimentalCharts.help.helpPopover(authorExperimentalCharts.timelineChart.elements.contentContainer.select(".point"), `${authorExperimentalCharts.timelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
+            });
+
+        authorExperimentalCharts.renderReflections(entries);
 
         //Handle users histogram chart help
         d3.select("#reflections .card-title button")
