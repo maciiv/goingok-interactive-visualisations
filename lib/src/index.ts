@@ -2352,7 +2352,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
             .html(data.nodes.filter(d => d.tag === "ref").length == 1 ? `Filtering by <span class="badge badge-pill badge-info">${chart.x.scale.invert(data.nodes.find(d => d.tag === "ref").fx).toDateString()} <i class="fas fa-window-close"></i></span>`:
                 "");
 
-        chart.elements.contentContainer.selectAll(".network-link")
+        let links = chart.elements.contentContainer.selectAll(".network-link")
             .data(data.links)
             .join(
                 enter => enter.append("line")
@@ -2378,7 +2378,7 @@ class AuthorControlCharts implements IAuthorControlCharts {
                 exit => exit.remove()
             );
         
-        chart.elements.contentContainer.selectAll(".network-node-group")
+        let nodes = chart.elements.contentContainer.selectAll(".network-node-group")
             .data(data.nodes)
             .join(
                 enter => enter.append("g")
@@ -2411,6 +2411,17 @@ class AuthorControlCharts implements IAuthorControlCharts {
             );
         
         chart.elements.content = chart.elements.contentContainer.selectAll(".network-node-group");
+
+        chart.simulation.on("tick", ticked);
+
+        function ticked() {
+            links.attr("x1", d => (d.source as ITags).x)
+            .attr("y1", d => (d.source as ITags).y)
+            .attr("x2", d => (d.target as ITags).x)
+            .attr("y2", d => (d.target as ITags).y);
+
+            nodes.attr("transform", (d: ITags) => `translate(${d.x}, ${d.y})`);
+        }
 
         //Enable tooltip       
         _this.interactions.tooltip.enableTooltip(chart, onMouseover, onMouseout);
@@ -2714,7 +2725,7 @@ class AuthorExperimentalCharts extends AuthorControlCharts implements IAuthorExp
             chart.click = true;
             d3.select(this).classed("clicked", true);
             let nodes = _this.allNetworkData.nodes.filter(c => {
-                return d.tags.includes(c) || c.fx === _this.networkChart.x.scale(d.timestamp)
+                return filterNodes(d.tags, c) || c.phrase === d.timestamp.toDateString()
             });
             let links = _this.allNetworkData.links.filter(c => {
                 return nodes.includes(c.source as ITags) || nodes.includes(c.target as ITags)
@@ -2722,6 +2733,12 @@ class AuthorExperimentalCharts extends AuthorControlCharts implements IAuthorExp
             let networkData = _this.getUpdatedNetworkData({"nodes": nodes, "links": links});
             _this.renderNetwork(_this.networkChart, networkData);
             _this.renderReflections([d]);
+        }
+
+        function filterNodes(tags: ITags[], tag: ITags) {
+            return tags.map(d => d.start_index).includes(tag.start_index) &&
+                tags.map(d => d.end_index).includes(tag.end_index) &&
+                tags.map(d => d.phrase).includes(tag.phrase)
         }
 
         return chart;
@@ -3221,7 +3238,6 @@ export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionA
         let networkChart = new ChartNetwork("network", "chart-container-network", entries.map(d => d.timestamp));
         let networkData = authorControlCharts.processNetworkData(networkChart, entries);
         networkChart.simulation = authorControlCharts.processSimulation(networkChart, networkData);
-        networkChart.simulation.tick(300);
         authorControlCharts.renderNetwork(networkChart, networkData);
 
         //Handle timeline chart help
@@ -3278,7 +3294,6 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflecti
         authorExperimentalCharts.networkChart = new ChartNetwork("network", "chart-container-network", entries.map(d => d.timestamp));
         authorExperimentalCharts.allNetworkData = authorExperimentalCharts.processNetworkData(authorExperimentalCharts.networkChart, entries);
         authorExperimentalCharts.networkChart.simulation = authorExperimentalCharts.processSimulation(authorExperimentalCharts.networkChart, authorExperimentalCharts.allNetworkData);
-        authorExperimentalCharts.networkChart.simulation.tick(300);
         authorExperimentalCharts.renderNetwork(authorExperimentalCharts.networkChart, authorExperimentalCharts.allNetworkData);
 
         //Handle timeline chart help
