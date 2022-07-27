@@ -589,3 +589,14 @@ Tutorial CSS
     width: 200px;
     display: flex;
 }
+
+.arrow {
+    stroke: #ffffff;
+    stroke-width: 3px;
+    fill: none;
+}
+
+.arrow-head {
+    stroke: #ffffff;
+    fill: #ffffff;
+}

@@ -2954,7 +2954,11 @@ class Tutorial implements ITutorial {
                         .call(div => div.append("button")
                             .attr("class", "btn btn-warning d-block w-50")
                             .html("Skip")
-                            .on("click", () => this.removeTutorial()))));
+                        .on("click", () => this.removeTutorial()))));
+            if (!isLeft) {
+                this.tutorial.select<HTMLDivElement>(".tutorial-content")
+                    .style("left", tutorialFocus.left - this.tutorial.select<HTMLDivElement>(".tutorial-content").node().getBoundingClientRect().width - 50 + "px");
+            }
             this.drawArrow(tutorialFocus, isLeft);
         } else {
             this.tutorial.select<HTMLDivElement>(".tutorial-content")
@@ -3221,6 +3225,9 @@ export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionA
     const colourScale = d3.scaleOrdinal(d3.schemeCategory10);
     const entries = d3.sort(entriesRaw.map((d, i) => { return {"timestamp": new Date(d.timestamp), "pseudonym": d.pseudonym, "point": d.point, "text": d.text, "tags": analyticsRaw[i].tags.map(d => processColour(d)), "matrix": analyticsRaw[i].matrix } as IRelfectionAuthorAnalytics }), d => d.timestamp);
     await drawCharts(entries);
+    new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
+    new TutorialData("#timeline .circle", "Hover for information on demand"),
+    new TutorialData("#network .network-node-group", "Hover for information on demand, zoom is also available")]);
     loading.isLoading = false;
     loading.removeDiv();
 
@@ -3258,8 +3265,8 @@ export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionA
         //Handle timeline chart help
         d3.select("#timeline .card-title button")
             .on("click", function (e: Event) {
-                authorControlCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Timeline</b><br>Your reflections are shown sorted by time");
-                authorControlCharts.help.helpPopover(timelineChart.elements.contentContainer.select(".point"), `${timelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
+                authorControlCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Timeline</b><br>Your reflections and the tags associated to them are shown over time");
+                authorControlCharts.help.helpPopover(timelineChart.elements.contentContainer.select(".circle"), `${timelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
             });
 
         authorControlCharts.renderReflections(entries);
@@ -3277,6 +3284,9 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflecti
     const colourScale = d3.scaleOrdinal(d3.schemeCategory10);
     const entries = d3.sort(entriesRaw.map((d, i) => { return {"timestamp": new Date(d.timestamp), "pseudonym": d.pseudonym, "point": d.point, "text": d.text, "tags": analyticsRaw[i].tags.map(d => processColour(d)), "matrix": analyticsRaw[i].matrix } as IRelfectionAuthorAnalytics }), d => d.timestamp);
     await drawCharts(entries);
+    new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
+    new TutorialData("#timeline .circle", "Hover for information on demand"),
+    new TutorialData("#network .network-node-group", "Hover for information on demand, zoom is also available")]);
     loading.isLoading = false;
     loading.removeDiv();
 
@@ -3301,7 +3311,7 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflecti
             .on("click", function (e: Event) {
                 authorExperimentalCharts.help.helpPopover(d3.select("#network .zoom-rect.active"), `${authorExperimentalCharts.networkChart.id}-help-zoom`, "use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move");
                 authorExperimentalCharts.help.helpPopover(d3.select(this), `${authorExperimentalCharts.networkChart.id}-help`, "<b>Network diagram</b><br>A network diagram that shows the phrases and tags associated to your reflections<br>The data represented are your <i>reflections over time</i>");
-                let showDataHelp = authorExperimentalCharts.help.helpPopover(authorExperimentalCharts.networkChart.elements.contentContainer.select(".network-node-group"), `${authorExperimentalCharts.networkChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
+                let showDataHelp = authorExperimentalCharts.help.helpPopover(authorExperimentalCharts.networkChart.elements.contentContainer.select(".network-node-group"), `${authorExperimentalCharts.networkChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand<br><u><i>drag</i></u> me to rearrange the network");
                 if (showDataHelp) {
                     d3.select(`#${authorExperimentalCharts.networkChart.id}-help-data`).style("top", parseInt(d3.select(`#${authorExperimentalCharts.networkChart.id}-help-data`).style("top")) - 14 + "px");
                 }
@@ -3314,7 +3324,7 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflecti
         //Handle timeline chart help
         d3.select("#timeline .card-title button")
             .on("click", function (e: Event) {
-                authorExperimentalCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Timeline</b><br>Your reflections are shown sorted by time");
+                authorExperimentalCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Timeline</b><br>Your reflections and the tags associated to them are shown over time");
                 authorExperimentalCharts.help.helpPopover(authorExperimentalCharts.timelineChart.elements.contentContainer.select(".point"), `${authorExperimentalCharts.timelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
             });
 
