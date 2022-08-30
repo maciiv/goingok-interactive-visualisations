@@ -1,40 +1,6 @@
 import * as d3 from "d3";
-interface IReflectionAuthorRaw {
-    timestamp: string;
-    pseudonym: string;
-    point: string;
-    text: string;
-    transformData(): IReflectionAuthor;
-}
-interface IAdminAnalyticsDataRaw {
-    group: string;
-    value: IReflectionAuthorRaw[];
-    createDate: string;
-    transformData(): AdminAnalyticsData;
-}
-interface IReflectionAuthor {
-    timestamp: Date;
-    pseudonym: string;
-    point: number;
-    text: string;
-}
-interface IAdminAnalyticsData {
-    group: string;
-    value: IReflectionAuthor[];
-    creteDate: Date;
-    colour: string;
-    selected: boolean;
-    getUsersData(): AdminAnalyticsData;
-}
-declare class AdminAnalyticsData implements IAdminAnalyticsData {
-    group: string;
-    value: IReflectionAuthor[];
-    creteDate: Date;
-    colour: string;
-    selected: boolean;
-    constructor(group: string, value: IReflectionAuthor[], createDate?: Date, colour?: string, selected?: boolean);
-    getUsersData(): AdminAnalyticsData;
-}
+import { IReflectionAuthor } from "./data/data.js";
+import { IAdminAnalyticsDataRaw } from "./data/db.js";
 interface ITags extends d3.SimulationNodeDatum {
     start_index?: number;
     tag: string;
