@@ -1,0 +1,65 @@
+{
+    "data": {
+        "reflections": [
+            {
+                "timestamp": "2019-09-26T07:31:33.082585",
+                "pseudonym": "texbux99",
+                "point": 100,
+                "text": "still waiting for my grades back from assignment 2, but still feeling good as other examinations have returned their grades and I am doing really well."
+            },
+            {
+                "timestamp": "2020-03-10T05:34:14.108458",
+                "pseudonym": "texbux99",
+                "point": 75,
+                "text": "Weeks 1 and 2 have been ok with the content delivered. Week 3 will be more stressful due to the amount of assessment released. Luckily things have settled and I and stable with the new place I moved into."
+            },
+            {
+                "timestamp": "2019-10-17T23:07:50.824921",
+                "pseudonym": "texbux99",
+                "point": 37,
+                "text": "Have not had the time to advance the third assignment more, two major assignments were due before this one so I have been focusing om them since one of them is a group assignment and another one is the biggest assignment of the most challenging unit this semester."
+            }
+        ],
+        "analytics": [
+            {
+                "tags": [
+                    { "start_index": 6, "tag": "AR", "phrase": "waiting for my grades", "end_index": 26 },
+                    { "start_index": 52, "tag": "AF", "phrase": "but still feeling", "end_index": 68 },
+                    { "start_index": 139, "tag": "EP", "phrase": "really well", "end_index": 149 }
+                ],
+                "matrix": [
+                    [0, 1, 1],
+                    [0, 0, 0],
+                    [0, 0, 0]
+                ]
+            },
+            {
+                "tags": [
+                    { "start_index": 14, "tag": "AR", "phrase": "have been", "end_index": 22 },
+                    { "start_index": 75, "tag": "AF", "phrase": "stressfull", "end_index": 83 },
+                    { "start_index": 127, "tag": "AF", "phrase": "luckily things have", "end_index": 145 },
+                    { "start_index": 191, "tag": "AF", "phrase": "i moved into", "end_index": 202 }
+                ],
+                "matrix": [
+                    [0, 1, 1, 0],
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0]
+                ]
+            },
+            {
+                "tags": [
+                    { "start_index": 0, "tag": "AR", "phrase": "have not had", "end_index": 11 },
+                    { "start_index": 82, "tag": "EP", "phrase": "were due before", "end_index": 96 },
+                    { "start_index": 110, "tag": "AF", "phrase": "i have been", "end_index": 120 }
+                ],
+                "matrix": [
+                    [0, 1, 0],
+                    [0, 0, 1],
+                    [0, 0, 0]
+                ]
+            }
+
+        ]
+    }
+}
