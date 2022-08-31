@@ -2,7 +2,10 @@ import d3 from "d3";
 import { ChartNetwork, ChartTimeNetwork } from "charts/charts.js";
 import { IHelp, Help } from "charts/help.js";
 import { IAuthorControlInteractions, AuthorControlInteractions, TooltipValues } from "charts/interactions.js";
-import { IRelfectionAuthorAnalytics, ITags, INetworkData, IReflectionAuthor, ILinks } from "data/data.js";
+import { IRelfectionAuthorAnalytics, ITags, INetworkData, IReflectionAuthor, ILinks, IReflectionAnalytics } from "data/data.js";
+import { ChartPadding } from "charts/render.js";
+import { Loading } from "utils/loading.js";
+import { Tutorial, TutorialData } from "utils/tutorial.js";
 
 export interface IAuthorControlCharts {
     help: IHelp;
@@ -395,5 +398,64 @@ export class AuthorControlCharts implements IAuthorControlCharts {
             }
         }     
         return html;
+    }
+}
+
+export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionAuthor[], analyticsRaw: IReflectionAnalytics[]) {
+    let loading = new Loading();
+    const colourScale = d3.scaleOrdinal(d3.schemeCategory10);
+    const entries = d3.sort(entriesRaw.map((d, i) => { return {"timestamp": new Date(d.timestamp), "pseudonym": d.pseudonym, "point": d.point, "text": d.text, "tags": analyticsRaw[i].tags.map(d => processColour(d)), "matrix": analyticsRaw[i].matrix } as IRelfectionAuthorAnalytics }), d => d.timestamp);
+    await drawCharts(entries);
+    new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
+    new TutorialData("#timeline .circle", "Hover for information on demand"),
+    new TutorialData("#network .network-node-group", "Hover for information on demand, zoom is also available")]);
+    loading.isLoading = false;
+    loading.removeDiv();
+
+    function processColour(tag: ITags): ITags {
+        if (tag.colour === undefined) {
+            return {"start_index": tag.start_index, "tag": tag.tag, "phrase": tag.phrase, "colour": colourScale(tag.tag), "end_index": tag.end_index}
+        }
+        return tag;
+    }
+
+    async function drawCharts(entries: IRelfectionAuthorAnalytics[]) {
+        let authorControlCharts = new AuthorControlCharts();
+        authorControlCharts.preloadTags(entries);
+
+        let networkChart = new ChartNetwork("network", "chart-container-network", entries.map(d => d.timestamp));
+        let networkData = authorControlCharts.processNetworkData(networkChart, entries);
+        networkChart.simulation = authorControlCharts.processSimulation(networkChart, networkData);
+        authorControlCharts.renderNetwork(networkChart, networkData);
+
+        //Handle timeline chart help
+        d3.select("#network .card-title button")
+            .on("click", function (e: Event) {
+                authorControlCharts.help.helpPopover(d3.select("#network .zoom-rect.active"), `${networkChart.id}-help-zoom`, "use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move");
+                authorControlCharts.help.helpPopover(d3.select(this), `${networkChart.id}-help`, "<b>Network diagram</b><br>A network diagram that shows the phrases and tags associated to your reflections<br>The data represented are your <i>reflections over time</i>");
+                let showDataHelp = authorControlCharts.help.helpPopover(networkChart.elements.contentContainer.select(".network-node-group"), `${networkChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
+                if (showDataHelp) {
+                    d3.select(`#${networkChart.id}-help-data`).style("top", parseInt(d3.select(`#${networkChart.id}-help-data`).style("top")) - 14 + "px");
+                }
+            });
+        
+        let timelineChart = new ChartTimeNetwork("timeline", entries.map(d => d.timestamp), new ChartPadding(40, 75, 10, 10));
+        entries.forEach(c => authorControlCharts.processTimelineSimulation(timelineChart, timelineChart.x.scale(c.timestamp), timelineChart.y.scale(c.point), c.tags));
+        authorControlCharts.renderTimeline(timelineChart, entries);
+
+        //Handle timeline chart help
+        d3.select("#timeline .card-title button")
+            .on("click", function (e: Event) {
+                authorControlCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Timeline</b><br>Your reflections and the tags associated to them are shown over time");
+                authorControlCharts.help.helpPopover(timelineChart.elements.contentContainer.select(".circle"), `${timelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
+            });
+
+        authorControlCharts.renderReflections(entries);
+
+        //Handle users histogram chart help
+        d3.select("#reflections .card-title button")
+            .on("click", function (e: Event) {
+                authorControlCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Reflections</b><br>Your reflections are shown sorted by time. The words with associated tags have a different background colour");
+            });
     }
 }

@@ -1,8 +1,11 @@
 import d3 from "d3";
 import { ChartTimeNetwork, ChartNetwork } from "charts/charts.js";
 import { IAuthorExperimentalInteractions, AuthorExperimentalInteractions } from "charts/interactions.js";
-import { IRelfectionAuthorAnalytics, INetworkData, ITags } from "data/data.js";
+import { IRelfectionAuthorAnalytics, INetworkData, ITags, IReflectionAnalytics, IReflectionAuthor } from "data/data.js";
 import { AuthorControlCharts, IAuthorControlCharts } from "./authorControl.js";
+import { ChartPadding } from "charts/render.js";
+import { Loading } from "utils/loading.js";
+import { Tutorial, TutorialData } from "utils/tutorial.js";
 
 export interface IAuthorExperimentalCharts extends IAuthorControlCharts {
     interactions: IAuthorExperimentalInteractions;
@@ -227,5 +230,68 @@ export class AuthorExperimentalCharts extends AuthorControlCharts implements IAu
         const _this = this;
 
         d3.select(`#reflections .badge`).on("click", () => _this.handleFilterButton());
+    }
+}
+
+export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflectionAuthor[], analyticsRaw: IReflectionAnalytics[]) {
+    let loading = new Loading();
+    const colourScale = d3.scaleOrdinal(d3.schemeCategory10);
+    const entries = d3.sort(entriesRaw.map((d, i) => { return {"timestamp": new Date(d.timestamp), "pseudonym": d.pseudonym, "point": d.point, "text": d.text, "tags": analyticsRaw[i].tags.map(d => processColour(d)), "matrix": analyticsRaw[i].matrix } as IRelfectionAuthorAnalytics }), d => d.timestamp);
+    await drawCharts(entries);
+    new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
+    new TutorialData("#timeline .circle", "Hover for information on demand"),
+    new TutorialData("#network .network-node-group", "Hover for information on demand, zoom is also available")]);
+    loading.isLoading = false;
+    loading.removeDiv();
+
+    function processColour(tag: ITags): ITags {
+        if (tag.colour === undefined) {
+            return {"start_index": tag.start_index, "tag": tag.tag, "phrase": tag.phrase, "colour": colourScale(tag.tag), "end_index": tag.end_index}
+        }
+        return tag;
+    }
+
+    async function drawCharts(entries: IRelfectionAuthorAnalytics[]) {
+        let authorExperimentalCharts = new AuthorExperimentalCharts();
+        authorExperimentalCharts.preloadTags(entries, true)
+
+        authorExperimentalCharts.networkChart = new ChartNetwork("network", "chart-container-network", entries.map(d => d.timestamp));
+        authorExperimentalCharts.allNetworkData = authorExperimentalCharts.processNetworkData(authorExperimentalCharts.networkChart, entries);
+        authorExperimentalCharts.networkChart.simulation = authorExperimentalCharts.processSimulation(authorExperimentalCharts.networkChart, authorExperimentalCharts.allNetworkData);
+        authorExperimentalCharts.renderNetwork(authorExperimentalCharts.networkChart, authorExperimentalCharts.allNetworkData);
+
+        //Handle timeline chart help
+        d3.select("#network .card-title button")
+            .on("click", function (e: Event) {
+                authorExperimentalCharts.help.helpPopover(d3.select("#network .zoom-rect.active"), `${authorExperimentalCharts.networkChart.id}-help-zoom`, "use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move");
+                authorExperimentalCharts.help.helpPopover(d3.select(this), `${authorExperimentalCharts.networkChart.id}-help`, "<b>Network diagram</b><br>A network diagram that shows the phrases and tags associated to your reflections<br>The data represented are your <i>reflections over time</i>");
+                let showDataHelp = authorExperimentalCharts.help.helpPopover(authorExperimentalCharts.networkChart.elements.contentContainer.select(".network-node-group"), `${authorExperimentalCharts.networkChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand<br><u><i>drag</i></u> me to rearrange the network");
+                if (showDataHelp) {
+                    d3.select(`#${authorExperimentalCharts.networkChart.id}-help-data`).style("top", parseInt(d3.select(`#${authorExperimentalCharts.networkChart.id}-help-data`).style("top")) - 14 + "px");
+                }
+            });
+
+        authorExperimentalCharts.timelineChart = new ChartTimeNetwork("timeline", entries.map(d => d.timestamp), new ChartPadding(40, 75, 10, 10));
+        entries.forEach(c => authorExperimentalCharts.processTimelineSimulation(authorExperimentalCharts.timelineChart, authorExperimentalCharts.timelineChart.x.scale(c.timestamp), authorExperimentalCharts.timelineChart.y.scale(c.point), c.tags));
+        authorExperimentalCharts.renderTimeline(authorExperimentalCharts.timelineChart, entries);
+
+        //Handle timeline chart help
+        d3.select("#timeline .card-title button")
+            .on("click", function (e: Event) {
+                authorExperimentalCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Timeline</b><br>Your reflections and the tags associated to them are shown over time");
+                authorExperimentalCharts.help.helpPopover(authorExperimentalCharts.timelineChart.elements.contentContainer.select(".point"), `${authorExperimentalCharts.timelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
+            });
+
+        authorExperimentalCharts.renderReflections(entries);
+
+        //Handle users histogram chart help
+        d3.select("#reflections .card-title button")
+            .on("click", function (e: Event) {
+                authorExperimentalCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Reflections</b><br>Your reflections are shown sorted by time. The words with associated tags have a different background colour");
+            });
+
+        authorExperimentalCharts.handleTags();
+        authorExperimentalCharts.handleTagsColours();
+        authorExperimentalCharts.handleReflectionsSort();
     }
 }
