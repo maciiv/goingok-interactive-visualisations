@@ -1,6 +1,4 @@
-import * as d3 from "d3";
-import { groupBy } from "../utils/utils";
-
+import { calculateMean, groupBy } from "../utils/utils.js";
 
 export interface IReflectionAuthor {
     timestamp: Date;
@@ -32,9 +30,7 @@ export class AdminAnalyticsData implements IAdminAnalyticsData {
         this.selected = selected;
     }
     getUsersData(): AdminAnalyticsData {
-        let usersMean = Array.from(d3.rollup(this.value, d => Math.round(d3.mean(d.map(r => r.point))), d => d.pseudonym), ([pseudonym, point]) => ({ pseudonym, point }) as IReflectionAuthor);
-        let test = groupBy(this.value, "pseudonym");
-        console.log(test)
+        let usersMean = groupBy(this.value, "pseudonym").map(d => { return { "pseudonym": d.key, "point": calculateMean(d.value.map(d => d.point))} as IReflectionAuthor})
         return new AdminAnalyticsData(this.group, usersMean, this.creteDate, this.colour);
     }
 }
@@ -58,7 +54,6 @@ export class DataStats implements IDataStats {
 
 export interface IAdminAnalyticsDataStats extends IAdminAnalyticsData {
     stats: IDataStats[];
-    roundDecimal(value: number): string;
     getStat(stat: string): IDataStats;
 }
 
@@ -66,19 +61,14 @@ export class AdminAnalyticsDataStats extends AdminAnalyticsData implements IAdmi
     stats: IDataStats[];
     constructor(entries: IAdminAnalyticsData) {
         super(entries.group, entries.value, entries.creteDate, entries.colour, entries.selected);
-        let uniqueUsers = Array.from(d3.rollup(entries.value, d => d.length, d => d.pseudonym), ([key, value]) => ({ key, value }));
+        let uniqueUsers = groupBy(entries.value, "pseudonym");
         this.stats = [];
         this.stats.push(new DataStats("usersTotal", "Users", uniqueUsers.length))
         this.stats.push(new DataStats("refTotal", "Reflections", entries.value.length))
-        this.stats.push(new DataStats("mean", "Mean", Math.round(d3.mean(entries.value.map(r => r.point)))));
-        this.stats.push(new DataStats("oldRef", "Oldest reflection", d3.min(entries.value.map(r => new Date(r.timestamp)))))
-        this.stats.push(new DataStats("newRef", "Newest reflection", d3.max(entries.value.map(r => new Date(r.timestamp)))))
+        this.stats.push(new DataStats("mean", "Mean", Math.round(calculateMean(entries.value.map(r => r.point)))));
+        this.stats.push(new DataStats("oldRef", "Oldest reflection", new Date(Math.min.apply(null, entries.value.map(r => new Date(r.timestamp))))))
+        this.stats.push(new DataStats("newRef", "Newest reflection", new Date(Math.max.apply(null, entries.value.map(r => new Date(r.timestamp))))))
         this.stats.push(new DataStats("ruRate", "Reflections per user", Math.round(entries.value.length / uniqueUsers.length * 100) / 100))
-    };
-    roundDecimal(value: number): string {
-        let p = d3.precisionFixed(0.1);
-        let f = d3.format("." + p + "f");
-        return f(value);
     };
     getStat(stat: string): IDataStats {
         var exists = this.stats.find(d => d.stat == stat);
@@ -88,4 +78,107 @@ export class AdminAnalyticsDataStats extends AdminAnalyticsData implements IAdmi
             return new DataStats("na", "Not found", 0);
         }
     }
+}
+
+export interface ITimelineData extends IReflectionAuthor {
+    colour: string;
+    group: string;
+}
+
+export class TimelineData implements ITimelineData {
+    timestamp: Date;
+    pseudonym: string;
+    point: number;
+    text: string;
+    colour: string;
+    group: string;
+    constructor(data: IReflectionAuthor, colour: string, group: string) {
+        this.timestamp = data.timestamp;
+        this.pseudonym = data.pseudonym;
+        this.point = data.point;
+        this.text = data.text;
+        this.colour = colour;
+        this.group = group;
+    }
+}
+
+export interface IHistogramData extends IAdminAnalyticsData {
+    bin: d3.Bin<number, number>;
+    percentage: number;
+}
+
+export class HistogramData extends AdminAnalyticsData implements IHistogramData {    
+    bin: d3.Bin<number, number>;
+    percentage: number;
+    constructor(value: IReflectionAuthor[], group: string, colour: string, bin: d3.Bin<number, number>, percentage: number) {
+        super(group, value, undefined, colour);
+        this.bin = bin;
+        this.percentage = percentage;
+    }
+}
+
+export interface IUserChartData {
+    binName: string;
+    percentage: number;
+    value: IReflectionAuthor[];
+    isGroup: boolean;
+}
+
+export class UserChartData implements IUserChartData {
+    binName: string;
+    percentage: number;
+    value: IReflectionAuthor[];
+    isGroup: boolean;
+    constructor(bin: d3.Bin<number, number>, value: IReflectionAuthor[], percentage: number, isGroup: boolean) {
+        if(bin.x0 == 0) {
+            this.binName = "distressed";
+        } else if(bin.x1 == 100) {
+            this.binName = "soaring";
+        } else {
+            this.binName = "going ok";
+        }
+        this.percentage = percentage;
+        this.isGroup = isGroup;
+    }
+}
+
+export interface IClickTextData {
+    clickData: {stat: IDataStats | number, group: string};
+    data: {stat: IDataStats | number, group: string};
+}
+
+export class ClickTextData implements IClickTextData {
+    clickData: {stat: IDataStats | number, group: string};
+    data: {stat: IDataStats | number, group: string};
+    constructor(clickStat: IDataStats | number, dataStat: IDataStats | number, clickGroup: string, dataGroup: string) {
+        this.clickData = {stat: clickStat, group: clickGroup},
+        this.data = {stat: dataStat, group: dataGroup}
+    }
+}
+
+export interface ITags extends d3.SimulationNodeDatum {
+    start_index?: number,
+    tag: string,
+    phrase: string,
+    colour?: string,
+    end_index?: number,
+    selected?: boolean
+}
+
+export interface ILinks<T> extends d3.SimulationLinkDatum<T> {
+    weight: number;
+    isReflection?: boolean;
+}
+
+export interface IReflectionAnalytics {
+    tags: ITags[],
+    matrix: number[][]
+}
+
+export interface IRelfectionAuthorAnalytics extends IReflectionAuthor, IReflectionAnalytics {
+}
+
+export interface INetworkData {
+    nodes: ITags[],
+    links: ILinks<ITags>[]
 }

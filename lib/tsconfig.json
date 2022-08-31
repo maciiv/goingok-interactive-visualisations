@@ -8,7 +8,11 @@
       "lib": ["es2017", "es7", "es6", "dom"],
       "outDir": "./dist",
       "moduleResolution": "node",
-      "esModuleInterop": true
+      "esModuleInterop": true,
+      "baseUrl": "./src",
+      "paths": {
+        "d3": ["../node_modules/d3"]
+      }
     },
     "include": [
       "src/**/*"

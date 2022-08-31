@@ -34,12 +34,10 @@ export declare class DataStats implements IDataStats {
 }
 export interface IAdminAnalyticsDataStats extends IAdminAnalyticsData {
     stats: IDataStats[];
-    roundDecimal(value: number): string;
     getStat(stat: string): IDataStats;
 }
 export declare class AdminAnalyticsDataStats extends AdminAnalyticsData implements IAdminAnalyticsDataStats {
     stats: IDataStats[];
     constructor(entries: IAdminAnalyticsData);
-    roundDecimal(value: number): string;
     getStat(stat: string): IDataStats;
 }
