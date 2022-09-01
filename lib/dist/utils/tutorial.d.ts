@@ -1,4 +1,4 @@
-//;
+var d3 = require("d3");
 export interface ITutorialData {
     id: string;
     content: string;

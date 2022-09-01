@@ -9,10 +9,6 @@
       "outDir": "./dist",
       "moduleResolution": "node",
       "esModuleInterop": true,
-      "baseUrl": "./src",
-      "paths": {
-        "d3": ["../node_modules/d3"]
-      }
     },
     "include": [
       "src/**/*"

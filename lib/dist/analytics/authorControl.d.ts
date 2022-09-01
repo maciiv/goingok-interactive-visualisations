@@ -1,4 +1,4 @@
-//;
+var d3 = require("d3");
 import { ChartNetwork, ChartTimeNetwork } from "../charts/charts.js";
 import { IHelp, Help } from "../charts/help.js";
 import { IAuthorControlInteractions, AuthorControlInteractions } from "../charts/interactions.js";
