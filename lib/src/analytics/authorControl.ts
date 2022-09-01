@@ -10,6 +10,7 @@ import { Tutorial, TutorialData } from "../utils/tutorial.js";
 export interface IAuthorControlCharts {
     help: IHelp;
     interactions: IAuthorControlInteractions;
+    resizeTimeline(): void;
     preloadTags(entries: IRelfectionAuthorAnalytics[], enable?: boolean): ITags[];
     processNetworkData(chart: ChartNetwork, entries: IRelfectionAuthorAnalytics[]): INetworkData;
     processSimulation(chart: ChartNetwork, data: INetworkData): void;
@@ -22,6 +23,11 @@ export interface IAuthorControlCharts {
 export class AuthorControlCharts implements IAuthorControlCharts {
     help = new Help();
     interactions = new AuthorControlInteractions();
+
+    resizeTimeline(): void {
+        let height = document.querySelector("#reflection-entry").getBoundingClientRect().height
+        document.querySelector(".chart-container.timeline").setAttribute("style", `min-height:${height - 80}px`)
+    }
 
     preloadTags(entries: IRelfectionAuthorAnalytics[], enable: boolean = false): ITags[] {
         let allTags = [] as ITags[];
@@ -421,6 +427,7 @@ export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionA
 
     async function drawCharts(entries: IRelfectionAuthorAnalytics[]) {
         let authorControlCharts = new AuthorControlCharts();
+        authorControlCharts.resizeTimeline();
         authorControlCharts.preloadTags(entries);
 
         let networkChart = new ChartNetwork("network", "chart-container-network", entries.map(d => d.timestamp));

@@ -1,4 +1,4 @@
-var d3 = require("d3");
+//;
 import { IAdminAnalyticsData, IAdminAnalyticsDataStats, IHistogramData, IReflectionAuthor } from "../data/data.js";
 import { ChartSeries, ChartTime, HistogramChartSeries, ChartTimeZoom, IChart, ChartNetwork } from "./charts.js";
 export interface ITransitions {

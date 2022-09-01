@@ -253,9 +253,10 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflecti
 
     async function drawCharts(entries: IRelfectionAuthorAnalytics[]) {
         let authorExperimentalCharts = new AuthorExperimentalCharts();
+        authorExperimentalCharts.resizeTimeline()
         authorExperimentalCharts.preloadTags(entries, true)
 
-        authorExperimentalCharts.networkChart = new ChartNetwork("network", "chart-container-network", entries.map(d => d.timestamp));
+        authorExperimentalCharts.networkChart = new ChartNetwork("network", "chart-container.network", entries.map(d => d.timestamp));
         authorExperimentalCharts.allNetworkData = authorExperimentalCharts.processNetworkData(authorExperimentalCharts.networkChart, entries);
         authorExperimentalCharts.networkChart.simulation = authorExperimentalCharts.processSimulation(authorExperimentalCharts.networkChart, authorExperimentalCharts.allNetworkData);
         authorExperimentalCharts.renderNetwork(authorExperimentalCharts.networkChart, authorExperimentalCharts.allNetworkData);

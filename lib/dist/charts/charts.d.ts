@@ -1,4 +1,4 @@
-var d3 = require("d3");
+//;
 import { IAdminAnalyticsData, ITags } from "../data/data.js";
 import { ChartSeriesAxis, ChartTimeAxis, ChartLinearAxis } from "./scales.js";
 import { IHelp } from "./help.js";
