@@ -1,11 +1,11 @@
 import d3 from "d3";
-import { ChartNetwork, ChartTimeNetwork } from "charts/charts.js";
-import { IHelp, Help } from "charts/help.js";
-import { IAuthorControlInteractions, AuthorControlInteractions, TooltipValues } from "charts/interactions.js";
-import { IRelfectionAuthorAnalytics, ITags, INetworkData, IReflectionAuthor, ILinks, IReflectionAnalytics } from "data/data.js";
-import { ChartPadding } from "charts/render.js";
-import { Loading } from "utils/loading.js";
-import { Tutorial, TutorialData } from "utils/tutorial.js";
+import { ChartNetwork, ChartTimeNetwork } from "../charts/charts.js";
+import { IHelp, Help } from "../charts/help.js";
+import { IAuthorControlInteractions, AuthorControlInteractions, TooltipValues } from "../charts/interactions.js";
+import { IRelfectionAuthorAnalytics, ITags, INetworkData, IReflectionAuthor, ILinks, IReflectionAnalytics } from "../data/data.js";
+import { ChartPadding } from "../charts/render.js";
+import { Loading } from "../utils/loading.js";
+import { Tutorial, TutorialData } from "../utils/tutorial.js";
 
 export interface IAuthorControlCharts {
     help: IHelp;

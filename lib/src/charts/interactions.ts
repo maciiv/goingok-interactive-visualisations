@@ -1,5 +1,5 @@
 import d3 from "d3";
-import { IAdminAnalyticsData, HistogramData, TimelineData, ClickTextData, IAdminAnalyticsDataStats, IClickTextData, IDataStats, IHistogramData, IReflectionAuthor } from "data/data.js";
+import { IAdminAnalyticsData, HistogramData, TimelineData, ClickTextData, IAdminAnalyticsDataStats, IClickTextData, IDataStats, IHistogramData, IReflectionAuthor } from "../data/data.js";
 import { ChartSeries, ChartTime, HistogramChartSeries, ChartTimeZoom, IChart, ChartNetwork } from "./charts.js";
 
 export interface ITransitions {

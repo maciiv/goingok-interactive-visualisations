@@ -85,29 +85,36 @@ export class Tutorial implements ITutorial {
     };
     private appendTutorialContent(tutorialFocus: DOMRect, content: string) {
         let isLeft = true;
+        let left = tutorialFocus.left + tutorialFocus.width - 200
         if (tutorialFocus.left + 50 > window.innerWidth / 2) {
             isLeft = false;
+        }
+        if (tutorialFocus.left < window.innerWidth / 4) {
+            left = left + 250;
+        }
+        if (tutorialFocus.left > window.innerWidth * 3 / 4) {
+            left = left - 200;
         }
         if (this.tutorial.selectAll(".tutorial-content").empty()) {
             this.tutorial.append("div")
                 .attr("class", "tutorial-content")
                 .style("top", (tutorialFocus.top - 50) + "px")
-                .style("left", tutorialFocus.left + tutorialFocus.width + 50 + "px")
+                .style("left", left + "px")
                 .call(div => div.append("div")
                     .attr("class", "row")
                     .call(div => div.append("div")
                         .attr("class", "col-md-12")
                         .html(content))
                     .call(div => div.append("div")
-                        .attr("class", "col-md-6"))
+                        .attr("class", "col-md-5 mt-2"))
                     .call(div => div.append("div")
-                        .attr("class", "col-md-5 d-flex")
+                        .attr("class", "col-md-7 d-flex mt-2")
                         .call(div => div.append("button")
-                            .attr("class", "btn btn-success d-block w-50")
+                            .attr("class", "btn btn-success d-block w-50 mx-1")
                             .html("Next")
                             .on("click", () => { this.slide = this.slide + 1; this.appendTutorialBackdrop() }))
                         .call(div => div.append("button")
-                            .attr("class", "btn btn-warning d-block w-50")
+                            .attr("class", "btn btn-warning d-block w-50 mx-1")
                             .html("Skip")
                         .on("click", () => this.removeTutorial()))));
             if (!isLeft) {
@@ -166,6 +173,7 @@ export class Tutorial implements ITutorial {
     removeTutorial(): void {
         d3.select("body")
             .classed("no-overflow", false);
+        window.scroll(0, 0)
         this.tutorial.remove();
     };
 }

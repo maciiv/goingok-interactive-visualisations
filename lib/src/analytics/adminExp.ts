@@ -1,11 +1,11 @@
 import d3 from "d3";
-import { ChartSeries, IHistogramChartSeries, ChartTime, ChartTimeZoom, HistogramChartSeries } from "charts/charts.js";
-import { IAdminAnalyticsData, IAdminAnalyticsDataStats, AdminAnalyticsDataStats, IHistogramData, IReflectionAuthor, HistogramData, ITimelineData, AdminAnalyticsData } from "data/data.js";
+import { ChartSeries, IHistogramChartSeries, ChartTime, ChartTimeZoom, HistogramChartSeries } from "../charts/charts.js";
+import { IAdminAnalyticsData, IAdminAnalyticsDataStats, AdminAnalyticsDataStats, IHistogramData, IReflectionAuthor, HistogramData, ITimelineData, AdminAnalyticsData } from "../data/data.js";
 import { IAdminControlCharts, AdminControlCharts } from "./adminControl.js";
-import { AdminExperimentalInteractions } from "charts/interactions.js";
-import { IAdminAnalyticsDataRaw, AdminAnalyticsDataRaw } from "data/db.js";
-import { Loading } from "utils/loading.js";
-import { Tutorial, TutorialData } from "utils/tutorial.js";
+import { AdminExperimentalInteractions } from "../charts/interactions.js";
+import { IAdminAnalyticsDataRaw, AdminAnalyticsDataRaw } from "../data/db.js";
+import { Loading } from "../utils/loading.js";
+import { Tutorial, TutorialData } from "../utils/tutorial.js";
 
 export interface IAdminExperimentalCharts extends IAdminControlCharts {
     barChart: ChartSeries;
@@ -398,9 +398,9 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAdminAnal
     await drawCharts(entries);
     new Tutorial([new TutorialData("#groups", "Add groups to the charts and change their colours"),
     new TutorialData(".card-title button", "Click the help symbol in any chart to get additional information"),
-    new TutorialData("#groups-chart .bar", "Hover for information on demand or click to compare and drill-down. Other charts will show only the selected group"), 
-    new TutorialData("#group-histogram-chart .threshold-line", "Drag to change the threshold (soaring or distressed) and recalculate the bins"), 
-    new TutorialData("#group-histogram-chart .histogram-rect", "Click to compare the bin with other's group bins"),
+    new TutorialData("#users .bar", "Hover for information on demand or click to compare and drill-down. Other charts will show only the selected group"), 
+    new TutorialData("#histogram .threshold-line", "Drag to change the threshold (soaring or distressed) and recalculate the bins"), 
+    new TutorialData("#histogram .histogram-rect", "Click to compare the bin with other's group bins"),
     new TutorialData("#timeline-plot", "Swap chart types. Both charts have zoom available"),
     new TutorialData("#timeline .circle", "Hover for information on demand or click to connect the user's reflections")]);
     loading.isLoading = false;

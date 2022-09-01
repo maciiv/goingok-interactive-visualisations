@@ -43,11 +43,11 @@ export class Help implements IHelp {
         }
     };
     removeHelp(chart: IChart): void {
-        document.querySelector(`#${chart.id}-help`).remove();
-        document.querySelector(`#${chart.id}-help-button`).remove();
-        document.querySelector(`#${chart.id}-help-data`).remove();
-        document.querySelector(`#${chart.id}-help-drag`).remove();
-        document.querySelector(`#${chart.id}-help-zoom`).remove();
+        document.querySelector(`#${chart.id}-help`)?.remove();
+        document.querySelector(`#${chart.id}-help-button`)?.remove();
+        document.querySelector(`#${chart.id}-help-data`)?.remove();
+        document.querySelector(`#${chart.id}-help-drag`)?.remove();
+        document.querySelector(`#${chart.id}-help-zoom`)?.remove();
         let icon = document.querySelector(`#${chart.id} .card-title i`)
         icon.setAttribute("class", "fas fa-question-circle");
     };
