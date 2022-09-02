@@ -7,7 +7,8 @@
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" />
         <title>Group Admin Experimental</title>
-        <script src="https://d3js.org/d3.v6.min.js"></script>        
+        <script src="https://d3js.org/d3.v6.min.js" type="module"></script>   
+        <script src="../lib/dist/index.js" type="module"></script>     
     </head>
     <body>    
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark" id="main-nav-bar">
@@ -162,8 +163,8 @@
         <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
-        <script src="../lib/dist/index.js"></script>
-        <script>
+        <script type="module">
+            import * as chart from "../lib/dist/index.js"
             d3.csv("test-data.csv").then(function (c) {
                     var data = c.map(function (r) {
                         return {
@@ -181,7 +182,7 @@
                     groupData[1].createDate = "2021-01-01";
                     groupData[2].createDate = "2021-03-01";
                     console.log(groupData)
-                buildExperimentAdminAnalyticsCharts(groupData);
+                chart.buildExperimentAdminAnalyticsCharts(groupData);
             });
         </script>
     </body>
