@@ -1,10 +1,14 @@
 import { calculateMean, groupBy } from "../utils/utils.js";
 
-export interface IReflectionAuthor {
+export interface IReflection {
+    refId: number;
     timestamp: Date;
-    pseudonym: string;
     point: number;
     text: string;
+}
+
+export interface IReflectionAuthor extends IReflection {
+    pseudonym: string;
 }
 
 export interface IAdminAnalyticsData {
@@ -86,6 +90,7 @@ export interface ITimelineData extends IReflectionAuthor {
 }
 
 export class TimelineData implements ITimelineData {
+    refId: number;
     timestamp: Date;
     pseudonym: string;
     point: number;
@@ -93,6 +98,7 @@ export class TimelineData implements ITimelineData {
     colour: string;
     group: string;
     constructor(data: IReflectionAuthor, colour: string, group: string) {
+        this.refId = data.refId;
         this.timestamp = data.timestamp;
         this.pseudonym = data.pseudonym;
         this.point = data.point;
@@ -156,29 +162,36 @@ export class ClickTextData implements IClickTextData {
     }
 }
 
-export interface ITags extends d3.SimulationNodeDatum {
-    start_index?: number,
-    tag: string,
-    phrase: string,
-    colour?: string,
-    end_index?: number,
+export interface INodes extends d3.SimulationNodeDatum {
+    idx: number
+    nodeType: string,
+    refId: number,
+    startIdx?: number,
+    endIdx?: number,
+    expression: string,
+    labelType: string,
+    name: string,
+    description: string,
     selected?: boolean
+    properties: any
 }
 
-export interface ILinks<T> extends d3.SimulationLinkDatum<T> {
+export interface IEdges<T> extends d3.SimulationLinkDatum<T> {
+    idx: number
+    edgeType: string,
+    directional: boolean,
     weight: number;
-    isReflection?: boolean;
+    labelType: string,
+    name: string,
+    description: string,
+    selected?: boolean
+    properties: any,
+    isReflection?: boolean,
 }
 
 export interface IReflectionAnalytics {
-    tags: ITags[],
-    matrix: number[][]
-}
-
-export interface IRelfectionAuthorAnalytics extends IReflectionAuthor, IReflectionAnalytics {
-}
-
-export interface INetworkData {
-    nodes: ITags[],
-    links: ILinks<ITags>[]
+    name: string,
+    description: string,
+    nodes: INodes[],
+    edges: IEdges<INodes>[]
 }

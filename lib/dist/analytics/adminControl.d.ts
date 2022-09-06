@@ -1,4 +1,4 @@
-//;
+import d3 from "d3";
 import { ChartSeries, HistogramChartSeries, ChartTime, ChartTimeZoom } from "../charts/charts.js";
 import { IHelp, Help } from "../charts/help.js";
 import { IAdminAnalyticsData, IAdminAnalyticsDataStats, ITimelineData, IReflectionAuthor } from "../data/data.js";

@@ -19,67 +19,75 @@
                 <div class="content-wrapper">
                     <div class="container-fluid">            
                         <div class="row" id="analytics-charts">
-                            <div class="col-md-4 mt-3" id="add-reflection">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5 class="card-title">
-                                            <span>Enter a reflection</span>
-                                            <button type="button" class="btn btn-light btn-sm float-right">
-                                                <i class="fas fa-question-circle"></i>
-                                            </button>
-                                        </h5>
+                            <div class="col-md-4 mt-3">
+                                <div class="row">
+                                    <div class="col-md-12" id="reflection-entry">
+                                        <div class="card">
+                                            <div class="card-body" style="min-height:40vh">
+                                                <h5 class="card-title">
+                                                    <span>Enter a reflection</span>
+                                                    <button type="button" class="btn btn-light btn-sm float-right">
+                                                        <i class="fas fa-question-circle"></i>
+                                                    </button>
+                                                </h5>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12 mt-3" id="reflections">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5 class="card-title">
+                                                    <span>Your reflections</span>
+                                                    <button type="button" class="btn btn-light btn-sm float-right">
+                                                        <i class="fas fa-question-circle"></i>
+                                                    </button>
+                                                </h5>
+                                                <h6 class="card-subtitle mb-2 instructions"></h6>
+                                                <div class="reflections-tab"></div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-8 mt-3" id="timeline">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5 class="card-title">
-                                            <span>Your reflections timeline</span>
-                                            <button type="button" class="btn btn-light btn-sm float-right">
-                                                <i class="fas fa-question-circle"></i>
-                                            </button>
-                                        </h5>
-                                        <h6 class="card-subtitle mb-2 instructions"></h6>
-                                        <div class="chart-container"></div>
+                            <div class="col-md-8 mt-3">
+                                <div class="row">
+                                    <div class="col-md-12" id="timeline">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5 class="card-title">
+                                                    <span>Your reflections timeline</span>
+                                                    <button type="button" class="btn btn-light btn-sm float-right">
+                                                        <i class="fas fa-question-circle"></i>
+                                                    </button>
+                                                </h5>
+                                                <h6 class="card-subtitle mb-2 instructions"></h6>
+                                                <div class="chart-container"></div>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                            <div class="col-md-12 mt-3">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h6 class="card-subtitle d-flex">
-                                            <span class="my-auto">Your tags:</span>
-                                            <ul id="tags" class="list-unstyled d-flex m-0"></ul>
-                                        </h6>
+                                    <div class="col-md-12 mt-3">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h6 class="card-subtitle d-flex">
+                                                    <span class="my-auto">Your tags:</span>
+                                                    <ul id="tags" class="list-unstyled d-flex m-0"></ul>
+                                                </h6>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mt-3" id="reflections">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5 class="card-title">
-                                            <span>Your reflections</span>
-                                            <button type="button" class="btn btn-light btn-sm float-right">
-                                                <i class="fas fa-question-circle"></i>
-                                            </button>
-                                        </h5>
-                                        <h6 class="card-subtitle mb-2 instructions"></h6>
-                                        <div class="reflections-tab"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-8 mt-3" id="network">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h5 class="card-title">
-                                            <span>Your reflections network</span>
-                                            <button type="button" class="btn btn-light btn-sm float-right">
-                                                <i class="fas fa-question-circle"></i>
-                                            </button>
-                                        </h5>
-                                        <h6 class="card-subtitle mb-2 instructions"></h6>
-                                        <div class="chart-container-network"></div>
+                                    <div class="col-md-12 mt-3" id="network">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5 class="card-title">
+                                                    <span>Your reflections network</span>
+                                                    <button type="button" class="btn btn-light btn-sm float-right">
+                                                        <i class="fas fa-question-circle"></i>
+                                                    </button>
+                                                </h5>
+                                                <h6 class="card-subtitle mb-2 instructions"></h6>
+                                                <div class="chart-container network"></div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

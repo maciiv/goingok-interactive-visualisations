@@ -1,4 +1,4 @@
-//;
+import d3 from "d3";
 import { IChart, HistogramChartSeries, IHistogramChartSeries } from "./charts.js";
 export interface IChartElements {
     svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>;

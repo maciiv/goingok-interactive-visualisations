@@ -1,4 +1,4 @@
-//;
+import d3 from "d3";
 export interface ITutorialData {
     id: string;
     content: string;
