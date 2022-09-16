@@ -390,8 +390,8 @@ export class AdminExperimentalCharts extends AdminControlCharts implements IAdmi
 }
 
 export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAdminAnalyticsDataRaw[]) {
-    let loading = new Loading();
-    let rawData = entriesRaw.map(d => new AdminAnalyticsDataRaw(d.group, d.value, d.createDate));
+    const loading = new Loading();
+    const rawData = entriesRaw.map(d => new AdminAnalyticsDataRaw(d.group, d.value, d.createDate));
     let entries = rawData.map(d => d.transformData());
     let colourScale = d3.scaleOrdinal(d3.schemeCategory10);
     entries = entries.map(d => new AdminAnalyticsData(d.group, d.value, d.creteDate, colourScale(d.group), true));
@@ -406,15 +406,15 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAdminAnal
     loading.isLoading = false;
     loading.removeDiv();
     async function drawCharts(allEntries: IAdminAnalyticsData[]) {
-        let adminExperimentalCharts = new AdminExperimentalCharts();
+        const adminExperimentalCharts = new AdminExperimentalCharts();
         //Handle sidebar button
         adminExperimentalCharts.sidebarBtn();
 
         //Preloaded groups
-        let entries = adminExperimentalCharts.preloadGroups(allEntries);
+        const entries = adminExperimentalCharts.preloadGroups(allEntries);
 
         //Create data with current entries
-        let data = entries.map(d => new AdminAnalyticsDataStats(d));
+        const data = entries.map(d => new AdminAnalyticsDataStats(d));
 
         //Render totals
         adminExperimentalCharts.renderTotals(data);
@@ -423,28 +423,23 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAdminAnal
         adminExperimentalCharts.barChart = new ChartSeries("users", data.map(d => d.group), false, data.map(d => d.getStat("usersTotal").value as number));
         adminExperimentalCharts.barChart = adminExperimentalCharts.renderBarChart(adminExperimentalCharts.barChart, data);
 
-         //Handle groups chart help
-         d3.select("#users .card-title button")
-         .on("click", function (e: Event) {
-            adminExperimentalCharts.help.helpPopover(d3.select(this), `${adminExperimentalCharts.barChart.id}-help`, "<b>Bar chart</b><br>A bar chart of the users in each group code");
-            adminExperimentalCharts.help.helpPopover(adminExperimentalCharts.barChart.elements.contentContainer.select(`#${adminExperimentalCharts.barChart.id}-data`), `${adminExperimentalCharts.barChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand<br><u><i>click</i></u> me to compare and drill-down");
-         });
+        //Handle groups chart help
+        adminExperimentalCharts.help.helpPopover(adminExperimentalCharts.barChart.id, `<b>Bar chart</b><br>
+            A bar chart of the users in each group code<br>
+            <u><i>Hover</i></u> over the bars for information on demand<br>
+            <u><i>Click</i></u> a bar to compare and drill-down`)
 
-         //Draw users histogram container
+        //Draw users histogram container
         let usersData = data.map(d => d.getUsersData());
         adminExperimentalCharts.histogram = new HistogramChartSeries("histogram", data.map(d => d.group));
         adminExperimentalCharts.renderHistogram(adminExperimentalCharts.histogram, usersData);
 
         //Handle users histogram chart help
-        d3.select("#histogram .card-title button")
-            .on("click", function (e: Event) {
-                adminExperimentalCharts.help.helpPopover(d3.select(this), `${adminExperimentalCharts.histogram.id}-help`, "<b>Histogram</b><br>A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i>");
-                adminExperimentalCharts.help.helpPopover(adminExperimentalCharts.histogram.elements.contentContainer.select(".histogram-rect"), `${adminExperimentalCharts.histogram.id}-help-data`, "<u><i>hover</i></u> me for information on demand<br><u><i>click</i></u> me to compare");
-                let showDragHelp = adminExperimentalCharts.help.helpPopover(adminExperimentalCharts.histogram.elements.contentContainer.select(".threshold-line.soaring"), `${adminExperimentalCharts.histogram.id}-help-drag`, "<u><i>drag</i></u> me to change the thresholds");
-                if (showDragHelp) {
-                    d3.select(`#${adminExperimentalCharts.histogram.id}-help-drag`).style("top", parseInt(d3.select(`#${adminExperimentalCharts.histogram.id}-help-drag`).style("top")) - 19 + "px");
-                }
-            });
+        adminExperimentalCharts.help.helpPopover(adminExperimentalCharts.histogram.id, `<b>Histogram</b><br>
+            A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i>
+            <u><i>Hover</i></u> over the boxes for information on demand<br>
+            <u><i>Click</i></u> a box to compare<br>
+            <u><i>Drag</i></u> the lines to change the thresholds`)
 
         //Draw timeline 
         adminExperimentalCharts.timeline = new ChartTime("timeline", [d3.min(data.map(d => d.getStat("oldRef").value)) as Date, d3.max(data.map(d => d.getStat("newRef").value)) as Date]);
@@ -453,20 +448,20 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAdminAnal
         adminExperimentalCharts.handleTimelineButtons(adminExperimentalCharts.timeline, adminExperimentalCharts.timelineZoom, data);
 
         //Handle timeline chart help
-        d3.select("#timeline .card-title button")
-            .on("click", function (e: Event) {
-                adminExperimentalCharts.help.helpPopover(d3.select("#timeline #timeline-plot"), `${adminExperimentalCharts.timeline.id}-help-button`, "<u><i>click</i></u> me to change chart type");
-                adminExperimentalCharts.help.helpPopover(d3.select("#timeline .zoom-rect.active"), `${adminExperimentalCharts.timeline.id}-help-zoom`, "use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move");
-                if (!adminExperimentalCharts.timeline.elements.contentContainer.select(".circle").empty()) {
-                    adminExperimentalCharts.help.helpPopover(d3.select(this), `${adminExperimentalCharts.timeline.id}-help`, "<b>Scatter plot</b><br>A scatter plot shows the data as a collection of points<br>The data represented are <i>reflections over time</i>");
-                    let showDataHelp = adminExperimentalCharts.help.helpPopover(adminExperimentalCharts.timeline.elements.contentContainer.select(".circle"), `${adminExperimentalCharts.timeline.id}-help-data`, "<u><i>hover</i></u> me for information on demand<br><u><i>click</i></u> me to connect the user's reflections");
-                    if (showDataHelp) {
-                        d3.select(`#${adminExperimentalCharts.timeline.id}-help-data`).style("top", parseInt(d3.select(`#${adminExperimentalCharts.timeline.id}-help-data`).style("top")) - 14 + "px");
-                    }
-                } else {
-                    adminExperimentalCharts.help.helpPopover(d3.select(this), `${adminExperimentalCharts.timeline.id}-help`, "<b>Density plot</b><br>A density plot shows the distribution of a numeric variable<br>The data represented are <i>reflections over time</i>");
-                }
-            });
+        // d3.select("#timeline .card-title button")
+        //     .on("click", function (e: Event) {
+        //         adminExperimentalCharts.help.helpPopover(d3.select("#timeline #timeline-plot"), `${adminExperimentalCharts.timeline.id}-help-button`, "<u><i>click</i></u> me to change chart type");
+        //         adminExperimentalCharts.help.helpPopover(d3.select("#timeline .zoom-rect.active"), `${adminExperimentalCharts.timeline.id}-help-zoom`, "use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move");
+        //         if (!adminExperimentalCharts.timeline.elements.contentContainer.select(".circle").empty()) {
+        //             adminExperimentalCharts.help.helpPopover(d3.select(this), `${adminExperimentalCharts.timeline.id}-help`, "<b>Scatter plot</b><br>A scatter plot shows the data as a collection of points<br>The data represented are <i>reflections over time</i>");
+        //             let showDataHelp = adminExperimentalCharts.help.helpPopover(adminExperimentalCharts.timeline.elements.contentContainer.select(".circle"), `${adminExperimentalCharts.timeline.id}-help-data`, "<u><i>hover</i></u> me for information on demand<br><u><i>click</i></u> me to connect the user's reflections");
+        //             if (showDataHelp) {
+        //                 d3.select(`#${adminExperimentalCharts.timeline.id}-help-data`).style("top", parseInt(d3.select(`#${adminExperimentalCharts.timeline.id}-help-data`).style("top")) - 14 + "px");
+        //             }
+        //         } else {
+        //             adminExperimentalCharts.help.helpPopover(d3.select(this), `${adminExperimentalCharts.timeline.id}-help`, "<b>Density plot</b><br>A density plot shows the distribution of a numeric variable<br>The data represented are <i>reflections over time</i>");
+        //         }
+        //     });
 
         //Draw user statistics
         let userStatistics = d3.select("#reflections .card");
@@ -474,10 +469,8 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAdminAnal
             .html("Select a reflection from the scatter plot to view specific users");
         
         //Handle users histogram chart help
-        d3.select("#reflections .card-title button")
-            .on("click", function (e: Event) {
-                adminExperimentalCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Reflections</b><br>Each user's reflections are shown sorted by time. The chart depicts the percentage of reflections in each reflection point group");
-            });
+        adminExperimentalCharts.help.helpPopover("reflections", `<b>Reflections</b><br>
+            Each user's reflections are shown sorted by time. The chart depicts the percentage of reflections in each reflection point group`)
 
         //Update charts depending on group
         adminExperimentalCharts.handleGroups();

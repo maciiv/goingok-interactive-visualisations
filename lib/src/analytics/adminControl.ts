@@ -595,8 +595,8 @@ export class AdminControlCharts implements IAdminControlCharts {
 }
 
 export async function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyticsDataRaw[]) {
-    let loading = new Loading();
-    let rawData = entriesRaw.map(d => new AdminAnalyticsDataRaw(d.group, d.value, d.createDate));
+    const loading = new Loading();
+    const rawData = entriesRaw.map(d => new AdminAnalyticsDataRaw(d.group, d.value, d.createDate));
     let entries = rawData.map(d => d.transformData());
     let colourScale = d3.scaleOrdinal(d3.schemeCategory10);
     entries = entries.map(d => new AdminAnalyticsData(d.group, d.value, d.creteDate, colourScale(d.group), d.selected));
@@ -609,7 +609,7 @@ export async function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyti
     loading.isLoading = false;
     loading.removeDiv();
     async function drawCharts(allEntries: IAdminAnalyticsData[]) {
-        let adminControlCharts = new AdminControlCharts();
+        const adminControlCharts = new AdminControlCharts();
         //Handle sidebar button
         adminControlCharts.sidebarBtn();
         adminControlCharts.preloadGroups(allEntries);
@@ -627,23 +627,19 @@ export async function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyti
             .html("");
 
         //Handle groups chart help
-        d3.select("#users .card-title button")
-            .on("click", function (e: Event) {
-                adminControlCharts.help.helpPopover(d3.select(this), `${usersChart.id}-help`, "<b>Bar chart</b><br>A bar chart of the users in each group code");
-                adminControlCharts.help.helpPopover(usersChart.elements.contentContainer.select(".bar"), `${usersChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
-            });
+        adminControlCharts.help.helpPopover(usersChart.id, `<b>Bar chart</b><br>
+            A bar chart of the users in each group code<br>
+            <u><i>Hover</i></u> over the bars for information on demand`)
 
          //Draw users histogram container
          let usersData = data.map(d => d.getUsersData());
          let histogram = new HistogramChartSeries("histogram", data.map(d => d.group));
          adminControlCharts.renderHistogram(histogram, usersData);
  
-         //Handle users histogram chart help
-         d3.select("#histogram .card-title button")
-             .on("click", function (e: Event) {
-                 adminControlCharts.help.helpPopover(d3.select(this), `${histogram.id}-help`, "<b>Histogram</b><br>A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i>");
-                 adminControlCharts.help.helpPopover(histogram.elements.contentContainer.select(`#${histogram.id}-data`), `${histogram.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
-             });
+        //Handle users histogram chart help
+        adminControlCharts.help.helpPopover(histogram.id, `<b>Histogram</b><br>
+            A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i>
+            <u><i>Hover</i></u> over the boxes for information on demand`)
 
         //Draw timeline 
         let timelineChart = new ChartTime("timeline", [d3.min(data.map(d => d.getStat("oldRef").value)) as Date, d3.max(data.map(d => d.getStat("newRef").value)) as Date]);
@@ -652,18 +648,18 @@ export async function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyti
         adminControlCharts.handleTimelineButtons(timelineChart, timelineZoomChart, data);
 
         //Handle timeline chart help
-        d3.select("#timeline .card-title button")
-            .on("click", function (e: Event) {
-                adminControlCharts.help.helpPopover(d3.select(this), `${timelineChart.id}-help`, "<b>Density plot</b><br>A density plot shows the distribution of a numeric variable<br><b>Scatter plot</b><br>The data is showed as a collection of points<br>The data represented are <i>reflections over time</i>");
-                adminControlCharts.help.helpPopover(d3.select("#timeline #timeline-plot"), `${timelineChart.id}-help-button`, "<u><i>click</i></u> me to change chart type");
-                adminControlCharts.help.helpPopover(d3.select("#timeline .zoom-rect.active"), `${timelineChart.id}-help-zoom`, "use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move");
-                if (!timelineChart.elements.contentContainer.select(".circle").empty()) {
-                    let showDataHelp = adminControlCharts.help.helpPopover(timelineChart.elements.contentContainer.select(".circle"), `${timelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
-                    if (showDataHelp) {
-                        d3.select(`#${timelineChart.id}-help-data`).style("top", parseInt(d3.select(`#${timelineChart.id}-help-data`).style("top")) - 14 + "px");
-                    }
-                }
-            });
+        // d3.select("#timeline .card-title button")
+        //     .on("click", function (e: Event) {
+        //         adminControlCharts.help.helpPopover(d3.select(this), `${timelineChart.id}-help`, "<b>Density plot</b><br>A density plot shows the distribution of a numeric variable<br><b>Scatter plot</b><br>The data is showed as a collection of points<br>The data represented are <i>reflections over time</i>");
+        //         adminControlCharts.help.helpPopover(d3.select("#timeline #timeline-plot"), `${timelineChart.id}-help-button`, "<u><i>click</i></u> me to change chart type");
+        //         adminControlCharts.help.helpPopover(d3.select("#timeline .zoom-rect.active"), `${timelineChart.id}-help-zoom`, "use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move");
+        //         if (!timelineChart.elements.contentContainer.select(".circle").empty()) {
+        //             let showDataHelp = adminControlCharts.help.helpPopover(timelineChart.elements.contentContainer.select(".circle"), `${timelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
+        //             if (showDataHelp) {
+        //                 d3.select(`#${timelineChart.id}-help-data`).style("top", parseInt(d3.select(`#${timelineChart.id}-help-data`).style("top")) - 14 + "px");
+        //             }
+        //         }
+        //     });
 
         //Draw user statistics
         let userStatistics = d3.select("#reflections .card-body");
@@ -691,9 +687,7 @@ export async function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyti
         users.each((d, i, g) => i == 0 ? adminControlCharts.renderUserStatistics(d3.select(g[i]), d, [30, 70]) : "");
 
         //Handle users histogram chart help
-        d3.select("#reflections .card-title button")
-            .on("click", function (e: Event) {
-                adminControlCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Reflections</b><br>Each user's reflections are shown sorted by time. The chart depicts the percentage of reflections in each reflection point group");
-            });
+        adminControlCharts.help.helpPopover("reflections", `<b>Reflections</b><br>
+            Each user's reflections are shown sorted by time. The chart depicts the percentage of reflections in each reflection point group`)
     }
 }

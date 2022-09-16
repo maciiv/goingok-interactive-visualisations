@@ -213,7 +213,7 @@ export class AuthorExperimentalCharts extends AuthorControlCharts implements IAu
 }
 
 export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflection[], analyticsRaw: IReflectionAnalytics[]) {
-    let loading = new Loading();
+    const loading = new Loading();
     const colourScale = d3.scaleOrdinal(d3.schemeCategory10);
     const entries = d3.sort(entriesRaw.map(d => { return { "refId": d.refId, "timestamp": new Date(d.timestamp), "point": d.point, "text": d.text } as IReflection }), d => d.timestamp);
     const analytics = analyticsRaw.map(d => { return {"name": d.name, "description": d.description, "nodes": d.nodes.map(c => processColour(c)), "edges": d.edges } })
@@ -245,15 +245,11 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflecti
             authorExperimentalCharts.renderNetwork(authorExperimentalCharts.networkChart, authorExperimentalCharts.allAnalytics.find(d => d.name == "Your Network"));
     
             //Handle timeline chart help
-            d3.select("#network .card-title button")
-                .on("click", function (e: Event) {
-                    authorExperimentalCharts.help.helpPopover(d3.select("#network .zoom-rect.active"), `${authorExperimentalCharts.networkChart.id}-help-zoom`, "use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move");
-                    authorExperimentalCharts.help.helpPopover(d3.select(this), `${authorExperimentalCharts.networkChart.id}-help`, "<b>Network diagram</b><br>A network diagram that shows the phrases and tags associated to your reflections<br>The data represented are your <i>reflections over time</i>");
-                    let showDataHelp = authorExperimentalCharts.help.helpPopover(authorExperimentalCharts.networkChart.elements.contentContainer.select(".network-node-group"), `${authorExperimentalCharts.networkChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand<br><u><i>drag</i></u> me to rearrange the network");
-                    if (showDataHelp) {
-                        d3.select(`#${authorExperimentalCharts.networkChart.id}-help-data`).style("top", parseInt(d3.select(`#${authorExperimentalCharts.networkChart.id}-help-data`).style("top")) - 14 + "px");
-                    }
-                });
+            authorExperimentalCharts.help.helpPopover(authorExperimentalCharts.networkChart.id, `<b>Network diagram</b><br>
+                A network diagram that shows the phrases and tags associated to your reflections<br>The data represented are your <i>reflections over time</i><br>
+                Use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move<br>
+                <u><i>Hover</i></u> over the network nodes for information on demand<br>
+                <u><i>Drag</i></u> the network nodes to rearrange the network`) 
         }
 
         if (analytics.find(d => d.name == "Your Timeline") === undefined) {
@@ -264,20 +260,17 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflecti
             authorExperimentalCharts.renderTimeline(authorExperimentalCharts.timelineChart, authorExperimentalCharts.allEntries, authorExperimentalCharts.allAnalytics.find(d => d.name == "Your Timeline"));
     
             //Handle timeline chart help
-            d3.select("#timeline .card-title button")
-                .on("click", function (e: Event) {
-                    authorExperimentalCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Timeline</b><br>Your reflections and the tags associated to them are shown over time");
-                    authorExperimentalCharts.help.helpPopover(authorExperimentalCharts.timelineChart.elements.contentContainer.select(".point"), `${authorExperimentalCharts.timelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
-                });
+            authorExperimentalCharts.help.helpPopover(authorExperimentalCharts.timelineChart.id, `<b>Timeline</b><br>
+                Your reflections and the tags associated to them are shown over time<br>
+                <u><i>Hover</i></u> over a reflection point for information on demand<br>
+                <u><i>Click</i></u> a reflection point to filter the network diagram`)
         }
 
         authorExperimentalCharts.renderReflections(entries);
 
         //Handle reflections chart help
-        d3.select("#reflections .card-title button")
-            .on("click", function (e: Event) {
-                authorExperimentalCharts.help.helpPopover(d3.select(this), "reflections-help", "<b>Reflections</b><br>Your reflections are shown sorted by time. The words with associated tags have a different background colour");
-            });
+        authorExperimentalCharts.help.helpPopover("reflections", `<b>Reflections</b><br>
+            Your reflections are shown sorted by time. The words with associated tags have a different background colour`)
 
         if (analytics.find(d => d.name == "Your Network") !== undefined && analytics.find(d => d.name == "Your Timeline") !== undefined) {
             authorExperimentalCharts.handleTags();
