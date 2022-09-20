@@ -26,7 +26,7 @@ export declare class AuthorExperimentalCharts extends AuthorControlCharts implem
     private getUpdatedAnalyticsData;
     private getUpdatedNetworkData;
     renderTimeline(chart: ChartTimeNetwork, data: IReflection[], analytics: IReflectionAnalytics): ChartTimeNetwork;
-    renderNetwork(chart: ChartNetwork, data: IReflectionAnalytics): ChartNetwork;
+    renderNetwork(chart: ChartNetwork, data: IReflectionAnalytics, reflection?: IReflection): ChartNetwork;
     renderReflections(data: IReflection[]): void;
 }
 export declare function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflection[], analyticsRaw: IReflectionAnalytics[]): Promise<void>;

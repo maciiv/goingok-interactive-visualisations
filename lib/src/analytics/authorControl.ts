@@ -1,11 +1,12 @@
 import d3 from "d3";
 import { ChartNetwork, ChartTimeNetwork } from "../charts/charts.js";
 import { IHelp, Help } from "../charts/help.js";
-import { IAuthorControlInteractions, AuthorControlInteractions, TooltipValues } from "../charts/interactions.js";
+import { IAuthorControlInteractions, AuthorControlInteractions } from "../charts/interactions.js";
 import { IReflectionAuthor, IReflectionAnalytics, IReflection, INodes, IEdges } from "../data/data.js";
 import { ChartPadding } from "../charts/render.js";
 import { Loading } from "../utils/loading.js";
 import { Tutorial, TutorialData } from "../utils/tutorial.js";
+import { TooltipValues } from "../interactions/tooltip.js";
 
 export interface IAuthorControlCharts {
     help: IHelp;
@@ -16,8 +17,9 @@ export interface IAuthorControlCharts {
     preloadTags(entries: IReflectionAnalytics[], enable?: boolean): INodes[];
     processSimulation(chart: ChartNetwork, data: IReflectionAnalytics): void;
     processTimelineSimulation(chart: ChartTimeNetwork, centerX: number, centerY: number, nodes: INodes[]): void;
+    getTooltipNodes(data: IReflectionAnalytics, nodeData: INodes): INodes[];
     renderTimeline(chart: ChartTimeNetwork, data: IReflection[], analytics: IReflectionAnalytics): ChartTimeNetwork;
-    renderNetwork(chart: ChartNetwork, data: IReflectionAnalytics): ChartNetwork;
+    renderNetwork(chart: ChartNetwork, data: IReflectionAnalytics, reflection?: IReflection): ChartNetwork;
     renderReflections(data: IReflectionAuthor[]): void;
 }
 
@@ -92,6 +94,13 @@ export class AuthorControlCharts implements IAuthorControlCharts {
             simulation.force("forceX", d3.forceX(-20).strength(0.25))
         }
         return simulation.tick(300);
+    }
+
+    getTooltipNodes(data: IReflectionAnalytics, nodeData: INodes): INodes[] {
+        let edges = data.edges.filter(d => d.source === nodeData).map(d => d.target as INodes);
+        edges = edges.concat(data.edges.filter(d => d.target === nodeData).map(d => d.source as INodes));
+        edges.push(nodeData);
+        return edges;
     }
 
     renderTimeline(chart: ChartTimeNetwork, data: IReflection[], analytics: IReflectionAnalytics): ChartTimeNetwork {
@@ -200,14 +209,14 @@ export class AuthorControlCharts implements IAuthorControlCharts {
         return chart;
     }
 
-    renderNetwork(chart: ChartNetwork, data: IReflectionAnalytics): ChartNetwork {
+    renderNetwork(chart: ChartNetwork, data: IReflectionAnalytics, reflection?: IReflection): ChartNetwork {
         const _this = this;
 
         d3.select(`#${chart.id} .card-subtitle`)
-            .html(data.nodes.filter(d => d.name === "ref").length == 1 ? `Filtering by <span class="badge badge-pill badge-info">${chart.x.scale.invert(data.nodes.find(d => d.name === "ref").fx).toDateString()} <i class="fas fa-window-close"></i></span>`:
+            .html(reflection !== undefined ? `Filtering by <span class="badge badge-pill badge-info">${reflection.timestamp.toDateString()} <i class="fas fa-window-close"></i></span>`:
                 "");
 
-        let links = chart.elements.contentContainer.selectAll(".network-link")
+        let edges = chart.elements.contentContainer.selectAll(".network-link")
             .data(data.edges)
             .join(
                 enter => enter.append("line")
@@ -233,7 +242,7 @@ export class AuthorControlCharts implements IAuthorControlCharts {
                 exit => exit.remove()
             );
         
-        let nodes = chart.elements.contentContainer.selectAll(".network-node-group")
+        let nodes = chart.elements.content = chart.elements.contentContainer.selectAll(".network-node-group")
             .data(data.nodes)
             .join(
                 enter => enter.append("g")
@@ -270,7 +279,7 @@ export class AuthorControlCharts implements IAuthorControlCharts {
         chart.simulation.on("tick", ticked);
 
         function ticked() {
-            links.attr("x1", d => (d.source as INodes).x)
+            edges.attr("x1", d => (d.source as INodes).x)
             .attr("y1", d => (d.source as INodes).y)
             .attr("x2", d => (d.target as INodes).x)
             .attr("y2", d => (d.target as INodes).y);
@@ -285,12 +294,8 @@ export class AuthorControlCharts implements IAuthorControlCharts {
                 return;
             }
 
-            let edges = data.edges.filter(d => d.source === d3.select<SVGGElement, INodes>(this).datum()).map(d => d.target);
-            edges = edges.concat(data.edges.filter(d => d.target === d3.select<SVGGElement, INodes>(this).datum()).map(d => d.source));
-            edges.push(d3.select<SVGGElement, INodes>(this).datum());
-
             d3.selectAll<SVGGElement, INodes>(".network-node-group")
-                .filter(d => edges.includes(d))
+                .filter(c => _this.getTooltipNodes(data, d).includes(c))
                 .call(enter => enter.select("text")
                     .text(d => d.expression)
                     .style("opacity", 0)
@@ -307,12 +312,7 @@ export class AuthorControlCharts implements IAuthorControlCharts {
         }
 
         function onMouseout() {
-            let links = data.edges.filter(d => d.source === d3.select<SVGGElement, INodes>(this).datum()).map(d => d.target);
-            links = links.concat(data.edges.filter(d => d.target === d3.select<SVGGElement, INodes>(this).datum()).map(d => d.source));
-            links.push(d3.select<SVGGElement, INodes>(this).datum());
-
             d3.selectAll<SVGGElement, INodes>(".network-node-group")
-                .filter(d => links.includes(d))
                 .call(enter => enter.select("text")
                     .text(null)
                     .style("opacity", 0)
@@ -326,6 +326,9 @@ export class AuthorControlCharts implements IAuthorControlCharts {
                     .attr("y", -5)
                     .attr("width", 10)
                     .attr("height", 10))
+            
+            d3.selectAll<HTMLSpanElement, unknown>("#reflections .reflections-tab span")
+                .style("background-color", null)
             
             _this.interactions.tooltip.removeTooltip(chart);
         }
@@ -357,16 +360,18 @@ export class AuthorControlCharts implements IAuthorControlCharts {
         .html(data.length == 1 ? `Filtering by <span class="badge badge-pill badge-info">${data[0].timestamp.toDateString()} <i class="fas fa-window-close"></i></span>`:
             "");
 
-        d3.select<HTMLDivElement, Date>("#reflections .reflections-tab")
+        d3.select<HTMLDivElement, IReflection>("#reflections .reflections-tab")
             .selectAll(".reflection")
             .data(data)
             .join(
                 enter => enter.append("div")
-                .attr("class", "reflection")
-                .call(div => div.append("p")
-                    .attr("class", "reflection-text")
-                    .html(d => _this.processReflectionsText(d))),
-                update => update.select<HTMLParagraphElement>("p")
+                    .attr("id", d => `ref-${d.refId}`)
+                    .attr("class", "reflection")
+                    .call(div => div.append("p")
+                        .attr("class", "reflection-text")
+                        .html(d => _this.processReflectionsText(d))),
+                update => update.attr("id", d => `ref-${d.refId}`)
+                    .select<HTMLParagraphElement>("p")
                     .html(d => _this.processReflectionsText(d)),
                 exit => exit.remove()
             )
@@ -380,7 +385,7 @@ export class AuthorControlCharts implements IAuthorControlCharts {
             const isOpenTag = nodes.find(c => c.startIdx === i);
             const isCloseTag = nodes.find(c => c.endIdx === i);
             if (isOpenTag !== undefined) {
-                html += `<span class="badge badge-pill" style="background-color: ${isOpenTag.properties["color"]}">${data.text[i]}`
+                html += `<span id="node-${isOpenTag.idx}" class="badge badge-pill" style="border: 2px solid ${isOpenTag.properties["color"]}">${data.text[i]}`
             } else if (isCloseTag !== undefined) {
                 html += `${data.text[i]}</span>`
             } else {

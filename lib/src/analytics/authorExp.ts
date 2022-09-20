@@ -160,19 +160,37 @@ export class AuthorExperimentalCharts extends AuthorControlCharts implements IAu
                 return nodes.includes(c.source as INodes) || nodes.includes(c.target as INodes)
             })
             let networkData = _this.getUpdatedNetworkData({"name": _this.allAnalytics.find(c => c.name == "Your Network").name, "description": _this.allAnalytics.find(c => c.name == "Your Network").description, "nodes": nodes, "edges": edges});
-            _this.renderNetwork(_this.networkChart, networkData);
+            _this.renderNetwork(_this.networkChart, networkData, d);
             _this.renderReflections([d]);
         }
 
         return chart;
     }
 
-    renderNetwork(chart: ChartNetwork, data: IReflectionAnalytics): ChartNetwork {
-        chart = super.renderNetwork(chart, data);
+    renderNetwork(chart: ChartNetwork, data: IReflectionAnalytics, reflection?: IReflection): ChartNetwork {
+        chart = super.renderNetwork(chart, data, reflection);
 
         const _this = this;
 
         d3.select(`#${chart.id} .badge`).on("click", () => _this.handleFilterButton());
+
+        _this.interactions.click.enableClick(chart, onClick)
+
+        function onClick(e: Event, d: INodes) {
+            let nodes = _this.getTooltipNodes(data, d);
+
+            d3.selectAll<HTMLDivElement, IReflection>("#reflections .reflections-tab div")
+                .filter(c => c.refId === d.refId)
+                .selectAll("span")
+                .each((c, i, g) => {
+                    let node = nodes.find(r => r.idx === parseInt(d3.select(g[i]).attr("id").replace("node-", "")))
+                    if (node !== undefined) {
+                        d3.select(g[i]).style("background-color", node.properties["color"])
+                    }
+                })
+            
+                document.querySelector(`#ref-${d.refId}`).scrollIntoView({ behavior: 'smooth', block: 'start' });                   
+        }
 
         chart.elements.content
             .call(d3.drag()
@@ -249,7 +267,8 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflecti
                 A network diagram that shows the phrases and tags associated to your reflections<br>The data represented are your <i>reflections over time</i><br>
                 Use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move<br>
                 <u><i>Hover</i></u> over the network nodes for information on demand<br>
-                <u><i>Drag</i></u> the network nodes to rearrange the network`) 
+                <u><i>Drag</i></u> the network nodes to rearrange the network<br>
+                <u><i>Click</i></u> to highlight the nodes in the reflection text`) 
         }
 
         if (analytics.find(d => d.name == "Your Timeline") === undefined) {

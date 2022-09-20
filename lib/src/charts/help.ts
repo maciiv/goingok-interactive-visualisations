@@ -8,13 +8,13 @@ export interface IHelp {
 export class Help implements IHelp {
     helpPopover(id: string, content: string): void {
         const helpId = `${id}-help`
-        document.querySelector(`#${id} .card-title button`).addEventListener("click", (e) => {    
-            const target = e.target as HTMLElement
+        const button = document.querySelector<HTMLElement>(`#${id} .card-title button`);
+        button.addEventListener("click", (e) => {    
             if (document.querySelector(`#${helpId}`) === null) {
                 let popover = document.createElement("div")
                 popover.setAttribute("id", helpId)
                 popover.setAttribute("class", "popover fade bs-popover-left show")
-                popover.style.top = `${window.pageYOffset + target.getBoundingClientRect().top}px`
+                popover.style.top = `${window.pageYOffset + button.getBoundingClientRect().top}px`
 
                 document.querySelector("body").appendChild(popover)
                 
@@ -28,17 +28,17 @@ export class Help implements IHelp {
                 popoverBody.innerHTML = content
                 popover.appendChild(popoverBody)
 
-                if (target.getBoundingClientRect().left - popover.getBoundingClientRect().width > 0) {
-                    popover.style.left = `${target.parentElement.getBoundingClientRect().left - popover.getBoundingClientRect().width}px`;
+                if (button.getBoundingClientRect().left - popover.getBoundingClientRect().width > 0) {
+                    popover.style.left = `${button.getBoundingClientRect().left - popover.getBoundingClientRect().width}px`;
                 } else {
-                    popover.style.left = `${target.parentElement.getBoundingClientRect().right}px`;
+                    popover.style.left = `${button.getBoundingClientRect().right}px`;
                     popover.setAttribute("class", "popover fade bs-popover-right show")
                 }
                 
-                target.setAttribute("class", "fas fa-window-close")
+                button.querySelector("i").setAttribute("class", "fas fa-window-close")
             } else {
                 document.querySelector(`#${helpId}`).remove()
-                target.setAttribute("class", "fas fa-question-circle")
+                button.querySelector("i").setAttribute("class", "fas fa-question-circle")
             }
         })
     }
