@@ -1,47 +1,47 @@
 import { IChart } from "./charts.js";
 
 export interface IHelp {
-    helpPopover(button: any, id: string, content: string): boolean;
+    helpPopover(id: string, content: string): void;
     removeHelp(chart: IChart): void;
 }
 
 export class Help implements IHelp {
-    helpPopover(button: any, id: string, content: string): boolean {
-        if (document.querySelector(`#${id}`) === null) {
-            let popover = document.createElement("div")
-            popover.setAttribute("id", id)
-            popover.setAttribute("class", "popover fade bs-popover-left show")
-            popover.style.top = `${window.pageYOffset + button.node().getBoundingClientRect().top}px`
+    helpPopover(id: string, content: string): void {
+        const helpId = `${id}-help`
+        const button = document.querySelector<HTMLElement>(`#${id} .card-title button`);
+        button.addEventListener("click", (e) => {    
+            if (document.querySelector(`#${helpId}`) === null) {
+                let popover = document.createElement("div")
+                popover.setAttribute("id", helpId)
+                popover.setAttribute("class", "popover fade bs-popover-left show")
+                popover.style.top = `${window.pageYOffset + button.getBoundingClientRect().top}px`
 
-            document.querySelector("body").appendChild(popover)
-            
-            let arrow = document.createElement("div")
-            arrow.setAttribute("class", "arrow")
-            arrow.style.top = "6px"
-            popover.appendChild(arrow);
+                document.querySelector("body").appendChild(popover)
+                
+                let arrow = document.createElement("div")
+                arrow.setAttribute("class", "arrow")
+                arrow.style.top = "6px"
+                popover.appendChild(arrow);
 
-            let popoverBody = document.createElement("div")
-            popoverBody.setAttribute("class", "popover-body")
-            popoverBody.innerHTML = content
-            popover.appendChild(popoverBody)
+                let popoverBody = document.createElement("div")
+                popoverBody.setAttribute("class", "popover-body")
+                popoverBody.innerHTML = content
+                popover.appendChild(popoverBody)
 
-            if (button.node().getBoundingClientRect().left - popover.getBoundingClientRect().width > 0) {
-                popover.style.left = "left", `${button.node().getBoundingClientRect().left - popover.getBoundingClientRect().width}px`;
+                if (button.getBoundingClientRect().left - popover.getBoundingClientRect().width > 0) {
+                    popover.style.left = `${button.getBoundingClientRect().left - popover.getBoundingClientRect().width}px`;
+                } else {
+                    popover.style.left = `${button.getBoundingClientRect().right}px`;
+                    popover.setAttribute("class", "popover fade bs-popover-right show")
+                }
+                
+                button.querySelector("i").setAttribute("class", "fas fa-window-close")
             } else {
-                popover.style.left = "left", `${button.node().getBoundingClientRect().right}px`;
-                popover.setAttribute("class", "popover fade bs-popover-right show")
+                document.querySelector(`#${helpId}`).remove()
+                button.querySelector("i").setAttribute("class", "fas fa-question-circle")
             }
-            
-            button.select("i")
-                .attr("class", "fas fa-window-close")
-            return true;
-        } else {
-            document.querySelector(`#${id}`).remove();
-            button.select("i")
-                .attr("class", "fas fa-question-circle")
-            return false;
-        }
-    };
+        })
+    }
     removeHelp(chart: IChart): void {
         document.querySelector(`#${chart.id}-help`)?.remove();
         document.querySelector(`#${chart.id}-help-button`)?.remove();
@@ -50,5 +50,5 @@ export class Help implements IHelp {
         document.querySelector(`#${chart.id}-help-zoom`)?.remove();
         let icon = document.querySelector(`#${chart.id} .card-title i`)
         icon.setAttribute("class", "fas fa-question-circle");
-    };
+    }
 }
