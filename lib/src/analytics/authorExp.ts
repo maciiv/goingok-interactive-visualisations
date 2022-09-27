@@ -37,7 +37,7 @@ export class AuthorExperimentalCharts extends AuthorControlCharts implements IAu
             .append("input")
             .attr("type", "checkbox")
             .attr("value", d => d.name)
-            .attr("checked", true)
+            .property("checked", true)
 
         return nodes;
     }

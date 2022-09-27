@@ -21,7 +21,19 @@
                         <h3 class="m-auto">GoingOK</h3>
                         <button type="button" id="sidebar-btn" class="btn btn-dark mr-2"><i class="fa fa-align-justify"></i></button>
                     </div>
-                    <div class="col-md-12">
+                    <div id="all-groups" class="col-md-12">
+                        <ul id="all" class="list-unstyled components mb-0">
+                            <li>
+                                <div class="input-group mb-0">
+                                    <div class="input-group-prepend">
+                                        <div class="input-group-text group-row">
+                                            <input type="checkbox" value="all" checked />
+                                        </div>
+                                    </div>
+                                    <input type="text" value="select all" class="form-control group-row" disabled />
+                                </div>
+                            </li>
+                        </ul>
                         <ul id="groups" class="list-unstyled components"></ul>
                     </div>
                     <div id="switch-dashboard" class="col-md-12 d-flex">

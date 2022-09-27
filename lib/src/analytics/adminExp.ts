@@ -1,4 +1,4 @@
-import d3 from "d3";
+import d3, { select } from "d3";
 import { ChartSeries, IHistogramChartSeries, ChartTime, ChartTimeZoom, HistogramChartSeries } from "../charts/charts.js";
 import { IAdminAnalyticsData, IAdminAnalyticsDataStats, AdminAnalyticsDataStats, IHistogramData, IReflectionAuthor, HistogramData, ITimelineData, AdminAnalyticsData } from "../data/data.js";
 import { IAdminControlCharts, AdminControlCharts } from "./adminControl.js";
@@ -31,16 +31,40 @@ export class AdminExperimentalCharts extends AdminControlCharts implements IAdmi
     preloadGroups(allEntries: IAdminAnalyticsData[]): IAdminAnalyticsData[] {
         super.preloadGroups(allEntries, true)
         this.allEntries = allEntries;
+
+        d3.select("#groups")
+            .selectAll<HTMLLIElement, IAdminAnalyticsData>("li").select("div")
+            .insert("div", "input")
+            .attr("class", "input-group-prepend")
+            .append("div")
+            .attr("class", "input-group-text group-row")
+            .append("input")
+            .attr("type", "checkbox")
+            .attr("value", d => d.group)
+            .property("checked", true)
+
         return d3.filter(allEntries, d => d.selected == true);
     };
     handleGroups(): void {
         let _this = this;
-        d3.selectAll("#groups input[type=checkbox]").on("change", (e: Event) => {
+        let inputs = d3.selectAll("#all-groups input[type=checkbox]")
+        inputs.on("change", (e: Event) => {
             let target = e.target as HTMLInputElement;
+            let entry = _this.allEntries.find(d => d.group == target.value)
             if (target.checked) {
-                _this.allEntries.find(d => d.group == target.value).selected = true;
+                if (entry !== undefined) {
+                    entry.selected = true
+                } else {
+                    _this.allEntries.forEach(c => c.selected = true)
+                    inputs.property("checked", true)
+                };
             } else {
-                _this.allEntries.find(d => d.group == target.value).selected = false;
+                if (entry !== undefined) {
+                    entry.selected = false
+                } else {
+                    _this.allEntries.forEach(c => c.selected = false)
+                    inputs.property("checked", false)
+                };
             }
             let data = _this.getUpdatedData();
             let clickData = _this.getClickData(_this.barChart.elements.contentContainer) as IAdminAnalyticsDataStats;

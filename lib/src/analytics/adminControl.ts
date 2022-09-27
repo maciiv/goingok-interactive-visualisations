@@ -42,17 +42,12 @@ export class AdminControlCharts implements IAdminControlCharts {
     };
     preloadGroups(allEntries: IAdminAnalyticsData[], enable: boolean = false): IAdminAnalyticsData[] {
         d3.select("#groups")
-            .selectAll("li")
+            .selectAll<HTMLLIElement, IAdminAnalyticsData>("li")
             .data(allEntries)
             .enter()
             .append("li")
             .append("div")
             .attr("class", "input-group mb-1")
-            .call(div => div.append("div")
-                .attr("class", "input-group-prepend")
-                .call(div => div.append("div")
-                    .attr("class", "input-group-text group-row")
-                    .html((d, i) => ` <input type="checkbox" value="${d.group}" checked ${!enable ? "disabled" : ""} />`)))
             .call(div => div.append("input")
                 .attr("type", "text")
                 .attr("class", "form-control group-row")
@@ -60,9 +55,14 @@ export class AdminControlCharts implements IAdminControlCharts {
                 .property("disabled", true))
             .call(div => div.append("div")
                 .attr("class", "input-group-append")
-                .call(div => div.append("div")
-                    .attr("class", "input-group-text group-row")
-                    .html(d => `<input type="color" value="${d.colour}" id="colour-${d.group}" ${!enable ? "disabled" : ""} />`)));
+                .append("div")
+                .attr("class", "input-group-text group-row")
+                .append("input")
+                .attr("id", d => `colour-${d.group}`)
+                .attr("type", "color")
+                .attr("value", d => d.colour)
+                .property("disabled", !enable))
+
         return allEntries;
     };
     renderTotals(data: IAdminAnalyticsDataStats[]) : void {
