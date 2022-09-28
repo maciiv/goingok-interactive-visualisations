@@ -1,5 +1,5 @@
 import d3 from "d3";
-import { ChartSeries, HistogramChartSeries, ChartTime, ChartTimeZoom, UserChart } from "../charts/charts.js";
+import { ChartSeries, ChartTime, ChartTimeZoom, UserChart } from "../charts/chartBase.js";
 import { IHelp, Help } from "../charts/help.js";
 import { IAdminAnalyticsData, IAdminAnalyticsDataStats, ITimelineData, HistogramData, IHistogramData, IReflectionAuthor, UserChartData, AdminAnalyticsData, AdminAnalyticsDataStats } from "../data/data.js";
 import { IAdminControlInteractions, AdminControlInteractions } from "../charts/interactions.js";
@@ -7,6 +7,7 @@ import { IAdminAnalyticsDataRaw, AdminAnalyticsDataRaw } from "../data/db.js";
 import { Loading } from "../utils/loading.js";
 import { Tutorial, TutorialData } from "../utils/tutorial.js";
 import { TooltipValues } from "../interactions/tooltip.js";
+import { HistogramChartSeries } from "../charts/chartHistogram.js";
 
 export interface IAdminControlCharts {
     help: IHelp;

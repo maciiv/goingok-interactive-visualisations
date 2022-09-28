@@ -1,11 +1,12 @@
-import d3, { select } from "d3";
-import { ChartSeries, IHistogramChartSeries, ChartTime, ChartTimeZoom, HistogramChartSeries } from "../charts/charts.js";
+import d3 from "d3";
+import { ChartSeries, ChartTime, ChartTimeZoom } from "../charts/chartBase.js";
 import { IAdminAnalyticsData, IAdminAnalyticsDataStats, AdminAnalyticsDataStats, IHistogramData, IReflectionAuthor, HistogramData, ITimelineData, AdminAnalyticsData } from "../data/data.js";
 import { IAdminControlCharts, AdminControlCharts } from "./adminControl.js";
 import { AdminExperimentalInteractions } from "../charts/interactions.js";
 import { IAdminAnalyticsDataRaw, AdminAnalyticsDataRaw } from "../data/db.js";
 import { Loading } from "../utils/loading.js";
 import { Tutorial, TutorialData } from "../utils/tutorial.js";
+import { IHistogramChartSeries, HistogramChartSeries } from "../charts/chartHistogram.js";
 
 export interface IAdminExperimentalCharts extends IAdminControlCharts {
     barChart: ChartSeries;

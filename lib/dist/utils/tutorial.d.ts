@@ -1,4 +1,4 @@
-//;
+;
 export interface ITutorialData {
     id: string;
     content: string;

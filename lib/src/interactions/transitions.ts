@@ -1,6 +1,7 @@
 import d3 from "d3";
 import { IAdminAnalyticsData, HistogramData, TimelineData } from "../data/data.js";
-import { ChartSeries, ChartTime, HistogramChartSeries, ChartTimeZoom } from "../charts/charts.js";
+import { ChartSeries, ChartTime, ChartTimeZoom } from "../charts/chartBase.js";
+import { HistogramChartSeries } from "../charts/chartHistogram.js";
 
 export interface ITransitions {
     axisSeries(chart: ChartSeries, data: IAdminAnalyticsData[]): void;

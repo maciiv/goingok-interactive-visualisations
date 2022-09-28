@@ -1,5 +1,6 @@
-//;
-import { IChart, HistogramChartSeries, IHistogramChartSeries } from "./charts.js";
+;
+import { IChart } from "./chartBase.js";
+import { HistogramChartSeries, IHistogramChartSeries } from "./chartHistogram.js";
 export interface IChartElements {
     svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>;
     contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
@@ -34,17 +35,4 @@ export declare class HistogramChartElements extends ChartElements implements IHi
     private appendThresholdLabel;
     private appendThresholdIndicators;
     getThresholdsValues(chart: IHistogramChartSeries): number[];
-}
-export interface IChartPadding {
-    xAxis: number;
-    yAxis: number;
-    top: number;
-    right: number;
-}
-export declare class ChartPadding implements IChartPadding {
-    xAxis: number;
-    yAxis: number;
-    top: number;
-    right: number;
-    constructor(xAxis?: number, yAxis?: number, top?: number, right?: number);
 }

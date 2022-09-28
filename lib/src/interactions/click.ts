@@ -1,6 +1,7 @@
 import { IReflectionAuthor, IAdminAnalyticsDataStats, IAdminAnalyticsData, IHistogramData, ClickTextData, IDataStats, HistogramData, IClickTextData } from "../data/data.js";
-import { IChart, ChartTime, ChartSeries, HistogramChartSeries } from "../charts/charts.js";
+import { IChart, ChartTime, ChartSeries } from "../charts/chartBase.js";
 import { ITooltipValues } from "./tooltip.js";
+import { HistogramChartSeries } from "../charts/chartHistogram.js";
 
 export interface IClick {
     enableClick(chart: IChart, onClick: any): void;

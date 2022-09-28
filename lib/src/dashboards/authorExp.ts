@@ -1,11 +1,12 @@
 import d3 from "d3";
-import { ChartTimeNetwork, ChartNetwork } from "../charts/charts.js";
 import { IAuthorExperimentalInteractions, AuthorExperimentalInteractions } from "../charts/interactions.js";
 import { IReflectionAnalytics, IReflection, INodes } from "../data/data.js";
 import { AuthorControlCharts, IAuthorControlCharts } from "./authorControl.js";
-import { ChartPadding } from "../charts/render.js";
 import { Loading } from "../utils/loading.js";
 import { Tutorial, TutorialData } from "../utils/tutorial.js";
+import { ChartPadding } from "../charts/chartBase.js";
+import { ChartNetwork } from "../charts/chartNetwork.js";
+import { ChartTimeNetwork } from "../charts/chartTimeNetwork.js";
 
 export interface IAuthorExperimentalCharts extends IAuthorControlCharts {
     interactions: IAuthorExperimentalInteractions;

@@ -1,4 +1,4 @@
-import { IChart } from "../charts/charts.js";
+import { IChart } from "../charts/chartBase.js";
 
 export interface ITooltipValues {
     label: string;

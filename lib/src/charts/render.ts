@@ -1,5 +1,6 @@
 import d3 from "d3";
-import { IChart, HistogramChartSeries, IHistogramChartSeries } from "./charts.js";
+import { IChart } from "./chartBase.js";
+import { HistogramChartSeries, IHistogramChartSeries } from "./chartHistogram.js";
 
 export interface IChartElements {
     svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>;
@@ -159,24 +160,4 @@ export class HistogramChartElements extends ChartElements implements IHistogramC
         }
         return result;
     };
-}
-
-export interface IChartPadding {
-    xAxis: number;
-    yAxis: number;
-    top: number;
-    right: number;
-}
-
-export class ChartPadding implements IChartPadding {
-    xAxis: number;
-    yAxis: number;
-    top: number;
-    right: number;
-    constructor(xAxis?: number, yAxis?: number, top?: number, right?: number) {
-        this.xAxis = xAxis == undefined ? 40 : xAxis;
-        this.yAxis = yAxis == undefined ? 75 : yAxis;
-        this.top = top == undefined ? 5 : top;
-        this.right = right == undefined ? 0 : right;
-    }
 }
