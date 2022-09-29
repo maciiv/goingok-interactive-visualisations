@@ -1,13 +1,16 @@
-;
+//;
 import { ChartSeries, ChartTime, ChartTimeZoom } from "../charts/chartBase.js";
 import { IHelp, Help } from "../charts/help.js";
 import { IAdminAnalyticsData, IAdminAnalyticsDataStats, ITimelineData, IReflectionAuthor } from "../data/data.js";
 import { IAdminControlInteractions, AdminControlInteractions } from "../charts/interactions.js";
 import { IAdminAnalyticsDataRaw } from "../data/db.js";
-import { HistogramChartSeries } from "../charts/chartHistogram.js";
+import { HistogramChartSeries } from "../charts/admin/controlHistogram.js";
+import { ControlBarChart } from "../charts/admin/controlBar.js";
 export interface IAdminControlCharts {
     help: IHelp;
     interactions: IAdminControlInteractions;
+    barChart1: ControlBarChart;
+    histogram1: HistogramChartSeries;
     sidebarBtn(): void;
     preloadGroups(allEntries: IAdminAnalyticsData[]): IAdminAnalyticsData[];
     renderTotals(data: IAdminAnalyticsDataStats[]): void;
@@ -22,6 +25,8 @@ export interface IAdminControlCharts {
 export declare class AdminControlCharts implements IAdminControlCharts {
     help: Help;
     interactions: AdminControlInteractions;
+    barChart1: ControlBarChart;
+    histogram1: HistogramChartSeries;
     sidebarBtn(): void;
     preloadGroups(allEntries: IAdminAnalyticsData[], enable?: boolean): IAdminAnalyticsData[];
     renderTotals(data: IAdminAnalyticsDataStats[]): void;

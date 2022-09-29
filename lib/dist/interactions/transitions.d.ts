@@ -1,7 +1,7 @@
-;
+//;
 import { IAdminAnalyticsData } from "../data/data.js";
 import { ChartSeries, ChartTime, ChartTimeZoom } from "../charts/chartBase.js";
-import { HistogramChartSeries } from "../charts/chartHistogram.js";
+import { HistogramChartSeries } from "../charts/admin/controlHistogram.js";
 export interface ITransitions {
     axisSeries(chart: ChartSeries, data: IAdminAnalyticsData[]): void;
     axisTime(chart: ChartTime, data: IAdminAnalyticsData[]): void;

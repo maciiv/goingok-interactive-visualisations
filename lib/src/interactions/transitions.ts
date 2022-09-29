@@ -1,7 +1,7 @@
 import d3 from "d3";
 import { IAdminAnalyticsData, HistogramData, TimelineData } from "../data/data.js";
 import { ChartSeries, ChartTime, ChartTimeZoom } from "../charts/chartBase.js";
-import { HistogramChartSeries } from "../charts/chartHistogram.js";
+import { Histogram } from "../charts/admin/histogram.js";
 
 export interface ITransitions {
     axisSeries(chart: ChartSeries, data: IAdminAnalyticsData[]): void;
@@ -30,15 +30,15 @@ export class Transitions {
 }
 
 export interface IAdminControlTransitions extends ITransitions {
-    histogram(chart: HistogramChartSeries, update: d3.Selection<SVGGElement, IAdminAnalyticsData, SVGGElement, unknown>): void;
+    histogram(chart: Histogram, update: d3.Selection<SVGGElement, IAdminAnalyticsData, SVGGElement, unknown>): void;
     timelineDensity(update: d3.Selection<SVGGElement, IAdminAnalyticsData, SVGGElement, unknown>, getDensityData: Function): void;
     timelineScatter(update: d3.Selection<SVGGElement, IAdminAnalyticsData, SVGGElement, unknown>, chart: ChartTime | ChartTimeZoom, zoom?: boolean, invisible?: boolean): void;
 }
 
 export class AdminControlTransitions extends Transitions implements IAdminControlTransitions {
-    histogram(chart: HistogramChartSeries, update: d3.Selection<SVGGElement, IAdminAnalyticsData, SVGGElement, unknown>): void {        
+    histogram(chart: Histogram, update: d3.Selection<SVGGElement, IAdminAnalyticsData, SVGGElement, unknown>): void {        
         update.selectAll(".histogram-rect")
-            .data(d => chart.bin(d.value.map(d => d.point)).map(c => { return new HistogramData(d.value, d.group, d.colour, c, Math.round(c.length / d.value.length * 100)) }))
+            .data(d => chart.getBinData(d))
             .join(
                 enter => enter,
                 update => update.style("stroke", d => d.colour)

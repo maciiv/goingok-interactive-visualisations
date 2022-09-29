@@ -1,7 +1,7 @@
 import { IReflectionAuthor, IAdminAnalyticsDataStats, IAdminAnalyticsData, IHistogramData, ClickTextData, IDataStats, HistogramData, IClickTextData } from "../data/data.js";
 import { IChart, ChartTime, ChartSeries } from "../charts/chartBase.js";
 import { ITooltipValues } from "./tooltip.js";
-import { HistogramChartSeries } from "../charts/chartHistogram.js";
+import { Histogram } from "../charts/admin/histogram.js";
 
 export interface IClick {
     enableClick(chart: IChart, onClick: any): void;
@@ -26,7 +26,7 @@ export interface IClickAdmin extends IClick {
     appendScatterText(chart: IChart, d: IReflectionAuthor, title: string, values: ITooltipValues[]): void;
     positionClickContainer(chart: ChartTime, box: any, text: any, d: IReflectionAuthor): string;
     appendGroupsText(chart: ChartSeries, data: IAdminAnalyticsDataStats[], clickData: IAdminAnalyticsDataStats): void;
-    appendThresholdPercentages(chart: HistogramChartSeries, data: IAdminAnalyticsData[], clickData: IHistogramData): void;
+    appendThresholdPercentages(chart: Histogram, data: IAdminAnalyticsData[], clickData: IHistogramData): void;
 }
 
 export class ClickAdmin extends Click implements IClickAdmin {
@@ -103,7 +103,7 @@ export class ClickAdmin extends Click implements IClickAdmin {
                 exit => exit.remove()
             );
     };
-    appendThresholdPercentages(chart: HistogramChartSeries, data: IAdminAnalyticsData[], clickData: IHistogramData): void {
+    appendThresholdPercentages(chart: Histogram, data: IAdminAnalyticsData[], clickData: IHistogramData): void {
         let thresholds = chart.elements.getThresholdsValues(chart);
         let tDistressed = thresholds[0];
         let tSoaring = thresholds[1];
@@ -117,7 +117,7 @@ export class ClickAdmin extends Click implements IClickAdmin {
                     .attr("class", "click-container")
                     .attr("transform", c => `translate(${chart.x.scale(c.group) + chart.x.scale.bandwidth() / 2}, 0)`)
                     .call(enter => enter.selectAll("text")
-                        .data(d => chart.bin(d.value.map(d => d.point)).map(c => { return new HistogramData(d.value, d.group, d.colour, c, Math.round(c.length / d.value.length * 100)) }))
+                        .data(d => chart.getBinData(d))
                         .enter()
                         .append("text")
                         .attr("class", "click-text black")
@@ -131,7 +131,7 @@ export class ClickAdmin extends Click implements IClickAdmin {
                     .duration(750)
                     .attr("transform", c => `translate(${chart.x.scale(c.group) + chart.x.scale.bandwidth() / 2}, 0)`))
                     .call(update => update.selectAll("text")
-                        .data(d => chart.bin(d.value.map(d => d.point)).map(c => { return new HistogramData(d.value, d.group, d.colour, c, Math.round(c.length / d.value.length * 100)) }))
+                        .data(d => chart.getBinData(d))
                         .join(
                             enter => enter,
                             update => update.attr("y", c => c.bin.x0 == 0 ? chart.y.scale(0 + tDistressed / 2) : c.bin.x1 == 100 ? chart.y.scale(tSoaring + (100 - tSoaring) / 2) : chart.y.scale(50))

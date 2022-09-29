@@ -6,11 +6,11 @@ import { AdminExperimentalInteractions } from "../charts/interactions.js";
 import { IAdminAnalyticsDataRaw, AdminAnalyticsDataRaw } from "../data/db.js";
 import { Loading } from "../utils/loading.js";
 import { Tutorial, TutorialData } from "../utils/tutorial.js";
-import { IHistogramChartSeries, HistogramChartSeries } from "../charts/chartHistogram.js";
+import { Histogram } from "../charts/admin/histogram.js";
 
 export interface IAdminExperimentalCharts extends IAdminControlCharts {
     barChart: ChartSeries;
-    histogram: IHistogramChartSeries;
+    histogram: Histogram;
     timeline: ChartTime;
     timelineZoom: ChartTimeZoom;
     sorted: string;
@@ -23,7 +23,7 @@ export interface IAdminExperimentalCharts extends IAdminControlCharts {
 
 export class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperimentalCharts {
     barChart: ChartSeries;
-    histogram: HistogramChartSeries;
+    histogram: Histogram;
     timeline: ChartTime;
     timelineZoom: ChartTimeZoom;
     sorted = "date";
@@ -224,7 +224,7 @@ export class AdminExperimentalCharts extends AdminControlCharts implements IAdmi
 
         return chart;
     };
-    renderHistogram(chart: HistogramChartSeries, data: IAdminAnalyticsData[]): HistogramChartSeries {
+    renderHistogram(chart: Histogram, data: IAdminAnalyticsData[]): Histogram {
         let _this = this;
         chart = super.renderHistogram(chart, data);
 
@@ -279,7 +279,7 @@ export class AdminExperimentalCharts extends AdminControlCharts implements IAdmi
                     .text(Math.round(line.datum())));
         }
         function dragEnd() {
-            chart.setBin();
+            //chart.setBin();
             _this.interactions.histogram(chart, chart.elements.contentContainer.selectAll(`.${chart.id}-histogram-container`));
             d3.select(this).classed("grabbing", false);
             d3.select(this).classed("grab", true);
@@ -456,7 +456,7 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAdminAnal
 
         //Draw users histogram container
         let usersData = data.map(d => d.getUsersData());
-        adminExperimentalCharts.histogram = new HistogramChartSeries("histogram", data.map(d => d.group));
+        adminExperimentalCharts.histogram = new Histogram(data);
         adminExperimentalCharts.renderHistogram(adminExperimentalCharts.histogram, usersData);
 
         //Handle users histogram chart help

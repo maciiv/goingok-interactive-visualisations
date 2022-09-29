@@ -7,17 +7,20 @@ import { IAdminAnalyticsDataRaw, AdminAnalyticsDataRaw } from "../data/db.js";
 import { Loading } from "../utils/loading.js";
 import { Tutorial, TutorialData } from "../utils/tutorial.js";
 import { TooltipValues } from "../interactions/tooltip.js";
-import { HistogramChartSeries } from "../charts/chartHistogram.js";
+import { Histogram } from "../charts/admin/histogram.js";
+import { BarChart } from "../charts/admin/barChart.js";
 
 export interface IAdminControlCharts {
     help: IHelp;
     interactions: IAdminControlInteractions;
+    barChart1: BarChart
+    histogram1: Histogram
     sidebarBtn(): void;
     preloadGroups(allEntries: IAdminAnalyticsData[]): IAdminAnalyticsData[];
     renderTotals(data: IAdminAnalyticsDataStats[]) : void;
     renderBarChart(chart: ChartSeries, data: IAdminAnalyticsDataStats[]): ChartSeries;
-    renderHistogram(chart: HistogramChartSeries, data: IAdminAnalyticsData[]): HistogramChartSeries;
-    handleHistogramHover(chart: HistogramChartSeries, bandwidth: d3.ScaleLinear<number, number, never>): void;
+    renderHistogram(chart: Histogram, data: IAdminAnalyticsData[]): Histogram;
+    handleHistogramHover(chart: Histogram, bandwidth: d3.ScaleLinear<number, number, never>): void;
     renderTimelineDensity(chart: ChartTime, data: IAdminAnalyticsData[]): ChartTime;
     renderTimelineScatter(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAdminAnalyticsData[]): ChartTime;
     handleTimelineButtons(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAdminAnalyticsData[], func?: Function): void;
@@ -27,6 +30,8 @@ export interface IAdminControlCharts {
 export class AdminControlCharts implements IAdminControlCharts {
     help = new Help();
     interactions = new AdminControlInteractions();
+    barChart1: BarChart
+    histogram1: Histogram
     sidebarBtn(): void {
         //Handle side bar btn click
         d3.select("#sidebar-btn").on("click", function () {
@@ -209,9 +214,9 @@ export class AdminControlCharts implements IAdminControlCharts {
 
         return chart;
     }
-    renderHistogram(chart: HistogramChartSeries, data: IAdminAnalyticsData[]): HistogramChartSeries {
-        chart.setBandwidth(data);
-        chart.setBin();
+    renderHistogram(chart: Histogram, data: IAdminAnalyticsData[]): Histogram {
+        //chart.setBandwidth(data);
+        //chart.setBin();
 
         d3.select(`#${chart.id} .card-subtitle`)
             .html(data.length == 1 ? `Filtering by <span class="badge badge-pill badge-info">${data[0].group} <i class="fas fa-window-close"></i></span>` :
@@ -225,7 +230,7 @@ export class AdminControlCharts implements IAdminControlCharts {
                     .attr("class", `${chart.id}-histogram-container`)
                     .attr("transform", d => `translate(${chart.x.scale(d.group)}, 0)`)
                     .call(enter => enter.selectAll(".histogram-rect")
-                        .data(d => chart.bin(d.value.map(d => d.point)).map(c => { return new HistogramData(d.value, d.group, d.colour, c, Math.round(c.length / d.value.length * 100)) }))
+                        .data(d => chart.getBinData(d))
                         .enter()
                         .append("rect")
                         .attr("id", `${chart.id}-data`)
@@ -264,7 +269,7 @@ export class AdminControlCharts implements IAdminControlCharts {
         this.handleHistogramHover(chart);
         return chart;
     };
-    handleHistogramHover(chart: HistogramChartSeries): void {
+    handleHistogramHover(chart: Histogram): void {
         let _this = this;
         _this.interactions.tooltip.enableTooltip(chart, onMouseover, onMouseout);
 
@@ -623,23 +628,25 @@ export async function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyti
         adminControlCharts.renderTotals(data);
 
         //Create groups chart with current data
-        let usersChart = new ChartSeries("users", data.map(d => d.group), false, data.map(d => d.getStat("usersTotal").value as number));
-        adminControlCharts.renderBarChart(usersChart, data);
+        adminControlCharts.barChart1 = new BarChart(data)
+        //let usersChart = new ChartSeries("users", data.map(d => d.group), false, data.map(d => d.getStat("usersTotal").value as number));
+        //adminControlCharts.renderBarChart(usersChart, data);
         d3.select("#users .card-subtitle")
             .html("");
 
         //Handle groups chart help
-        adminControlCharts.help.helpPopover(usersChart.id, `<b>Bar chart</b><br>
+        adminControlCharts.help.helpPopover(adminControlCharts.barChart1.id, `<b>Bar chart</b><br>
             A bar chart of the users in each group code<br>
             <u><i>Hover</i></u> over the bars for information on demand`)
 
          //Draw users histogram container
          let usersData = data.map(d => d.getUsersData());
-         let histogram = new HistogramChartSeries("histogram", data.map(d => d.group));
-         adminControlCharts.renderHistogram(histogram, usersData);
+         adminControlCharts.histogram1 = new Histogram(data)
+         //let histogram = new HistogramChartSeries(data);
+         //adminControlCharts.renderHistogram(histogram, usersData);
  
         //Handle users histogram chart help
-        adminControlCharts.help.helpPopover(histogram.id, `<b>Histogram</b><br>
+        adminControlCharts.help.helpPopover(adminControlCharts.histogram1.id, `<b>Histogram</b><br>
             A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i>
             <u><i>Hover</i></u> over the boxes for information on demand`)
 

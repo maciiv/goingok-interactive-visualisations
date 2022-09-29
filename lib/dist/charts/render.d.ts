@@ -1,6 +1,6 @@
-;
+//;
 import { IChart } from "./chartBase.js";
-import { HistogramChartSeries, IHistogramChartSeries } from "./chartHistogram.js";
+import { HistogramChartSeries } from "./admin/controlHistogram";
 export interface IChartElements {
     svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>;
     contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
@@ -30,9 +30,9 @@ export interface IHistogramChartElements extends IChartElements {
     getThresholdsValues(chart: HistogramChartSeries): number[];
 }
 export declare class HistogramChartElements extends ChartElements implements IHistogramChartElements {
-    constructor(chart: IHistogramChartSeries);
+    constructor(chart: HistogramChartSeries);
     private appendThresholdAxis;
     private appendThresholdLabel;
     private appendThresholdIndicators;
-    getThresholdsValues(chart: IHistogramChartSeries): number[];
+    getThresholdsValues(chart: HistogramChartSeries): number[];
 }

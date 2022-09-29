@@ -1,6 +1,6 @@
 import d3 from "d3";
 import { IChart } from "./chartBase.js";
-import { HistogramChartSeries, IHistogramChartSeries } from "./chartHistogram.js";
+import { Histogram } from "./admin/histogram";
 
 export interface IChartElements {
     svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>;
@@ -87,24 +87,24 @@ export class ChartElements implements IChartElements {
 }
 
 export interface IHistogramChartElements extends IChartElements {
-    getThresholdsValues(chart: HistogramChartSeries): number[];
+    getThresholdsValues(chart: Histogram): number[];
 }
 
 export class HistogramChartElements extends ChartElements implements IHistogramChartElements {
-    constructor(chart: IHistogramChartSeries) {
+    constructor(chart: Histogram) {
         super(chart);
         let thresholds = this.getThresholdsValues(chart);
         this.appendThresholdAxis(chart);
         this.appendThresholdIndicators(chart, thresholds);
         this.appendThresholdLabel(chart);
     }
-    private appendThresholdAxis(chart: IHistogramChartSeries): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
+    private appendThresholdAxis(chart: Histogram): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
         return this.contentContainer.append("g")
             .attr("transform", `translate(${chart.width - chart.padding.yAxis - chart.padding.right}, 0)`)
             .attr("class", "threshold-axis")
             .call(chart.thresholdAxis);
     };
-    private appendThresholdLabel(chart: IHistogramChartSeries): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
+    private appendThresholdLabel(chart: Histogram): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
         let label = this.svg.append("g")
             .attr("class", "threshold-label-container")
         label.append("text")
@@ -114,7 +114,7 @@ export class HistogramChartElements extends ChartElements implements IHistogramC
         label.attr("transform", `translate(${chart.width - chart.padding.right + this.contentContainer.select<SVGGElement>(".threshold-axis").node().getBBox().width + label.node().getBBox().height}, ${chart.padding.top + this.svg.select<SVGGElement>(".y-axis").node().getBBox().height / 2}) rotate(-90)`);
         return label;
     };
-    private appendThresholdIndicators(chart: IHistogramChartSeries, thresholds: number[]): void {
+    private appendThresholdIndicators(chart: Histogram, thresholds: number[]): void {
         this.contentContainer.selectAll(".threshold-indicator-container")
             .data(thresholds)
             .enter()
@@ -148,7 +148,7 @@ export class HistogramChartElements extends ChartElements implements IHistogramC
             .attr("y1", d => chart.y.scale(d))
             .attr("y2", d => chart.y.scale(d));
     }
-    getThresholdsValues(chart: IHistogramChartSeries): number[] {
+    getThresholdsValues(chart: Histogram): number[] {
         let result: number[] = [30, 70];
         let dThreshold = this.contentContainer.select<SVGLineElement>(".threshold-line.distressed");
         if (!dThreshold.empty()) {

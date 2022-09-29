@@ -3,10 +3,10 @@ import { IAdminAnalyticsData, IAdminAnalyticsDataStats } from "../data/data.js";
 import { IAdminControlCharts, AdminControlCharts } from "./adminControl.js";
 import { AdminExperimentalInteractions } from "../charts/interactions.js";
 import { IAdminAnalyticsDataRaw } from "../data/db.js";
-import { IHistogramChartSeries, HistogramChartSeries } from "../charts/chartHistogram.js";
+import { HistogramChartSeries } from "../charts/admin/controlHistogram.js";
 export interface IAdminExperimentalCharts extends IAdminControlCharts {
     barChart: ChartSeries;
-    histogram: IHistogramChartSeries;
+    histogram: HistogramChartSeries;
     timeline: ChartTime;
     timelineZoom: ChartTimeZoom;
     sorted: string;
