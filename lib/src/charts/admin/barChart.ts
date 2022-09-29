@@ -1,15 +1,30 @@
 import d3 from "d3";
 import { IAdminAnalyticsDataStats } from "../../data/data.js";
+import { ClickAdmin } from "../../interactions/click.js";
 import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
+import { Transitions } from "../../interactions/transitions.js";
 import { ChartSeries } from "../chartBase.js";
 
 export class BarChart extends ChartSeries {
-    data: IAdminAnalyticsDataStats[]
+    private _data: IAdminAnalyticsDataStats[]
+    get data() {
+        return this._data
+    }
+    set data(entries: IAdminAnalyticsDataStats[]) {
+        this._data = entries.filter(d => d.selected)
+        if (this.data.length != 0) {
+            this.y.scale.domain([0, d3.max(this.data.map(d => d.getStat("usersTotal").value as number))]);
+            this.transitions.axisSeries(this, this.data);
+            this.transitions.axisLinear(this);
+        }       
+        this.render();
+    }
     tooltip = new Tooltip()
+    transitions = new Transitions()
+    clicking = new ClickAdmin()
     constructor(data: IAdminAnalyticsDataStats[]) {
         super("users", data.map(d => d.group), false, data.map(d => d.getStat("usersTotal").value as number))
         this.data = data
-        this.render()
     }
     render(): void {
         let _this = this;

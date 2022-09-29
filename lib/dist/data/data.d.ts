@@ -10,7 +10,7 @@ export interface IReflectionAuthor extends IReflection {
 export interface IAdminAnalyticsData {
     group: string;
     value: IReflectionAuthor[];
-    creteDate: Date;
+    createDate: Date;
     colour: string;
     selected: boolean;
     getUsersData(): AdminAnalyticsData;
@@ -18,7 +18,7 @@ export interface IAdminAnalyticsData {
 export declare class AdminAnalyticsData implements IAdminAnalyticsData {
     group: string;
     value: IReflectionAuthor[];
-    creteDate: Date;
+    createDate: Date;
     colour: string;
     selected: boolean;
     constructor(group: string, value: IReflectionAuthor[], createDate?: Date, colour?: string, selected?: boolean);

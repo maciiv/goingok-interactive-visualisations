@@ -7,3 +7,5 @@ export declare function caculateSum(arr: number[]): number;
 export declare function calculateMean(arr: number[]): number;
 export declare function getDOMRect(id: string): DOMRect;
 export declare function addDays(date: Date, days: number): Date;
+export declare function minDate(arr: Date[]): Date;
+export declare function maxDate(arr: Date[]): Date;

@@ -14,7 +14,7 @@ export interface IReflectionAuthor extends IReflection {
 export interface IAdminAnalyticsData {
     group: string;
     value: IReflectionAuthor[];
-    creteDate: Date;
+    createDate: Date;
     colour: string;
     selected: boolean;
     getUsersData(): AdminAnalyticsData;
@@ -23,19 +23,19 @@ export interface IAdminAnalyticsData {
 export class AdminAnalyticsData implements IAdminAnalyticsData {
     group: string;
     value: IReflectionAuthor[];
-    creteDate: Date;
+    createDate: Date;
     colour: string;
     selected: boolean;
-    constructor(group: string, value: IReflectionAuthor[], createDate: Date = undefined, colour: string = undefined, selected: boolean = false) {
+    constructor(group: string, value: IReflectionAuthor[], createDate: Date = undefined, colour: string = undefined, selected: boolean = true) {
         this.group = group;
         this.value = value;
-        this.creteDate = createDate;
+        this.createDate = createDate;
         this.colour = colour;
         this.selected = selected;
     }
     getUsersData(): AdminAnalyticsData {
         let usersMean = groupBy(this.value, "pseudonym").map(d => { return { "pseudonym": d.key, "point": calculateMean(d.value.map(d => d.point))} as IReflectionAuthor})
-        return new AdminAnalyticsData(this.group, usersMean, this.creteDate, this.colour);
+        return new AdminAnalyticsData(this.group, usersMean, this.createDate, this.colour);
     }
 }
 
@@ -64,7 +64,7 @@ export interface IAdminAnalyticsDataStats extends IAdminAnalyticsData {
 export class AdminAnalyticsDataStats extends AdminAnalyticsData implements IAdminAnalyticsDataStats {
     stats: IDataStats[];
     constructor(entries: IAdminAnalyticsData) {
-        super(entries.group, entries.value, entries.creteDate, entries.colour, entries.selected);
+        super(entries.group, entries.value, entries.createDate, entries.colour, entries.selected);
         let uniqueUsers = groupBy(entries.value, "pseudonym");
         this.stats = [];
         this.stats.push(new DataStats("usersTotal", "Users", uniqueUsers.length))

@@ -9,12 +9,13 @@ import { Tutorial, TutorialData } from "../utils/tutorial.js";
 import { TooltipValues } from "../interactions/tooltip.js";
 import { Histogram } from "../charts/admin/histogram.js";
 import { BarChart } from "../charts/admin/barChart.js";
+import { Timeline } from "../charts/admin/timeline.js";
+import { Users } from "../charts/admin/users.js";
+import { Totals } from "../charts/admin/totals.js";
 
 export interface IAdminControlCharts {
     help: IHelp;
     interactions: IAdminControlInteractions;
-    barChart1: BarChart
-    histogram1: Histogram
     sidebarBtn(): void;
     preloadGroups(allEntries: IAdminAnalyticsData[]): IAdminAnalyticsData[];
     renderTotals(data: IAdminAnalyticsDataStats[]) : void;
@@ -27,11 +28,63 @@ export interface IAdminControlCharts {
     renderUserStatistics(card: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAdminAnalyticsData, thresholds: number[], timelineData?: ITimelineData): void;
 }
 
+export class Dashboard {
+    totals: Totals
+    barChart: BarChart
+    histogram: Histogram
+    timeline: Timeline
+    users: Users
+    constructor(data: IAdminAnalyticsDataStats[]) {
+        this.totals = new Totals(data)
+        this.barChart = new BarChart(data)
+        this.histogram = new Histogram(data)
+        this.timeline = new Timeline(data)
+        this.users = new Users(data)
+    }
+    sidebarBtn(): void {
+        //Handle side bar btn click
+        d3.select("#sidebar-btn").on("click", function () {
+            let isActive = d3.select("#sidebar").attr("class").includes("active");
+            d3.select("#sidebar")
+                .classed("active", !isActive);
+            d3.select("#groups")
+                .classed("active", isActive);
+            d3.select("#switch-dashboard")
+                .classed("active", isActive);
+            d3.select(this)
+                .classed("active", isActive);
+        });
+    };
+    preloadGroups(allEntries: IAdminAnalyticsData[], enable: boolean = false): IAdminAnalyticsData[] {
+        d3.select("#groups")
+            .selectAll<HTMLLIElement, IAdminAnalyticsData>("li")
+            .data(allEntries)
+            .enter()
+            .append("li")
+            .append("div")
+            .attr("class", "input-group mb-1")
+            .call(div => div.append("input")
+                .attr("type", "text")
+                .attr("class", "form-control group-row")
+                .attr("value", d => d.group)
+                .property("disabled", true))
+            .call(div => div.append("div")
+                .attr("class", "input-group-append")
+                .append("div")
+                .attr("class", "input-group-text group-row")
+                .append("input")
+                .attr("id", d => `colour-${d.group}`)
+                .attr("type", "color")
+                .attr("value", d => d.colour)
+                .property("disabled", !enable))
+
+        return allEntries;
+    };
+}
+
 export class AdminControlCharts implements IAdminControlCharts {
     help = new Help();
     interactions = new AdminControlInteractions();
-    barChart1: BarChart
-    histogram1: Histogram
     sidebarBtn(): void {
         //Handle side bar btn click
         d3.select("#sidebar-btn").on("click", function () {
@@ -605,8 +658,8 @@ export async function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyti
     const loading = new Loading();
     const rawData = entriesRaw.map(d => new AdminAnalyticsDataRaw(d.group, d.value, d.createDate));
     let entries = rawData.map(d => d.transformData());
-    let colourScale = d3.scaleOrdinal(d3.schemeCategory10);
-    entries = entries.map(d => new AdminAnalyticsData(d.group, d.value, d.creteDate, colourScale(d.group), d.selected));
+    const colourScale = d3.scaleOrdinal(d3.schemeCategory10);
+    entries = entries.map(d => new AdminAnalyticsData(d.group, d.value, d.createDate, colourScale(d.group), true));
     await drawCharts(entries);
     new Tutorial([ new TutorialData("#groups", "All your groups are selected to visualise and colours assigned. You cannot change this section"),
     new TutorialData(".card-title button", "Click the help symbol in any chart to get additional information"),
@@ -616,87 +669,37 @@ export async function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyti
     loading.isLoading = false;
     loading.removeDiv();
     async function drawCharts(allEntries: IAdminAnalyticsData[]) {
-        const adminControlCharts = new AdminControlCharts();
+        const data = allEntries.map(d => new AdminAnalyticsDataStats(d));
+        const help = new Help()
+        const dashboard = new Dashboard(data);
         //Handle sidebar button
-        adminControlCharts.sidebarBtn();
-        adminControlCharts.preloadGroups(allEntries);
-
-        //Create data with current entries
-        let data = allEntries.map(d => new AdminAnalyticsDataStats(d));
-
-        //Render totals
-        adminControlCharts.renderTotals(data);
+        dashboard.sidebarBtn();
+        dashboard.preloadGroups(allEntries);
 
         //Create groups chart with current data
-        adminControlCharts.barChart1 = new BarChart(data)
-        //let usersChart = new ChartSeries("users", data.map(d => d.group), false, data.map(d => d.getStat("usersTotal").value as number));
-        //adminControlCharts.renderBarChart(usersChart, data);
         d3.select("#users .card-subtitle")
             .html("");
 
         //Handle groups chart help
-        adminControlCharts.help.helpPopover(adminControlCharts.barChart1.id, `<b>Bar chart</b><br>
+        help.helpPopover(dashboard.barChart.id, `<b>Bar chart</b><br>
             A bar chart of the users in each group code<br>
             <u><i>Hover</i></u> over the bars for information on demand`)
-
-         //Draw users histogram container
-         let usersData = data.map(d => d.getUsersData());
-         adminControlCharts.histogram1 = new Histogram(data)
-         //let histogram = new HistogramChartSeries(data);
-         //adminControlCharts.renderHistogram(histogram, usersData);
  
         //Handle users histogram chart help
-        adminControlCharts.help.helpPopover(adminControlCharts.histogram1.id, `<b>Histogram</b><br>
+        help.helpPopover(dashboard.histogram.id, `<b>Histogram</b><br>
             A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i>
             <u><i>Hover</i></u> over the boxes for information on demand`)
 
-        //Draw timeline 
-        let timelineChart = new ChartTime("timeline", [d3.min(data.map(d => d.getStat("oldRef").value)) as Date, d3.max(data.map(d => d.getStat("newRef").value)) as Date]);
-        let timelineZoomChart = new ChartTimeZoom(timelineChart, [d3.min(data.map(d => d.getStat("oldRef").value)) as Date, d3.max(data.map(d => d.getStat("newRef").value)) as Date]);
-        adminControlCharts.renderTimelineScatter(timelineChart, timelineZoomChart, data);
-        adminControlCharts.handleTimelineButtons(timelineChart, timelineZoomChart, data);
-
         //Handle timeline chart help
-        // d3.select("#timeline .card-title button")
-        //     .on("click", function (e: Event) {
-        //         adminControlCharts.help.helpPopover(d3.select(this), `${timelineChart.id}-help`, "<b>Density plot</b><br>A density plot shows the distribution of a numeric variable<br><b>Scatter plot</b><br>The data is showed as a collection of points<br>The data represented are <i>reflections over time</i>");
-        //         adminControlCharts.help.helpPopover(d3.select("#timeline #timeline-plot"), `${timelineChart.id}-help-button`, "<u><i>click</i></u> me to change chart type");
-        //         adminControlCharts.help.helpPopover(d3.select("#timeline .zoom-rect.active"), `${timelineChart.id}-help-zoom`, "use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move");
-        //         if (!timelineChart.elements.contentContainer.select(".circle").empty()) {
-        //             let showDataHelp = adminControlCharts.help.helpPopover(timelineChart.elements.contentContainer.select(".circle"), `${timelineChart.id}-help-data`, "<u><i>hover</i></u> me for information on demand");
-        //             if (showDataHelp) {
-        //                 d3.select(`#${timelineChart.id}-help-data`).style("top", parseInt(d3.select(`#${timelineChart.id}-help-data`).style("top")) - 14 + "px");
-        //             }
-        //         }
-        //     });
-
-        //Draw user statistics
-        let userStatistics = d3.select("#reflections .card-body");
-        userStatistics.append("ul")
-            .attr("class", "nav nav-tabs")
-            .selectAll("li")
-            .data(data)
-            .enter()
-            .append("li")
-            .attr("class", "nav-item")
-            .append("a")
-            .attr("class", (d, i) => `nav-link ${i == 0 ? "active" : ""}`)
-            .attr("href", d => `#reflections-${d.group}`)
-            .attr("data-toggle", "tab")
-            .html(d => d.group)
-            .on("click", (e, d) => setTimeout(() => adminControlCharts.renderUserStatistics(d3.select(`#reflections-${d.group}`), d, [30, 70]), 250));
-        let users = userStatistics.append("div")
-            .attr("class", "tab-content")          
-            .selectAll("div")
-            .data(data)
-            .enter()
-            .append("div")
-            .attr("class", (d, i) => `tab-pane fade ${i == 0 ? "show active" : ""} users-tab-pane`)
-            .attr("id", d => `reflections-${d.group}`);
-        users.each((d, i, g) => i == 0 ? adminControlCharts.renderUserStatistics(d3.select(g[i]), d, [30, 70]) : "");
+        d3.select("#timeline .card-title button")
+            .on("click", function (e: Event) {
+                help.helpPopover(`${dashboard.timeline.id}-help`, `<b>Scatter plot</b><br>
+                    The data is showed as a collection of points<br>The data represented are <i>reflections over time</i><br>
+                    <u><i>Hover</i></u> over the circles for information on demand`)
+            });
 
         //Handle users histogram chart help
-        adminControlCharts.help.helpPopover("reflections", `<b>Reflections</b><br>
+        help.helpPopover("reflections", `<b>Reflections</b><br>
             Each user's reflections are shown sorted by time. The chart depicts the percentage of reflections in each reflection point group`)
     }
 }

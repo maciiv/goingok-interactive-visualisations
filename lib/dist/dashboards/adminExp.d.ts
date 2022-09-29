@@ -1,12 +1,14 @@
 import { ChartSeries, ChartTime, ChartTimeZoom } from "../charts/chartBase.js";
 import { IAdminAnalyticsData, IAdminAnalyticsDataStats } from "../data/data.js";
-import { IAdminControlCharts, AdminControlCharts } from "./adminControl.js";
+import { IAdminControlCharts, AdminControlCharts, Dashboard } from "./adminControl.js";
 import { AdminExperimentalInteractions } from "../charts/interactions.js";
 import { IAdminAnalyticsDataRaw } from "../data/db.js";
-import { HistogramChartSeries } from "../charts/admin/controlHistogram.js";
-export interface IAdminExperimentalCharts extends IAdminControlCharts {
+import { Histogram } from "../charts/admin/histogram.js";
+import { Sort } from "../interactions/sort.js";
+import { Help } from "../charts/help.js";
+export interface Idashboard extends IAdminControlCharts {
     barChart: ChartSeries;
-    histogram: HistogramChartSeries;
+    histogram: Histogram;
     timeline: ChartTime;
     timelineZoom: ChartTimeZoom;
     sorted: string;
@@ -16,9 +18,24 @@ export interface IAdminExperimentalCharts extends IAdminControlCharts {
     handleGroupsSort(): void;
     handleFilterButton(): void;
 }
-export declare class AdminExperimentalCharts extends AdminControlCharts implements IAdminExperimentalCharts {
+export declare class ExperimentalDashboard extends Dashboard {
+    entries: IAdminAnalyticsData[];
+    sorted: string;
+    sort: Sort;
+    help: Help;
+    preloadGroups(entries: IAdminAnalyticsData[]): IAdminAnalyticsData[];
+    handleGroups(): void;
+    handleGroupsColours(): void;
+    handleGroupsSort(): void;
+    handleFilterButton(): void;
+    constructor(data: IAdminAnalyticsDataStats[]);
+    extendBarChart(): void;
+    private removeAllHelp;
+    private getClickData;
+}
+export declare class dashboard extends AdminControlCharts implements Idashboard {
     barChart: ChartSeries;
-    histogram: HistogramChartSeries;
+    histogram: Histogram;
     timeline: ChartTime;
     timelineZoom: ChartTimeZoom;
     sorted: string;
@@ -37,7 +54,7 @@ export declare class AdminExperimentalCharts extends AdminControlCharts implemen
     private removeUserStatistics;
     private removeAllHelp;
     renderBarChart(chart: ChartSeries, data: IAdminAnalyticsDataStats[]): ChartSeries;
-    renderHistogram(chart: HistogramChartSeries, data: IAdminAnalyticsData[]): HistogramChartSeries;
+    renderHistogram(chart: Histogram, data: IAdminAnalyticsData[]): Histogram;
     renderTimelineScatter(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAdminAnalyticsData[]): ChartTime;
     renderTimelineDensity(chart: ChartTime, data: IAdminAnalyticsData[]): ChartTime;
     handleTimelineButtons(chart: ChartTime, zoomChart: ChartTimeZoom, data: IAdminAnalyticsData[]): void;

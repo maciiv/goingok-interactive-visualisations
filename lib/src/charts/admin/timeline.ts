@@ -1,20 +1,35 @@
 import d3 from "d3";
 import { IAdminAnalyticsData, IReflectionAuthor, ITimelineData, TimelineData } from "../../data/data.js";
+import { Click } from "../../interactions/click.js";
 import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
+import { Transitions } from "../../interactions/transitions.js";
 import { Zoom } from "../../interactions/zoom.js";
+import { maxDate, minDate } from "../../utils/utils.js";
 import { ChartTime, ChartTimeZoom } from "../chartBase.js";
 
 export class Timeline extends ChartTime {
-    data: IAdminAnalyticsData[]
     zoomChart: ChartTimeZoom
     tooltip = new Tooltip()
     zoom = new Zoom()
-    constructor(data: IAdminAnalyticsData[]) {
-        let domain = [Math.min.apply(null, data.map(d => d.creteDate)), Math.max.apply(null, data.map(d => d.creteDate))]
-        super("timeline", domain)
-        this.zoomChart = new ChartTimeZoom(this, domain);
-        this.data = data
+    transitions = new Transitions()
+    clicking = new Click()
+    private _data: IAdminAnalyticsData[]
+    get data() {
+        return this._data
+    }
+    set data(entries: IAdminAnalyticsData[]) {
+        this._data = entries.filter(d => d.selected)
+        this.zoomChart.x.scale.domain([this.minTimelineDate(), this.maxTimelineDate()]);
+        this.transitions.axisTime(this, this.data)
+        if (this.click) {
+            this.clicking.removeClick(this);
+        }
         this.render()
+    }
+    constructor(data: IAdminAnalyticsData[]) {
+        super("timeline", [minDate(data.map(d => minDate(d.value.map(c => c.timestamp)))), maxDate(data.map(d => maxDate(d.value.map(c => c.timestamp))))])
+        this.zoomChart = new ChartTimeZoom(this, [this.minTimelineDate(data), this.maxTimelineDate(data)]);
+        this.data = data
     }
     render() {
         let _this = this
@@ -28,8 +43,8 @@ export class Timeline extends ChartTime {
         d3.select(`#${_this.id} .card-subtitle`)
             .classed("instructions", _this.data.length <= 1)
             .classed("text-muted", _this.data.length != 1)
-            .html(_this.data.length != 1 ? `The oldest reflection was on ${Math.min.apply(null, _this.data.map(d => d.creteDate)).toDateString()} in the group code ${_this.data[d3.minIndex(_this.data.map(d => d3.min(d.value.map(d => d.timestamp))))].group}, while
-                the newest reflection was on ${Math.max.apply(null, _this.data.map(d => d.creteDate)).toDateString()} in the group code ${_this.data[d3.maxIndex(_this.data.map(d => d3.max(d.value.map(d => d.timestamp))))].group}` :
+            .html(_this.data.length != 1 ? `The oldest reflection was on ${_this.minTimelineDate().toDateString()} in the group code ${_this.data[d3.minIndex(_this.data.map(d => d3.min(d.value.map(d => d.timestamp))))].group}, while
+                the newest reflection was on ${_this.maxTimelineDate().toDateString()} in the group code ${_this.data[d3.maxIndex(_this.data.map(d => d3.max(d.value.map(d => d.timestamp))))].group}` :
                 `Filtering by <span class="badge badge-pill badge-info">${_this.data[0].group} <i class="fas fa-window-close"></i></span>`);
 
         //Draw circles
@@ -153,4 +168,12 @@ export class Timeline extends ChartTime {
                         .attr("cy", d => chart.y.scale(d.point))),
                 exit => exit.remove())
     };
+    protected minTimelineDate(data?: IAdminAnalyticsData[]): Date {
+        const processData = data === undefined ? this.data : data
+        return minDate(processData.map(d => minDate(d.value.map(c => c.timestamp))))
+    }
+    protected maxTimelineDate(data?: IAdminAnalyticsData[]): Date {
+        const processData = data === undefined ? this.data : data
+        return maxDate(processData.map(d => maxDate(d.value.map(c => c.timestamp))))
+    }
 }

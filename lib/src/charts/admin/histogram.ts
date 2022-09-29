@@ -1,6 +1,7 @@
 import d3 from "d3";
 import { HistogramData, IAdminAnalyticsData, IAdminAnalyticsDataStats, IHistogramData } from "../../data/data.js";
 import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
+import { Transitions } from "../../interactions/transitions.js";
 import { ChartSeries, ChartPadding } from "../chartBase.js";
 import { IHistogramChartElements, HistogramChartElements } from "../render.js";
 import { ChartSeriesAxis } from "../scaleBase.js";
@@ -9,8 +10,21 @@ export class Histogram extends ChartSeries {
     elements: IHistogramChartElements;
     thresholdAxis: d3.Axis<d3.NumberValue>;
     bandwidth: d3.ScaleLinear<number, number, never>;
-    data: IAdminAnalyticsData[]
     tooltip = new Tooltip()
+    transitions = new Transitions()
+    private _data: IAdminAnalyticsData[]
+    get data() {
+        return this._data
+    }
+    set data(entries: IAdminAnalyticsData[]) {
+        this._data = entries.filter(d => d.selected).map(d => d.getUsersData())
+        this.x.scale.domain(entries.filter(d => d.selected).map(d => d.group));
+        this.bandwidth = d3.scaleLinear()
+            .range([0, this.x.scale.bandwidth()])
+            .domain([-100, 100]);
+        this.transitions.axisSeries(this, this.data);
+        this.render();
+    }
     constructor(data: IAdminAnalyticsDataStats[]) {
         super("histogram", data.map(d => d.group));
         this.padding = new ChartPadding(40, 75, 5, 85);
@@ -18,11 +32,7 @@ export class Histogram extends ChartSeries {
         d3.select(`#${this.id} svg`).remove();
         this.thresholdAxis = this.y.setThresholdAxis(30, 70);
         this.elements = new HistogramChartElements(this);
-        this.data = data.map(d => d.getUsersData())
-        this.bandwidth = d3.scaleLinear()
-            .range([0, this.x.scale.bandwidth()])
-            .domain([-100, 100]);
-        this.render()
+        this.data = data
     }
     getBinData(d: IAdminAnalyticsData): HistogramData[] {
         let bin = d3.bin().domain([0, 100]).thresholds([0, this.elements.getThresholdsValues(this)[0], this.elements.getThresholdsValues(this)[1]]);
@@ -98,6 +108,7 @@ export class Histogram extends ChartSeries {
             let tooltipBox =_this.tooltip.appendTooltipText(_this, d.bin.x0 == 0 ? "Distressed" : d.bin.x1 == 100 ? "Soaring" : "GoingOK" , [new TooltipValues("Total", `${d.bin.length} (${d.percentage}%)`)]);
             _this.tooltip.positionTooltipContainer(_this, _this.x.scale(d.group) + _this.bandwidth(d.bin.length), d.bin.x1 > 25 ? _this.y.scale(d.bin.x1) : _this.y.scale(d.bin.x0) - tooltipBox.node().getBBox().height);
         }
+        
         function onMouseout() {
             _this.elements.svg.select(".tooltip-container").transition()
                 .style("opacity", 0);

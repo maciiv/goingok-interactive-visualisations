@@ -35,3 +35,11 @@ export function addDays(date: Date, days: number): Date {
   result.setDate(result.getDate() + days)
   return result;
 }
+
+export function minDate(arr: Date[]): Date {
+  return new Date(Math.min.apply(null, arr))
+}
+
+export function maxDate(arr: Date[]): Date {
+  return new Date(Math.max.apply(null, arr))
+}

@@ -1,4 +1,4 @@
-//;
+;
 import { IHelp, Help } from "../charts/help.js";
 import { IAuthorControlInteractions, AuthorControlInteractions } from "../charts/interactions.js";
 import { IReflectionAuthor, IReflectionAnalytics, IReflection, INodes } from "../data/data.js";
