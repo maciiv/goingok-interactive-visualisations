@@ -1,5 +1,6 @@
 import d3 from "d3";
 import { HistogramData, IAdminAnalyticsData, IAdminAnalyticsDataStats, IHistogramData } from "../../data/data.js";
+import { ClickAdmin } from "../../interactions/click.js";
 import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
 import { Transitions } from "../../interactions/transitions.js";
 import { ChartSeries, ChartPadding } from "../chartBase.js";
@@ -12,6 +13,7 @@ export class Histogram extends ChartSeries {
     bandwidth: d3.ScaleLinear<number, number, never>;
     tooltip = new Tooltip()
     transitions = new Transitions()
+    clicking = new ClickAdmin()
     private _data: IAdminAnalyticsData[]
     get data() {
         return this._data

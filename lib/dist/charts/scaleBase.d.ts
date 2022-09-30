@@ -1,5 +1,5 @@
 ;
-export interface IChartAxis {
+interface IChartAxis {
     scale: d3.ScaleBand<string> | d3.ScaleLinear<number, number, never> | d3.ScaleTime<number, number, never>;
     axis: d3.Axis<d3.AxisDomain>;
     label: string;
@@ -23,3 +23,4 @@ export declare class ChartTimeAxis implements IChartAxis {
     label: string;
     constructor(label: string, domain: Date[], range: number[]);
 }
+export {};

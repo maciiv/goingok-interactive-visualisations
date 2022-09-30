@@ -3,9 +3,9 @@ import { IAdminAnalyticsDataStats } from "../../data/data.js";
 import { ClickAdmin } from "../../interactions/click.js";
 import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
 import { Transitions } from "../../interactions/transitions.js";
-import { ChartSeries } from "../chartBase.js";
+import { ChartSeries, ExtendChart } from "../chartBase.js";
 
-export class BarChart extends ChartSeries {
+export class BarChart<T> extends ChartSeries {
     private _data: IAdminAnalyticsDataStats[]
     get data() {
         return this._data
@@ -18,10 +18,13 @@ export class BarChart extends ChartSeries {
             this.transitions.axisLinear(this);
         }       
         this.render();
+        this.extend !== undefined && this.dashboard !== undefined ? this.extend(this.dashboard) : null
     }
     tooltip = new Tooltip()
     transitions = new Transitions()
     clicking = new ClickAdmin()
+    dashboard?: T
+    extend?: ExtendChart<T>
     constructor(data: IAdminAnalyticsDataStats[]) {
         super("users", data.map(d => d.group), false, data.map(d => d.getStat("usersTotal").value as number))
         this.data = data

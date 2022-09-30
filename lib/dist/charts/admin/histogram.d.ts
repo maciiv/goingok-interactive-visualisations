@@ -1,5 +1,6 @@
 ;
 import { HistogramData, IAdminAnalyticsData, IAdminAnalyticsDataStats } from "../../data/data.js";
+import { ClickAdmin } from "../../interactions/click.js";
 import { Tooltip } from "../../interactions/tooltip.js";
 import { Transitions } from "../../interactions/transitions.js";
 import { ChartSeries } from "../chartBase.js";
@@ -10,6 +11,7 @@ export declare class Histogram extends ChartSeries {
     bandwidth: d3.ScaleLinear<number, number, never>;
     tooltip: Tooltip;
     transitions: Transitions;
+    clicking: ClickAdmin;
     private _data;
     get data(): IAdminAnalyticsData[];
     set data(entries: IAdminAnalyticsData[]);

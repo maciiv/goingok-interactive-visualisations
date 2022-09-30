@@ -1,17 +1,22 @@
 import { ChartSeriesAxis, ChartTimeAxis, ChartLinearAxis } from "./scaleBase.js";
 import { IHelp } from "./help.js";
 import { IChartElements, IHistogramChartElements } from "./render.js";
-export interface IChartScales {
+interface IChartScales {
     x: ChartSeriesAxis | ChartTimeAxis | ChartLinearAxis;
     y: ChartLinearAxis | ChartSeriesAxis;
 }
-export interface IChart extends IChartScales {
+interface IChartBasic {
     id: string;
     width: number;
     height: number;
     padding: IChartPadding;
-    elements: IChartElements | IHistogramChartElements;
     click: boolean;
+}
+export declare type ExtendChart<T> = {
+    (dashboard: T): void;
+};
+export interface IChart extends IChartScales, IChartBasic {
+    elements: IChartElements | IHistogramChartElements;
 }
 export interface IChartPadding {
     xAxis: number;
@@ -65,3 +70,4 @@ export declare class UserChart implements IChart {
     click: boolean;
     constructor(id: string, containerClass: string);
 }
+export {};

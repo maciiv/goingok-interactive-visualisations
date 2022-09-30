@@ -29,7 +29,9 @@ export declare class ExperimentalDashboard extends Dashboard {
     handleGroupsSort(): void;
     handleFilterButton(): void;
     constructor(data: IAdminAnalyticsDataStats[]);
-    extendBarChart(): void;
+    extendBarChart(dashboard: ExperimentalDashboard): void;
+    extendHistogram(dashboard: ExperimentalDashboard): Histogram;
+    extendTimeline(dashboard: ExperimentalDashboard): import("../charts/admin/timeline.js").Timeline;
     private removeAllHelp;
     private getClickData;
 }

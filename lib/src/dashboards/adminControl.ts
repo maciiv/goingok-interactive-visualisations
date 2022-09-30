@@ -30,7 +30,7 @@ export interface IAdminControlCharts {
 
 export class Dashboard {
     totals: Totals
-    barChart: BarChart
+    barChart: BarChart<this>
     histogram: Histogram
     timeline: Timeline
     users: Users
@@ -80,6 +80,17 @@ export class Dashboard {
 
         return allEntries;
     };
+    protected getUserStatisticBinName(data: IReflectionAuthor, thresholds: number[]): string {
+        let distressed = thresholds[0];
+        let soaring = thresholds[1];
+        if (data.point <= distressed) {
+            return "Distressed";
+        } else if (data.point >= soaring) {
+            return "Soaring";
+        } else {
+            return "GoingOK";
+        }
+    }
 }
 
 export class AdminControlCharts implements IAdminControlCharts {

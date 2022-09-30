@@ -140,16 +140,21 @@ export class ExperimentalDashboard extends Dashboard {
     };
     constructor(data: IAdminAnalyticsDataStats[]) {
         super(data)
-        this.extendBarChart()
+        this.barChart.extend = this.extendBarChart
+        this.barChart.dashboard = this
+        this.extendBarChart(this)
+        this.extendHistogram(this)
+        this.extendTimeline(this)
     }
-    extendBarChart() {
-        let _this = this
+    extendBarChart(dashboard: ExperimentalDashboard) {
+        let _this = dashboard
         _this.barChart.clicking.enableClick(_this.barChart, onClick);
         _this.barChart.elements.contentContainer.select(".zoom-rect").on("click", () => {
             _this.barChart.clicking.removeClick(_this.barChart);
             _this.totals.data = _this.barChart.data
             _this.histogram.data = _this.barChart.data
             _this.timeline.data = _this.barChart.data
+            _this.users.data = _this.barChart.data
         });
         function onClick(e: Event, d: IAdminAnalyticsDataStats) {
             if (d3.select(this).attr("class").includes("clicked")) {
@@ -165,7 +170,156 @@ export class ExperimentalDashboard extends Dashboard {
             _this.totals.data = [d]
             _this.histogram.data = _this.barChart.data.filter(c => c.group == d.group)
             _this.timeline.data = [d]
+            _this.users.data = [d]
             _this.removeAllHelp(_this.barChart);
+        }
+    }
+    extendHistogram(dashboard: ExperimentalDashboard) {
+        let _this = dashboard
+        let chart = _this.histogram
+
+        d3.select(`#${chart.id} .badge`).on("click", () => _this.handleFilterButton());
+
+        chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
+            chart.clicking.removeClick(chart);
+        });
+
+        //Add drag functions to the distressed threshold
+        chart.elements.contentContainer.selectAll(".threshold-line")
+            .classed("grab", true)
+            .call(d3.drag()
+                .on("start", dragStart)
+                .on("drag", dragging)
+                .on("end", dragEnd));
+
+        //Start dragging functions           
+        function dragStart() {
+            chart.elements.contentContainer.selectAll(`.${chart.id}-histogram-text-container`).remove();
+            d3.select(this).classed("grab", false);
+            d3.select(this).classed("grabbing", true);
+            _this.help.removeHelp(chart);
+        }
+        function dragging(e: MouseEvent, d: number) {
+            if (d > 50) {
+                if (chart.y.scale.invert(e.y) < 51 || chart.y.scale.invert(e.y) > 99) {
+                    return;
+                }
+            } else {
+                if (chart.y.scale.invert(e.y) < 1 || chart.y.scale.invert(e.y) > 49) {
+                    return;
+                }
+            }
+            
+            let thresholds = chart.elements.getThresholdsValues(chart);
+            let tDistressed = thresholds[0];
+            let tSoaring = thresholds[1];
+
+            d3.select<SVGLineElement, number>(this)
+                .datum(chart.y.scale.invert(e.y))
+                .attr("y1", d => chart.y.scale(d))
+                .attr("y2", d => chart.y.scale(d))
+                .call(line => chart.thresholdAxis
+                    .tickValues(line.datum() > 50 ? [tDistressed, line.datum()] : [line.datum(), tSoaring])
+                    .tickFormat(d => line.datum() > 50 ? d == tDistressed ? "Distressed" : d == line.datum() ? "Soaring" : "" : d == line.datum() ? "Distressed" : d == tSoaring ? "Soaring" : ""))
+                .call(line =>  chart.elements.contentContainer.selectAll<SVGGElement, unknown>(".threshold-axis")
+                    .call(chart.thresholdAxis))
+                .call(line => chart.elements.contentContainer.select<SVGGElement>(`.threshold-indicator-container.${line.datum() > 50 ? "soaring" : "distressed"}`)
+                    .attr("transform", `translate(${chart.width - chart.padding.yAxis - chart.padding.right + 5}, ${(line.datum() > 85 && d > 50) || (line.datum() > 15 && d < 50) ? chart.y.scale(line.datum()) + 25 : chart.y.scale(line.datum()) - 15})`)
+                    .select("text")
+                    .text(Math.round(line.datum())));
+        }
+        function dragEnd() {
+            chart.render()
+            d3.select(this).classed("grabbing", false);
+            d3.select(this).classed("grab", true);
+            if (chart.click) {
+                let clickData = chart.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IHistogramData;
+                chart.clicking.appendThresholdPercentages(chart, chart.data, clickData);
+            } 
+            if (chart.id == "histogram" && !_this.timeline.elements.contentContainer.selectAll(".clicked").empty()) {
+                let usersData = _this.timeline.elements.contentContainer.selectAll<SVGCircleElement, IReflectionAuthor>(".clicked").datum();
+                let binName = _this.getUserStatisticBinName(chart.data.map(d => d.value.find(d => d.pseudonym == usersData.pseudonym))[0], chart.elements.getThresholdsValues(chart));
+                d3.select(`#reflections #${usersData.pseudonym} .bin-name`)
+                    .attr("class", `bin-name ${binName.toLowerCase()}`)
+                    .html(`<b>${binName}</b>`);
+            }
+        }
+
+        chart.clicking.enableClick(chart, onClick);
+        function onClick(e: Event, d: HistogramData) {
+            if (d3.select(this).attr("class").includes("clicked")) {
+                chart.clicking.removeClick(chart);
+                return;
+            }
+            chart.clicking.removeClick(chart);
+            chart.click = true;
+            chart.clicking.appendThresholdPercentages(chart, chart.data, d);
+        }
+
+        return chart;
+    }
+    extendTimeline(dashboard: ExperimentalDashboard) {
+        let _this = dashboard;
+        let chart = _this.timeline
+
+        if (_this.timeline.data.length == 0) {
+            //Remove scatter plot
+            chart.elements.contentContainer.selectAll(".circle").remove();
+            chart.elements.svg.selectAll(".zoom-container").remove();
+            chart.elements.contentContainer.selectAll(".click-line").remove();
+            chart.elements.zoomSVG = undefined;
+            chart.elements.zoomFocus = undefined;
+            return chart;
+        }
+
+        d3.select(`#${chart.id} .badge`).on("click", () => _this.handleFilterButton());
+        //Enable click
+        _this.timeline.clicking.enableClick(chart, onClick);
+        chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
+            _this.timeline.clicking.removeClick(chart);
+            _this.users.data = _this.timeline.data;
+        });
+
+        function onClick(e: Event, d: ITimelineData) {
+            if (d3.select(this).attr("class").includes("clicked")) {
+                if (d3.select(this).attr("class").includes("main")) {
+                    _this.timeline.clicking.removeClick(chart);
+                    _this.users.data = _this.timeline.data;
+                    return;
+                } else {
+                    chart.elements.content.classed("main", false);
+                }
+            }
+
+            _this.timeline.clicking.removeClick(chart);
+            //Remove users html containers
+            _this.users.data = _this.timeline.data;
+            chart.click = true;
+            chart.elements.content.classed("clicked", (data: IReflectionAuthor) => data.pseudonym == d.pseudonym);
+            d3.select(this)
+                .classed("main", true);
+            
+            let usersData = _this.timeline.data.find(c => c.group == d.group).value.filter(c => c.pseudonym == d.pseudonym);
+
+            let line = d3.line<IReflectionAuthor>()
+                .x(d => chart.x.scale(d.timestamp))
+                .y(d => chart.y.scale(d.point))
+                .curve(d3.curveMonotoneX)
+
+            chart.elements.contentContainer.append("path")
+                .datum(d3.sort(usersData, d => d.timestamp))
+                .attr("class", "click-line")
+                .attr("d", d => line(d))
+                .style("stroke", d.colour);
+
+            //Draw click containers
+            usersData.forEach(c => _this.timeline.clicking.appendScatterText(chart, c, c.point.toString()));
+
+            _this.users.data = [_this.timeline.data.find(c => c.group == d.group)]
+
+            _this.help.removeHelp(chart);
+            //Scroll
+            document.querySelector("#timeline").scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
     private removeAllHelp(barChart: ChartSeries) {

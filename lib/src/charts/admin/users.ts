@@ -1,5 +1,6 @@
 import d3 from "d3";
 import { IAdminAnalyticsData, IReflectionAuthor, ITimelineData, UserChartData } from "../../data/data.js";
+import { groupBy } from "../../utils/utils.js";
 import { UserChart } from "../chartBase.js";
 
 export class Users {
@@ -11,33 +12,92 @@ export class Users {
         this._data = entries.filter(d => d.selected);
         this.render()
     }
+    id: string
     constructor(data: IAdminAnalyticsData[]) {
-        this.data = data;
+        this.id = "reflections"
+        this.data = data
     }
     render() {
-        let userStatistics = d3.select("#reflections .card-body");
-        userStatistics.append("ul")
-            .attr("class", "nav nav-tabs")
-            .selectAll("li")
+        d3.select(`#${this.id} .nav.nav-tabs`).selectAll("li")
             .data(this.data)
-            .enter()
-            .append("li")
-            .attr("class", "nav-item")
-            .append("a")
-            .attr("class", (d, i) => `nav-link ${i == 0 ? "active" : ""}`)
-            .attr("href", d => `#reflections-${d.group}`)
-            .attr("data-toggle", "tab")
-            .html(d => d.group)
-            .on("click", (e, d) => setTimeout(() => this.renderReflections(d3.select(`#reflections-${d.group}`), d, [30, 70]), 250));
-        let users = userStatistics.append("div")
-            .attr("class", "tab-content")          
+            .join(
+                enter => enter.append("li")
+                    .attr("class", "nav-item")
+                    .append("a")
+                    .attr("class", (d, i) => `nav-link ${i == 0 ? "active" : ""}`)
+                    .attr("href", d => `#reflections-${d.group}`)
+                    .attr("data-toggle", "tab")
+                    .html(d => d.group)
+                    .on("click", (e, d) => setTimeout(() => this.renderReflections(d3.select(`#reflections-${d.group}`), d, [30, 70]), 250)),
+                update => update.attr("class", (d, i) => `nav-link ${i == 0 ? "active" : ""}`)
+                    .attr("href", d => `#reflections-${d.group}`)
+                    .attr("data-toggle", "tab")
+                    .html(d => d.group),
+                exit => exit.remove()
+            )
+        d3.select(`#${this.id} .tab-content`)       
             .selectAll("div")
             .data(this.data)
-            .enter()
-            .append("div")
-            .attr("class", (d, i) => `tab-pane fade ${i == 0 ? "show active" : ""} users-tab-pane`)
-            .attr("id", d => `reflections-${d.group}`);
-        users.each((d, i, g) => i == 0 ? this.renderReflections(d3.select(g[i]), d, [30, 70]) : "");
+            .join(
+                enter => enter.append("div")
+                    .attr("class", (d, i) => `tab-pane fade ${i == 0 ? "show active" : ""} users-tab-pane`)
+                    .attr("id", d => `reflections-${d.group}`)
+                    .call(enter => enter.selectAll("div")
+                        .data(d => groupBy(d.value, "pseudonym"))
+                        .enter()
+                        .append("div")
+                        .attr("class", "row statistics-text")
+                        .attr("id", d => d.key)
+                        .call(div => div.append("div")
+                            .attr("class", "col-md-4")
+                            .call(div => div.append("h5")
+                                .attr("class", "mb-0 mt-1")
+                                .html(d => `${d.key} is`))
+                            .call(div => div.append("span")
+                                .attr("class", d => `bin-name`)
+                                .html(d => `<b></b>`))
+                            .call(div => div.append("div")
+                                .attr("class", "mt-2")
+                                .append("h6")
+                                .html("Percentage of reflections"))
+                            .call(div => div.append("div")
+                                .attr("class", "w-100 mt-1 user-chart")))
+                        .call(div => div.append("div")
+                            .attr("class", "col-md-8")
+                            .append("p")
+                            .attr("class", "mb-1")
+                            .call(p => p.append("span")
+                                .html(d => `User ${d.key} reflections in chronological order:`))
+                            .call(p => p.append("ul")
+                                .attr("class", "pr-3")
+                                .selectAll("li")
+                                .data(d => d3.sort(d.value, r => r.timestamp))
+                                .enter()
+                                .append("li")
+                                .classed("reflection-selected", false)
+                                .html(d => `<i>${d.timestamp.toDateString()} | Reflection point ${d.point}</i><br> ${d.text}`)))),
+                update => update.attr("class", (d, i) => `tab-pane fade ${i == 0 ? "show active" : ""} users-tab-pane`)
+                    .attr("id", d => `reflections-${d.group}`)
+                    .call(update => update.selectAll(".statistics-text")
+                        .data(d => groupBy(d.value, "pseudonym"))
+                        .join(
+                            enter => enter,
+                            update => update.attr("id", d => d.key)
+                                .call(update => update.select("h5")
+                                    .html(d => `${d.key} is`))
+                                .call(update => update.select("p span")
+                                    .html(d => `User ${d.key} reflections in chronological order:`))
+                                .call(update => update.selectAll("li")
+                                    .data(d => d3.sort(d.value, r => r.timestamp))
+                                    .join(
+                                        enter => enter,
+                                        update => update.html(d => `<i>${d.timestamp.toDateString()} | Reflection point ${d.point}</i><br> ${d.text}`),
+                                        exit => exit.remove()
+                                    )),
+                            exit => exit.remove()
+                        )),
+                exit => exit.remove())
+        //users.each((d, i, g) => i == 0 ? this.renderReflections(d3.select(g[i]), d, [30, 70]) : "");
     }
     renderReflections(card: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>, data: IAdminAnalyticsData, thresholds: number[], timelineData?: ITimelineData): void {
         let _this = this;

@@ -1,6 +1,6 @@
 ;
 import { IAdminAnalyticsData } from "../../data/data.js";
-import { Click } from "../../interactions/click.js";
+import { ClickAdmin } from "../../interactions/click.js";
 import { Tooltip } from "../../interactions/tooltip.js";
 import { Transitions } from "../../interactions/transitions.js";
 import { Zoom } from "../../interactions/zoom.js";
@@ -10,7 +10,7 @@ export declare class Timeline extends ChartTime {
     tooltip: Tooltip;
     zoom: Zoom;
     transitions: Transitions;
-    clicking: Click;
+    clicking: ClickAdmin;
     private _data;
     get data(): IAdminAnalyticsData[];
     set data(entries: IAdminAnalyticsData[]);

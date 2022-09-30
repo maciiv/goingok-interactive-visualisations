@@ -3,18 +3,26 @@ import { IHelp, Help } from "./help.js";
 import { IChartElements, IHistogramChartElements, ChartElements } from "./render.js";
 import { getDOMRect } from "../utils/utils.js";
 
-export interface IChartScales {
+interface IChartScales {
     x: ChartSeriesAxis | ChartTimeAxis | ChartLinearAxis;
     y: ChartLinearAxis | ChartSeriesAxis;
 }
 
-export interface IChart extends IChartScales {
+interface IChartBasic {
     id: string;
     width: number;
     height: number;
     padding: IChartPadding;
-    elements: IChartElements | IHistogramChartElements;
     click: boolean;
+}
+
+
+export type ExtendChart<T> = {
+    (dashboard: T): void
+}
+
+export interface IChart extends IChartScales, IChartBasic {
+    elements: IChartElements | IHistogramChartElements;
 }
 
 export interface IChartPadding {

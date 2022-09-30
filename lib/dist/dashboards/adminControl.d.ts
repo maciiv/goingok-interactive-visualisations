@@ -25,13 +25,14 @@ export interface IAdminControlCharts {
 }
 export declare class Dashboard {
     totals: Totals;
-    barChart: BarChart;
+    barChart: BarChart<this>;
     histogram: Histogram;
     timeline: Timeline;
     users: Users;
     constructor(data: IAdminAnalyticsDataStats[]);
     sidebarBtn(): void;
     preloadGroups(allEntries: IAdminAnalyticsData[], enable?: boolean): IAdminAnalyticsData[];
+    protected getUserStatisticBinName(data: IReflectionAuthor, thresholds: number[]): string;
 }
 export declare class AdminControlCharts implements IAdminControlCharts {
     help: Help;
