@@ -162,6 +162,7 @@ export class ExperimentalDashboard extends Dashboard {
                 _this.totals.data = _this.barChart.data
                 _this.histogram.data = _this.barChart.data
                 _this.timeline.data = _this.barChart.data
+                _this.users.data = _this.barChart.data
                 return;
             }
             _this.barChart.clicking.removeClick(_this.barChart);
@@ -299,7 +300,17 @@ export class ExperimentalDashboard extends Dashboard {
             d3.select(this)
                 .classed("main", true);
             
-            let usersData = _this.timeline.data.find(c => c.group == d.group).value.filter(c => c.pseudonym == d.pseudonym);
+            let groupData = _this.timeline.data.find(c => c.group == d.group)
+            let usersData = groupData.value.filter(c => c.pseudonym == d.pseudonym).map(c => { 
+                return { 
+                    "refId": c.refId,
+                    "timestamp": c.timestamp,
+                    "point": c.point,
+                    "text": c.text,
+                    "pseudonym": c.pseudonym,
+                    "selected": c.refId == d.refId
+                } as IReflectionAuthor
+            })
 
             let line = d3.line<IReflectionAuthor>()
                 .x(d => chart.x.scale(d.timestamp))
@@ -315,7 +326,7 @@ export class ExperimentalDashboard extends Dashboard {
             //Draw click containers
             usersData.forEach(c => _this.timeline.clicking.appendScatterText(chart, c, c.point.toString()));
 
-            _this.users.data = [_this.timeline.data.find(c => c.group == d.group)]
+            _this.users.data = [new AdminAnalyticsData(groupData.group, usersData, groupData.createDate, groupData.colour, groupData.selected)]
 
             _this.help.removeHelp(chart);
             //Scroll

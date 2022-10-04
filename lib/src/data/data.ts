@@ -9,6 +9,7 @@ export interface IReflection {
 
 export interface IReflectionAuthor extends IReflection {
     pseudonym: string;
+    selected: boolean
 }
 
 export interface IAdminAnalyticsData {
@@ -95,6 +96,7 @@ export class TimelineData implements ITimelineData {
     pseudonym: string;
     point: number;
     text: string;
+    selected: boolean
     colour: string;
     group: string;
     constructor(data: IReflectionAuthor, colour: string, group: string) {

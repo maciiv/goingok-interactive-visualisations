@@ -1,5 +1,6 @@
 import { IReflectionAuthor, AdminAnalyticsData } from "./data.js";
 export interface IReflectionAuthorRaw {
+    refId: string;
     timestamp: string;
     pseudonym: string;
     point: string;

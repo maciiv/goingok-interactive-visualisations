@@ -1,6 +1,7 @@
 import { IReflectionAuthor, AdminAnalyticsData } from "./data.js";
 
 export interface IReflectionAuthorRaw {
+    refId: string
     timestamp: string;
     pseudonym: string;
     point: string;
@@ -27,7 +28,7 @@ export class AdminAnalyticsDataRaw implements IAdminAnalyticsDataRaw {
     transformData(): AdminAnalyticsData {
         return new AdminAnalyticsData(this.group, this.value.map(d => {
             return {
-                timestamp: new Date(d.timestamp), pseudonym: d.pseudonym, point: parseInt(d.point), text: d.text
+                refId: parseInt(d.refId), timestamp: new Date(d.timestamp), pseudonym: d.pseudonym, point: parseInt(d.point), text: d.text
             }
         }) as IReflectionAuthor[], new Date(this.createDate), undefined, false);
     }

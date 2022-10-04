@@ -6,6 +6,7 @@ export interface IReflection {
 }
 export interface IReflectionAuthor extends IReflection {
     pseudonym: string;
+    selected: boolean;
 }
 export interface IAdminAnalyticsData {
     group: string;
@@ -54,6 +55,7 @@ export declare class TimelineData implements ITimelineData {
     pseudonym: string;
     point: number;
     text: string;
+    selected: boolean;
     colour: string;
     group: string;
     constructor(data: IReflectionAuthor, colour: string, group: string);

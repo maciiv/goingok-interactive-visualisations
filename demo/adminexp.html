@@ -163,7 +163,7 @@
                                         </h5>
                                         <h6 class="card-subtitle mb-2 instructions"></h6>
                                         <ul class="nav nav-tabs"></ul>
-                                        <div class="tab-content"></div>
+                                        <div class="tab-content users-tab-pane"></div>
                                     </div>
                                 </div>
                             </div>
@@ -182,6 +182,7 @@
             d3.csv("test-data.csv").then(function (c) {
                     var data = c.map(function (r) {
                         return {
+                            refId: r.refId,
                             timestamp: r.timestamp,
                             point: r.point,
                             pseudonym: r.pseudonym,
@@ -193,9 +194,6 @@
                         var group = _a[0], value = _a[1];
                         return ({ group: group, value: value, createDate: "2021-02-01" });
                     });
-                    groupData[1].createDate = "2021-01-01";
-                    groupData[2].createDate = "2021-03-01";
-                    console.log(groupData)
                 chart.buildExperimentAdminAnalyticsCharts(groupData);
             });
         </script>
