@@ -1,9 +1,12 @@
 import d3, { BaseType } from "d3";
 import { IAdminAnalyticsData, IReflectionAuthor } from "../../data/data.js";
+import { Sort } from "../../interactions/sort.js";
 import { calculateMean, groupBy, IGroupBy, maxDate, minDate } from "../../utils/utils.js";
 
 export class Users {
     id: string
+    sorted = "name"
+    sort = new Sort()
     private _data: IAdminAnalyticsData[]
     get data() {
         return this._data
@@ -39,9 +42,10 @@ export class Users {
                 exit => exit.remove()
             )
         
+        _this.handleSort(_this.data[0].value)
         _this.renderTabContent(_this.data[0].value)
     }
-    renderTabContent(data: IReflectionAuthor[]): void {
+    renderTabContent(data: IReflectionAuthor[], groupByData?: IGroupBy<IReflectionAuthor>[]): void {
         const _this = this
 
         const usersStats = groupBy(data, "pseudonym").map(d => {
@@ -54,7 +58,7 @@ export class Users {
             }
         })
         const minUser = usersStats.sort((a, b) => a.mean - b.mean)[0]
-        const maxUser = usersStats.sort((a, b) => a.mean - b.mean)[-1]
+        const maxUser = usersStats.sort((a, b) => a.mean - b.mean)[usersStats.length - 1]
 
         d3.select(`#${_this.id} .text-muted`)
             .html(usersStats.length === 1 ? `The user ${usersStats[0].pseudonym} has a total of ${usersStats[0].total} reflections between
@@ -63,7 +67,7 @@ export class Users {
 
         d3.select(`#${_this.id} .tab-content`)
             .selectAll("div .statistics-text")
-            .data(d3.sort(groupBy(data, "pseudonym"), c => c.key))
+            .data(groupByData === undefined ? d3.sort(groupBy(data, "pseudonym"), c => c.key) : groupByData)
             .join(
                 enter => enter.append("div")
                     .attr("class", "row statistics-text")
@@ -112,6 +116,22 @@ export class Users {
                 exit => exit.remove()
             )
     }
+    private handleSort(data: IReflectionAuthor[]) {
+        const _this = this
+        let sortedData = groupBy(data, "pseudonym")
+        d3.select("#sort-users .btn-group-toggle").on("click", (e: any) => {
+            var selectedOption = e.target.control.value;
+            sortedData = sortedData.sort(function (a, b) {
+                if (selectedOption == "name") {
+                    return _this.sort.sortData(a.key, b.key, _this.sorted == "name" ? true : false);
+                } else if (selectedOption == "point") {
+                    return _this.sort.sortData(calculateMean(a.value.map(d => d.point)), calculateMean(b.value.map(d => d.point)), _this.sorted == "point" ? true : false);
+                }
+            });
+            _this.sorted = _this.sort.setSorted(_this.sorted, selectedOption);
+            _this.renderTabContent(data, sortedData)
+        });
+    };
     protected getUserStatisticBinName(data: IReflectionAuthor, thresholds: number[]): string {
         let distressed = thresholds[0];
         let soaring = thresholds[1];
