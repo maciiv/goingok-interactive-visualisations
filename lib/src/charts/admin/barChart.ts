@@ -6,6 +6,11 @@ import { Transitions } from "../../interactions/transitions.js";
 import { ChartSeries, ExtendChart } from "../chartBase.js";
 
 export class BarChart<T> extends ChartSeries {
+    tooltip = new Tooltip()
+    transitions = new Transitions()
+    clicking = new ClickAdmin()
+    dashboard?: T
+    extend?: ExtendChart<T>
     private _data: IAdminAnalyticsDataStats[]
     get data() {
         return this._data
@@ -17,14 +22,9 @@ export class BarChart<T> extends ChartSeries {
             this.transitions.axisSeries(this, this.data);
             this.transitions.axisLinear(this);
         }       
-        this.render();
+        this.render()
         this.extend !== undefined && this.dashboard !== undefined ? this.extend(this.dashboard) : null
     }
-    tooltip = new Tooltip()
-    transitions = new Transitions()
-    clicking = new ClickAdmin()
-    dashboard?: T
-    extend?: ExtendChart<T>
     constructor(data: IAdminAnalyticsDataStats[]) {
         super("users", data.map(d => d.group), false, data.map(d => d.getStat("usersTotal").value as number))
         this.data = data

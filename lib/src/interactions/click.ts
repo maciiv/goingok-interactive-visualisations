@@ -22,14 +22,14 @@ export class Click implements IClick {
     };
 }
 
-export interface IClickAdmin extends IClick {
+export interface IClickAdmin<T> extends IClick {
     appendScatterText(chart: IChart, d: IReflectionAuthor, title: string, values: ITooltipValues[]): void;
     positionClickContainer(chart: ChartTime, box: any, text: any, d: IReflectionAuthor): string;
     appendGroupsText(chart: ChartSeries, data: IAdminAnalyticsDataStats[], clickData: IAdminAnalyticsDataStats): void;
-    appendThresholdPercentages(chart: Histogram, data: IAdminAnalyticsData[], clickData: IHistogramData): void;
+    appendThresholdPercentages(chart: Histogram<T>, data: IAdminAnalyticsData[], clickData: IHistogramData): void;
 }
 
-export class ClickAdmin extends Click implements IClickAdmin {
+export class ClickAdmin<T> extends Click implements IClickAdmin<T> {
     appendScatterText(chart: ChartTime, d: IReflectionAuthor, title: string, values: ITooltipValues[] = null): void {
         let container = chart.elements.contentContainer.append("g")
             .datum(d)
@@ -103,7 +103,7 @@ export class ClickAdmin extends Click implements IClickAdmin {
                 exit => exit.remove()
             );
     };
-    appendThresholdPercentages(chart: Histogram, data: IAdminAnalyticsData[], clickData: IHistogramData): void {
+    appendThresholdPercentages(chart: Histogram<T>, data: IAdminAnalyticsData[], clickData: IHistogramData): void {
         let thresholds = chart.elements.getThresholdsValues(chart);
         let tDistressed = thresholds[0];
         let tSoaring = thresholds[1];

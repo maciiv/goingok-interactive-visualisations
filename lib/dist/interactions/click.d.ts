@@ -10,17 +10,17 @@ export declare class Click implements IClick {
     enableClick(chart: IChart, onClick: any): void;
     removeClick(chart: IChart): void;
 }
-export interface IClickAdmin extends IClick {
+export interface IClickAdmin<T> extends IClick {
     appendScatterText(chart: IChart, d: IReflectionAuthor, title: string, values: ITooltipValues[]): void;
     positionClickContainer(chart: ChartTime, box: any, text: any, d: IReflectionAuthor): string;
     appendGroupsText(chart: ChartSeries, data: IAdminAnalyticsDataStats[], clickData: IAdminAnalyticsDataStats): void;
-    appendThresholdPercentages(chart: Histogram, data: IAdminAnalyticsData[], clickData: IHistogramData): void;
+    appendThresholdPercentages(chart: Histogram<T>, data: IAdminAnalyticsData[], clickData: IHistogramData): void;
 }
-export declare class ClickAdmin extends Click implements IClickAdmin {
+export declare class ClickAdmin<T> extends Click implements IClickAdmin<T> {
     appendScatterText(chart: ChartTime, d: IReflectionAuthor, title: string, values?: ITooltipValues[]): void;
     positionClickContainer(chart: ChartTime, box: any, text: any, d: IReflectionAuthor): string;
     appendGroupsText(chart: ChartSeries, data: IAdminAnalyticsDataStats[], clickData: IAdminAnalyticsDataStats): void;
-    appendThresholdPercentages(chart: Histogram, data: IAdminAnalyticsData[], clickData: IHistogramData): void;
+    appendThresholdPercentages(chart: Histogram<T>, data: IAdminAnalyticsData[], clickData: IHistogramData): void;
     private comparativeText;
 }
 export interface IClickAuthor extends IClick {

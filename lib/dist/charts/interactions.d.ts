@@ -1,24 +1,8 @@
-import { IClick, ClickAdmin, Click } from "../interactions/click.js";
+import { IClick, Click } from "../interactions/click.js";
 import { ISort, Sort } from "../interactions/sort.js";
 import { ITooltip, Tooltip } from "../interactions/tooltip.js";
-import { IAdminControlTransitions, AdminControlTransitions, ITransitions, Transitions } from "../interactions/transitions.js";
+import { ITransitions, Transitions } from "../interactions/transitions.js";
 import { IZoom, Zoom } from "../interactions/zoom.js";
-export interface IAdminControlInteractions extends IAdminControlTransitions {
-    tooltip: ITooltip;
-    zoom: IZoom;
-}
-export declare class AdminControlInteractions extends AdminControlTransitions implements IAdminControlInteractions {
-    tooltip: Tooltip;
-    zoom: Zoom;
-}
-export interface IAdminExperimentalInteractions extends IAdminControlInteractions {
-    click: IClick;
-    sort: ISort;
-}
-export declare class AdminExperimentalInteractions extends AdminControlInteractions implements IAdminExperimentalInteractions {
-    click: ClickAdmin;
-    sort: Sort;
-}
 export interface IAuthorControlTransitions extends ITransitions {
 }
 export declare class AuthorControlTransitions extends Transitions implements IAuthorControlTransitions {

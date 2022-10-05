@@ -4,13 +4,15 @@ import { ClickAdmin } from "../../interactions/click.js";
 import { Tooltip } from "../../interactions/tooltip.js";
 import { Transitions } from "../../interactions/transitions.js";
 import { Zoom } from "../../interactions/zoom.js";
-import { ChartTime, ChartTimeZoom } from "../chartBase.js";
-export declare class Timeline extends ChartTime {
+import { ChartTime, ChartTimeZoom, ExtendChart } from "../chartBase.js";
+export declare class Timeline<T> extends ChartTime {
     zoomChart: ChartTimeZoom;
     tooltip: Tooltip;
     zoom: Zoom;
     transitions: Transitions;
-    clicking: ClickAdmin;
+    clicking: ClickAdmin<unknown>;
+    dashboard?: T;
+    extend?: ExtendChart<T>;
     private _data;
     get data(): IAdminAnalyticsData[];
     set data(entries: IAdminAnalyticsData[]);

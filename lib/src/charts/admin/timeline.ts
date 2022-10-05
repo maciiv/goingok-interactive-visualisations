@@ -5,14 +5,16 @@ import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
 import { Transitions } from "../../interactions/transitions.js";
 import { Zoom } from "../../interactions/zoom.js";
 import { maxDate, minDate } from "../../utils/utils.js";
-import { ChartTime, ChartTimeZoom } from "../chartBase.js";
+import { ChartTime, ChartTimeZoom, ExtendChart } from "../chartBase.js";
 
-export class Timeline extends ChartTime {
+export class Timeline<T> extends ChartTime {
     zoomChart: ChartTimeZoom
     tooltip = new Tooltip()
     zoom = new Zoom()
     transitions = new Transitions()
     clicking = new ClickAdmin()
+    dashboard?: T
+    extend?: ExtendChart<T>
     private _data: IAdminAnalyticsData[]
     get data() {
         return this._data
@@ -25,6 +27,7 @@ export class Timeline extends ChartTime {
             this.clicking.removeClick(this);
         }
         this.render()
+        this.extend !== undefined && this.dashboard !== undefined ? this.extend(this.dashboard) : null
     }
     constructor(data: IAdminAnalyticsData[]) {
         super("timeline", [minDate(data.map(d => minDate(d.value.map(c => c.timestamp)))), maxDate(data.map(d => maxDate(d.value.map(c => c.timestamp))))])

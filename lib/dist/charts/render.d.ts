@@ -1,6 +1,5 @@
 ;
 import { IChart } from "./chartBase.js";
-import { Histogram } from "./admin/histogram";
 export interface IChartElements {
     svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>;
     contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
@@ -25,14 +24,4 @@ export declare class ChartElements implements IChartElements {
     private appendXAxisLabel;
     private appendYAxis;
     private appendYAxisLabel;
-}
-export interface IHistogramChartElements extends IChartElements {
-    getThresholdsValues(chart: Histogram): number[];
-}
-export declare class HistogramChartElements extends ChartElements implements IHistogramChartElements {
-    constructor(chart: Histogram);
-    private appendThresholdAxis;
-    private appendThresholdLabel;
-    private appendThresholdIndicators;
-    getThresholdsValues(chart: Histogram): number[];
 }

@@ -80,7 +80,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-12 mt-3" id="sort">
+                            <div class="col-md-12 mt-3" id="sort-groups">
                                 <div class="card">
                                     <div class="card-body">
                                         <h6 class="card-subtitle">
@@ -161,7 +161,22 @@
                                                 <i class="fas fa-question-circle"></i>
                                             </button>
                                         </h5>
-                                        <h6 class="card-subtitle mb-2 instructions"></h6>
+                                        <h6 class="card-subtitle d-flex mb-2">
+                                            <div class="col-md-6 pl-0 text-muted"></div>
+                                            <div class="col-md-6 d-flex">
+                                                <div class="ml-auto">
+                                                    <span>Sort users by:</span>
+                                                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                                        <label class="btn btn-light active">
+                                                            <input type="radio" name="sort" value="name">Name
+                                                        </label>
+                                                        <label class="btn btn-light">
+                                                            <input type="radio" name="sort" value="point">Reflection state point
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </h6>
                                         <ul class="nav nav-tabs"></ul>
                                         <div class="tab-content users-tab-pane"></div>
                                     </div>

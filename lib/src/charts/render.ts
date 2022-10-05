@@ -1,6 +1,5 @@
 import d3 from "d3";
 import { IChart } from "./chartBase.js";
-import { Histogram } from "./admin/histogram";
 
 export interface IChartElements {
     svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>;
@@ -84,80 +83,4 @@ export class ChartElements implements IChartElements {
             .attr("text-anchor", "middle")
             .text(chart.y.label);
     }
-}
-
-export interface IHistogramChartElements extends IChartElements {
-    getThresholdsValues(chart: Histogram): number[];
-}
-
-export class HistogramChartElements extends ChartElements implements IHistogramChartElements {
-    constructor(chart: Histogram) {
-        super(chart);
-        let thresholds = this.getThresholdsValues(chart);
-        this.appendThresholdAxis(chart);
-        this.appendThresholdIndicators(chart, thresholds);
-        this.appendThresholdLabel(chart);
-    }
-    private appendThresholdAxis(chart: Histogram): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
-        return this.contentContainer.append("g")
-            .attr("transform", `translate(${chart.width - chart.padding.yAxis - chart.padding.right}, 0)`)
-            .attr("class", "threshold-axis")
-            .call(chart.thresholdAxis);
-    };
-    private appendThresholdLabel(chart: Histogram): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
-        let label = this.svg.append("g")
-            .attr("class", "threshold-label-container")
-        label.append("text")
-            .attr("class", "y-label-text")
-            .attr("text-anchor", "middle")
-            .text("Thresholds");
-        label.attr("transform", `translate(${chart.width - chart.padding.right + this.contentContainer.select<SVGGElement>(".threshold-axis").node().getBBox().width + label.node().getBBox().height}, ${chart.padding.top + this.svg.select<SVGGElement>(".y-axis").node().getBBox().height / 2}) rotate(-90)`);
-        return label;
-    };
-    private appendThresholdIndicators(chart: Histogram, thresholds: number[]): void {
-        this.contentContainer.selectAll(".threshold-indicator-container")
-            .data(thresholds)
-            .enter()
-            .append("g")
-            .attr("class", "threshold-indicator-container")
-            .classed("distressed", d => d < 50 ? true : false)
-            .classed("soaring", d => d > 50 ? true : false)
-            .attr("transform", d => `translate(${chart.width - chart.padding.yAxis - chart.padding.right + 5}, ${d < 50 ? chart.y.scale(d) + 25 : chart.y.scale(d) - 15})`)
-            .call(g => g.append("rect")
-                .attr("class", "threshold-indicator-box")
-                .classed("distressed", d => d < 50 ? true : false)
-                .classed("soaring", d => d > 50 ? true : false))
-            .call(g => g.append("text")
-                .attr("class", "threshold-indicator-text")
-                .attr("x", 5)
-                .text(d => d))
-            .call(g => g.selectAll("rect")
-                .attr("width", g.select<SVGTextElement>("text").node().getBBox().width + 10)
-                .attr("height", g.select<SVGTextElement>("text").node().getBBox().height + 5)
-                .attr("y", -g.select<SVGTextElement>("text").node().getBBox().height));
-        
-        this.contentContainer.selectAll(".threshold-line")
-            .data(thresholds)
-            .enter()
-            .append("line")
-            .attr("class", "threshold-line")
-            .classed("distressed", d => d < 50 ? true : false)
-            .classed("soaring", d => d > 50 ? true : false)
-            .attr("x1", 0)
-            .attr("x2", chart.width - chart.padding.yAxis - chart.padding.right)
-            .attr("y1", d => chart.y.scale(d))
-            .attr("y2", d => chart.y.scale(d));
-    }
-    getThresholdsValues(chart: Histogram): number[] {
-        let result: number[] = [30, 70];
-        let dThreshold = this.contentContainer.select<SVGLineElement>(".threshold-line.distressed");
-        if (!dThreshold.empty()) {
-            result[0] = chart.y.scale.invert(parseInt(dThreshold.attr("y1")));
-        }
-        let sThreshold = this.contentContainer.select<SVGLineElement>(".threshold-line.soaring");
-        if (!sThreshold.empty()) {
-            result[1] = chart.y.scale.invert(parseInt(sThreshold.attr("y1")));
-        }
-        return result;
-    };
 }

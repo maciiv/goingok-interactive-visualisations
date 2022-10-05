@@ -1,6 +1,6 @@
 import { ChartSeriesAxis, ChartTimeAxis, ChartLinearAxis } from "./scaleBase.js";
 import { IHelp } from "./help.js";
-import { IChartElements, IHistogramChartElements } from "./render.js";
+import { IChartElements } from "./render.js";
 interface IChartScales {
     x: ChartSeriesAxis | ChartTimeAxis | ChartLinearAxis;
     y: ChartLinearAxis | ChartSeriesAxis;
@@ -16,7 +16,7 @@ export declare type ExtendChart<T> = {
     (dashboard: T): void;
 };
 export interface IChart extends IChartScales, IChartBasic {
-    elements: IChartElements | IHistogramChartElements;
+    elements: IChartElements;
 }
 export interface IChartPadding {
     xAxis: number;

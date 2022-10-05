@@ -1,6 +1,6 @@
 import { ChartSeriesAxis, ChartTimeAxis, ChartLinearAxis } from "./scaleBase.js";
 import { IHelp, Help } from "./help.js";
-import { IChartElements, IHistogramChartElements, ChartElements } from "./render.js";
+import { IChartElements, ChartElements } from "./render.js";
 import { getDOMRect } from "../utils/utils.js";
 
 interface IChartScales {
@@ -22,7 +22,7 @@ export type ExtendChart<T> = {
 }
 
 export interface IChart extends IChartScales, IChartBasic {
-    elements: IChartElements | IHistogramChartElements;
+    elements: IChartElements;
 }
 
 export interface IChartPadding {
