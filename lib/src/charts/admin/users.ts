@@ -45,7 +45,7 @@ export class Users {
         _this.handleSort(_this.data[0].value)
         _this.renderTabContent(_this.data[0].value)
     }
-    renderTabContent(data: IReflectionAuthor[], groupByData?: IGroupBy<IReflectionAuthor>[]): void {
+    private renderTabContent(data: IReflectionAuthor[], groupByData?: IGroupBy<IReflectionAuthor>[]): void {
         const _this = this
 
         const usersStats = groupBy(data, "pseudonym").map(d => {
@@ -119,12 +119,19 @@ export class Users {
     private handleSort(data: IReflectionAuthor[]) {
         const _this = this
         let sortedData = groupBy(data, "pseudonym")
-        d3.select("#sort-users .btn-group-toggle").on("click", (e: any) => {
+        d3.select("#sort-users .btn-group-toggle").on("click", function(e: any) {
             var selectedOption = e.target.control.value;
+            const parentEl = d3.select<HTMLInputElement, unknown>(`#sort-users input[value="${selectedOption}"]`).node().parentElement
+            d3.selectAll("#sort-users .btn-group-toggle i")
+                .classed("d-none", true);
+            d3.select(parentEl).select("i")
+                .classed("d-none", false)
             sortedData = sortedData.sort(function (a, b) {
                 if (selectedOption == "name") {
+                    d3.select(parentEl).select("i").classed(_this.sorted == "name" ? "fa-chevron-up" : "fa-chevron-down", true)
                     return _this.sort.sortData(a.key, b.key, _this.sorted == "name" ? true : false);
                 } else if (selectedOption == "point") {
+                    d3.select(parentEl).select("i").classed(_this.sorted == "point" ? "fa-chevron-up" : "fa-chevron-down", true)
                     return _this.sort.sortData(calculateMean(a.value.map(d => d.point)), calculateMean(b.value.map(d => d.point)), _this.sorted == "point" ? true : false);
                 }
             });
