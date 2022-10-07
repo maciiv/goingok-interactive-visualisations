@@ -10,7 +10,7 @@ import { Help } from "../charts/help.js";
 
 export class ExperimentalDashboard extends Dashboard {
     entries: IAdminAnalyticsData[]
-    sorted = "date"
+    sorted = ""
     sort = new Sort()
     help = new Help()
     preloadGroups(entries: IAdminAnalyticsData[]): IAdminAnalyticsData[] {
@@ -92,15 +92,21 @@ export class ExperimentalDashboard extends Dashboard {
         });
     };
     handleGroupsSort(): void {
-        let _this = this;
-        d3.select("#sort-groups .btn-group-toggle").on("click", (e: any) => {
-            var selectedOption = e.target.control.value;
+        const _this = this;
+        const id = "sort-groups"
+        d3.select(`#${id} .btn-group-toggle`).on("click", (e: any) => {
+            const selectedOption = e.target.control.value
+            const chevron = _this.sorted === selectedOption ? "fa-chevron-down" : "fa-chevron-up"
+            _this.sort.setChevronVisibility(id, selectedOption)
             _this.entries = _this.entries.sort(function (a, b) {
                 if (selectedOption == "date") {
+                    _this.sort.handleChevronChange(id, selectedOption, chevron)
                     return _this.sort.sortData(a.createDate, b.createDate, _this.sorted == "date" ? true : false);
                 } else if (selectedOption == "name") {
+                    _this.sort.handleChevronChange(id, selectedOption, chevron)
                     return _this.sort.sortData(a.group, b.group, _this.sorted == "name" ? true : false);
                 } else if (selectedOption == "mean") {
+                    _this.sort.handleChevronChange(id, selectedOption, chevron)
                     return _this.sort.sortData(d3.mean(a.value.map(d => d.point)), d3.mean(b.value.map(d => d.point)), _this.sorted == "mean" ? true : false);
                 }
             });
@@ -228,13 +234,7 @@ export class ExperimentalDashboard extends Dashboard {
                 let clickData = chart.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IHistogramData;
                 chart.clicking.appendThresholdPercentages(chart, chart.data, clickData);
             } 
-            if (chart.id == "histogram" && !_this.timeline.elements.contentContainer.selectAll(".clicked").empty()) {
-                let usersData = _this.timeline.elements.contentContainer.selectAll<SVGCircleElement, IReflectionAuthor>(".clicked").datum();
-                let binName = _this.getUserStatisticBinName(chart.data.map(d => d.value.find(d => d.pseudonym == usersData.pseudonym))[0], chart.elements.getThresholdsValues(chart));
-                d3.select(`#reflections #${usersData.pseudonym} .bin-name`)
-                    .attr("class", `bin-name ${binName.toLowerCase()}`)
-                    .html(`<b>${binName}</b>`);
-            }
+            _this.users.thresholds = chart.elements.getThresholdsValues(chart)
         }
 
         chart.clicking.enableClick(chart, onClick);

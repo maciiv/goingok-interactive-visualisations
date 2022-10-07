@@ -5,7 +5,7 @@ import { calculateMean, groupBy, IGroupBy, maxDate, minDate } from "../../utils/
 
 export class Users {
     id: string
-    sorted = "name"
+    sorted = ""
     sort = new Sort()
     private _data: IAdminAnalyticsData[]
     get data() {
@@ -14,6 +14,16 @@ export class Users {
     set data(entries: IAdminAnalyticsData[]) {
         this._data = entries.filter(d => d.selected);
         this.render()
+    }
+    private _thresholds = [30 , 70]
+    get thresholds() {
+        return this._thresholds
+    }
+    set thresholds(thresholds: number[]) {
+        this._thresholds = thresholds
+        d3.selectAll(`#${this.id} meter`)
+            .attr("low", this.thresholds[0])
+            .attr("high", this.thresholds[1])
     }
     constructor(data: IAdminAnalyticsData[]) {
         this.id = "reflections"
@@ -76,10 +86,8 @@ export class Users {
                         .attr("class", "col-md-4")
                         .call(div => div.append("h5")
                             .attr("class", "mb-0 mt-1")
-                            .html(d => `${d.key} is`))
-                        .call(div => div.append("span")
-                            .attr("class", d => `bin-name`)
-                            .html(d => `<b></b>`))
+                            .html(d => `${d.key} <small>average is</small>`))
+                        .call(div => div.append(d => _this.renderUserMeter(d)))
                         .call(div => div.append("div")
                             .attr("class", "mt-2")
                             .append("h6")
@@ -98,6 +106,8 @@ export class Users {
                 update => update.attr("id", d => d.key)
                     .call(update => update.select("h5")
                         .html(d => `${d.key} is`))
+                    .call(update => update.select("meter")
+                        .attr("value", d => calculateMean(d.value.map(c => c.point))))
                     .call(update => update.select("p span")
                         .html(d => `User ${d.key} reflections in chronological order:`))
                     .call(update => _this.renderReflections(update.select("p ul"))),
@@ -118,20 +128,18 @@ export class Users {
     }
     private handleSort(data: IReflectionAuthor[]) {
         const _this = this
+        const id = "sort-users"
         let sortedData = groupBy(data, "pseudonym")
-        d3.select("#sort-users .btn-group-toggle").on("click", function(e: any) {
-            var selectedOption = e.target.control.value;
-            const parentEl = d3.select<HTMLInputElement, unknown>(`#sort-users input[value="${selectedOption}"]`).node().parentElement
-            d3.selectAll("#sort-users .btn-group-toggle i")
-                .classed("d-none", true);
-            d3.select(parentEl).select("i")
-                .classed("d-none", false)
+        d3.select(`#${id} .btn-group-toggle`).on("click", function(e: any) {
+            const selectedOption = e.target.control.value;
+            const chevron = _this.sorted === selectedOption ? "fa-chevron-down" : "fa-chevron-up"
+            _this.sort.setChevronVisibility(id, selectedOption)
             sortedData = sortedData.sort(function (a, b) {
                 if (selectedOption == "name") {
-                    d3.select(parentEl).select("i").classed(_this.sorted == "name" ? "fa-chevron-up" : "fa-chevron-down", true)
+                    _this.sort.handleChevronChange(id, selectedOption, chevron)
                     return _this.sort.sortData(a.key, b.key, _this.sorted == "name" ? true : false);
                 } else if (selectedOption == "point") {
-                    d3.select(parentEl).select("i").classed(_this.sorted == "point" ? "fa-chevron-up" : "fa-chevron-down", true)
+                    _this.sort.handleChevronChange(id, selectedOption, chevron)
                     return _this.sort.sortData(calculateMean(a.value.map(d => d.point)), calculateMean(b.value.map(d => d.point)), _this.sorted == "point" ? true : false);
                 }
             });
@@ -139,6 +147,44 @@ export class Users {
             _this.renderTabContent(data, sortedData)
         });
     };
+    private renderUserMeter(data: IGroupBy<IReflectionAuthor>): HTMLDivElement {
+        const row = document.createElement("div")
+        row.classList.add("row", "mt-1")
+        const scale = meterScale()
+        row.appendChild(scale[0])
+        row.appendChild(scale[1])
+        row.appendChild(scale[2])
+        const meterCol = document.createElement("div")
+        meterCol.classList.add("col-12")
+        const meter = document.createElement("meter")
+        meter.classList.add("w-100", "user-meter")
+        meter.setAttribute("max", "100")
+        meter.setAttribute("value", calculateMean(data.value.map(d => d.point)).toString())
+        meter.setAttribute("low", this.thresholds[0].toString())
+        meter.setAttribute("high", this.thresholds[1].toString())
+        meterCol.appendChild(meter)
+        row.appendChild(meterCol)
+        return row
+
+        function meterScale(): HTMLDivElement[] {
+            const labels = ["distressed", "going ok", "soaring"]
+            let scale = [] as HTMLDivElement[]
+            labels.forEach(c => {
+                let label = meterLabel(c)
+                c === "going ok" ? label.classList.add("text-center") : null
+                c === "soaring" ? label.classList.add("text-right") : null
+                scale.push(label)
+            })
+            return scale
+        }
+
+        function meterLabel(name: string): HTMLDivElement {
+            let col = document.createElement("div")
+            col.classList.add("col-4", "xx-small")
+            col.innerHTML = name
+            return col
+        }
+    }
     protected getUserStatisticBinName(data: IReflectionAuthor, thresholds: number[]): string {
         let distressed = thresholds[0];
         let soaring = thresholds[1];

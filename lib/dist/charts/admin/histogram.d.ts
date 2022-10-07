@@ -1,4 +1,4 @@
-;
+//;
 import { HistogramData, IAdminAnalyticsData, IAdminAnalyticsDataStats } from "../../data/data.js";
 import { ClickAdmin } from "../../interactions/click.js";
 import { Tooltip } from "../../interactions/tooltip.js";

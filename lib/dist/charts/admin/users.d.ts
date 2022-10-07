@@ -7,10 +7,14 @@ export declare class Users {
     private _data;
     get data(): IAdminAnalyticsData[];
     set data(entries: IAdminAnalyticsData[]);
+    private _thresholds;
+    get thresholds(): number[];
+    set thresholds(thresholds: number[]);
     constructor(data: IAdminAnalyticsData[]);
     render(): void;
     private renderTabContent;
     private renderReflections;
     private handleSort;
+    private renderUserMeter;
     protected getUserStatisticBinName(data: IReflectionAuthor, thresholds: number[]): string;
 }

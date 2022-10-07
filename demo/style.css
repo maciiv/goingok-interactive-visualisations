@@ -338,6 +338,31 @@ Admin CSS
     color: #2eb82e;
 }
 
+.xx-small {
+    font-size: xx-small;
+}
+
+meter.user-meter {
+    --sub-optimum: #ff9900;
+    --sub-sub-optimum: #006fe6;
+}
+
+meter.user-meter:-moz-meter-sub-optimum::-moz-meter-bar {
+    background: var(--sub-optimum);
+}
+
+meter.user-meter::-webkit-meter-suboptimum-value {
+background: var(--sub-optimum);
+}
+
+meter.user-meter:-moz-meter-sub-sub-optimum::-moz-meter-bar {
+background: var(--sub-sub-optimum);
+}
+
+meter.user-meter::-webkit-meter-even-less-good-value {
+background: var(--sub-sub-optimum);
+}
+
 /**************************************************
 Author CSS
 ***************************************************/
