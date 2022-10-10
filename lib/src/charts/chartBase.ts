@@ -3,12 +3,12 @@ import { IHelp, Help } from "./help.js";
 import { IChartElements, ChartElements } from "./render.js";
 import { getDOMRect } from "../utils/utils.js";
 
-interface IChartScales {
+export interface IChartScales {
     x: ChartSeriesAxis | ChartTimeAxis | ChartLinearAxis;
     y: ChartLinearAxis | ChartSeriesAxis;
 }
 
-interface IChartBasic {
+export interface IChartBasic {
     id: string;
     width: number;
     height: number;
@@ -91,15 +91,6 @@ export class ChartTime implements IChart {
         this.x = new ChartTimeAxis("Time", domain, [0, this.width - this.padding.yAxis]);
         this.click = false;
         this.elements = new ChartElements(this);
-    }
-}
-
-export class ChartTimeZoom implements IChartScales {
-    x: ChartTimeAxis;
-    y: ChartLinearAxis;
-    constructor(chart: IChart, domain: Date[]) {
-        this.x = new ChartTimeAxis("", domain, [0, chart.width - chart.padding.yAxis - 5]);
-        this.y = new ChartLinearAxis("", [0, 100], [25, 0], "left");
     }
 }
 

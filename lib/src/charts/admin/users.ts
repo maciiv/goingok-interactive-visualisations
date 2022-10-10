@@ -161,6 +161,7 @@ export class Users {
         meter.setAttribute("max", "100")
         meter.setAttribute("value", calculateMean(data.value.map(d => d.point)).toString())
         meter.setAttribute("low", this.thresholds[0].toString())
+        meter.setAttribute("optimum", "99.99")
         meter.setAttribute("high", this.thresholds[1].toString())
         meterCol.appendChild(meter)
         row.appendChild(meterCol)
@@ -183,17 +184,6 @@ export class Users {
             col.classList.add("col-4", "xx-small")
             col.innerHTML = name
             return col
-        }
-    }
-    protected getUserStatisticBinName(data: IReflectionAuthor, thresholds: number[]): string {
-        let distressed = thresholds[0];
-        let soaring = thresholds[1];
-        if (data.point <= distressed) {
-            return "Distressed";
-        } else if (data.point >= soaring) {
-            return "Soaring";
-        } else {
-            return "GoingOK";
         }
     }
 }

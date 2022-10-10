@@ -1,4 +1,4 @@
-import { IAdminAnalyticsData, IReflectionAuthor } from "../../data/data.js";
+import { IAdminAnalyticsData } from "../../data/data.js";
 import { Sort } from "../../interactions/sort.js";
 export declare class Users {
     id: string;
@@ -16,5 +16,4 @@ export declare class Users {
     private renderReflections;
     private handleSort;
     private renderUserMeter;
-    protected getUserStatisticBinName(data: IReflectionAuthor, thresholds: number[]): string;
 }

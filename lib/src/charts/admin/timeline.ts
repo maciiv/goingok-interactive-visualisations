@@ -5,7 +5,8 @@ import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
 import { Transitions } from "../../interactions/transitions.js";
 import { Zoom } from "../../interactions/zoom.js";
 import { maxDate, minDate } from "../../utils/utils.js";
-import { ChartTime, ChartTimeZoom, ExtendChart } from "../chartBase.js";
+import { ChartTime, ExtendChart, IChart, IChartScales } from "../chartBase.js";
+import { ChartTimeAxis, ChartLinearAxis } from "../scaleBase.js";
 
 export class Timeline<T> extends ChartTime {
     zoomChart: ChartTimeZoom
@@ -38,15 +39,14 @@ export class Timeline<T> extends ChartTime {
         let _this = this
 
         if (_this.data.length == 0) {
-            d3.select(`#${_this.id} .card-subtitle`)
+            d3.selectAll(`#${_this.id} .card-subtitle span`)
                 .html("");
         } else {
-            d3.select(`#${_this.id} .card-subtitle`)
-                .classed("instructions", _this.data.length <= 1)
-                .classed("text-muted", _this.data.length != 1)
-                .html(_this.data.length != 1 ? `The oldest reflection was on ${_this.minTimelineDate().toDateString()} in the group code ${_this.data[d3.minIndex(_this.data.map(d => d3.min(d.value.map(d => d.timestamp))))].group}, while
-                    the newest reflection was on ${_this.maxTimelineDate().toDateString()} in the group code ${_this.data[d3.maxIndex(_this.data.map(d => d3.max(d.value.map(d => d.timestamp))))].group}` :
-                    `Filtering by <span class="badge badge-pill badge-info">${_this.data[0].group} <i class="fas fa-window-close"></i></span>`)
+            d3.select(`#${_this.id} .card-subtitle .instructions`)
+                .html(_this.data.length == 1 ? `Filtering by <span class="badge badge-pill badge-info pointer">${_this.data[0].group} <i class="fas fa-window-close"></i></span>` : null)    
+            d3.select(`#${_this.id} .card-subtitle .text-muted`)
+                .html(`The oldest reflection was on ${_this.minTimelineDate().toDateString()}${_this.data.length != 1 ? ` in the group code ${_this.data[d3.minIndex(_this.data.map(d => d3.min(d.value.map(d => d.timestamp))))].group}` : ""}, while
+                    the newest reflection was on ${_this.maxTimelineDate().toDateString()}${_this.data.length != 1 ? ` in the group code ${_this.data[d3.maxIndex(_this.data.map(d => d3.max(d.value.map(d => d.timestamp))))].group}` : ""}`)
         }
 
         //Draw circles
@@ -177,5 +177,14 @@ export class Timeline<T> extends ChartTime {
     protected maxTimelineDate(data?: IAdminAnalyticsData[]): Date {
         const processData = data === undefined ? this.data : data
         return maxDate(processData.map(d => maxDate(d.value.map(c => c.timestamp))))
+    }
+}
+
+class ChartTimeZoom implements IChartScales {
+    x: ChartTimeAxis;
+    y: ChartLinearAxis;
+    constructor(chart: IChart, domain: Date[]) {
+        this.x = new ChartTimeAxis("", domain, [0, chart.width - chart.padding.yAxis - 5]);
+        this.y = new ChartLinearAxis("", [0, 100], [25, 0], "left");
     }
 }

@@ -1,4 +1,4 @@
-//;
+;
 import { IChart } from "./chartBase.js";
 export interface IChartElements {
     svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>;

@@ -1,10 +1,11 @@
-//;
+;
 import { IAdminAnalyticsData } from "../../data/data.js";
 import { ClickAdmin } from "../../interactions/click.js";
 import { Tooltip } from "../../interactions/tooltip.js";
 import { Transitions } from "../../interactions/transitions.js";
 import { Zoom } from "../../interactions/zoom.js";
-import { ChartTime, ChartTimeZoom, ExtendChart } from "../chartBase.js";
+import { ChartTime, ExtendChart, IChart, IChartScales } from "../chartBase.js";
+import { ChartTimeAxis, ChartLinearAxis } from "../scaleBase.js";
 export declare class Timeline<T> extends ChartTime {
     zoomChart: ChartTimeZoom;
     tooltip: Tooltip;
@@ -22,3 +23,9 @@ export declare class Timeline<T> extends ChartTime {
     protected minTimelineDate(data?: IAdminAnalyticsData[]): Date;
     protected maxTimelineDate(data?: IAdminAnalyticsData[]): Date;
 }
+declare class ChartTimeZoom implements IChartScales {
+    x: ChartTimeAxis;
+    y: ChartLinearAxis;
+    constructor(chart: IChart, domain: Date[]);
+}
+export {};

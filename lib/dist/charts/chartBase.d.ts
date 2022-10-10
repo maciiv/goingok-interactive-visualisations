@@ -1,11 +1,11 @@
 import { ChartSeriesAxis, ChartTimeAxis, ChartLinearAxis } from "./scaleBase.js";
 import { IHelp } from "./help.js";
 import { IChartElements } from "./render.js";
-interface IChartScales {
+export interface IChartScales {
     x: ChartSeriesAxis | ChartTimeAxis | ChartLinearAxis;
     y: ChartLinearAxis | ChartSeriesAxis;
 }
-interface IChartBasic {
+export interface IChartBasic {
     id: string;
     width: number;
     height: number;
@@ -54,11 +54,6 @@ export declare class ChartTime implements IChart {
     click: boolean;
     constructor(id: string, domain: Date[], chartPadding?: ChartPadding);
 }
-export declare class ChartTimeZoom implements IChartScales {
-    x: ChartTimeAxis;
-    y: ChartLinearAxis;
-    constructor(chart: IChart, domain: Date[]);
-}
 export declare class UserChart implements IChart {
     id: string;
     width: number;
@@ -70,4 +65,3 @@ export declare class UserChart implements IChart {
     click: boolean;
     constructor(id: string, containerClass: string);
 }
-export {};

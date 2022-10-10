@@ -1,4 +1,4 @@
-import { IAdminAnalyticsData, IAdminAnalyticsDataStats, IReflectionAuthor } from "../data/data.js";
+import { IAdminAnalyticsData, IAdminAnalyticsDataStats } from "../data/data.js";
 import { IAdminAnalyticsDataRaw } from "../data/db.js";
 import { Histogram } from "../charts/admin/histogram.js";
 import { BarChart } from "../charts/admin/barChart.js";
@@ -14,6 +14,5 @@ export declare class Dashboard {
     constructor(data: IAdminAnalyticsDataStats[]);
     sidebarBtn(): void;
     preloadGroups(allEntries: IAdminAnalyticsData[], enable?: boolean): IAdminAnalyticsData[];
-    protected getUserStatisticBinName(data: IReflectionAuthor, thresholds: number[]): string;
 }
 export declare function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyticsDataRaw[]): Promise<void>;

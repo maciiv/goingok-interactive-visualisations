@@ -19,6 +19,12 @@
 Admin CSS
 ***************************************************/
 
+:root {
+    --optimum: #006622;
+    --sub-optimum: #002db3;
+    --sub-sub-optimum: #ff9900;
+}
+
 #sidebar {
     width: 300px;
     background: #000000;
@@ -129,7 +135,7 @@ Admin CSS
     fill-opacity: 0.75;
 }
 
-.bar, .circle {
+.bar, .circle, .pointer {
     cursor: pointer;
 }
 
@@ -174,13 +180,6 @@ Admin CSS
 .author-line, .line {
     fill: none;
     stroke: #3399CC;
-}
-
-.group-area {
-    fill: #ff6600;
-    fill-opacity: 0.2;
-    stroke: #ff6600;
-    opacity: 0.3;
 }
 
 .tooltip-container {
@@ -261,12 +260,12 @@ Admin CSS
 }
 
 .threshold-line.distressed {
-    stroke: #377eb8;
+    stroke: var(--sub-sub-optimum);
 }
 
 
 .threshold-line.soaring {
-    stroke: #ff7f00;
+    stroke: var(--optimum);
 }
 
 
@@ -278,13 +277,13 @@ Admin CSS
 }
 
 .threshold-indicator-box.soaring {
-    stroke: #ff7f00;
-    fill: #ff7f00;
+    stroke: var(--optimum);
+    fill: var(--optimum);
 }
 
 .threshold-indicator-box.distressed {
-    stroke: #377eb8;
-    fill: #377eb8;
+    stroke: var(--sub-sub-optimum);
+    fill: var(--sub-sub-optimum);
 }
 
 .threshold-indicator-text {
@@ -326,25 +325,16 @@ Admin CSS
     background-color:#ffff80;
 }
 
-.bin-name.distressed {
-    color: #006fe6;
-}
-
-.bin-name.soaring {
-    color: #ff9900;
-}
-
-.bin-name.goingok {
-    color: #2eb82e;
-}
-
 .xx-small {
     font-size: xx-small;
 }
 
-meter.user-meter {
-    --sub-optimum: #ff9900;
-    --sub-sub-optimum: #006fe6;
+meter.user-meter:-moz-meter-optimum::-moz-meter-bar {
+    background: var(--optimum);
+}
+
+meter.user-meter::-webkit-meter-optimum-value {
+    background: var(--optimum);
 }
 
 meter.user-meter:-moz-meter-sub-optimum::-moz-meter-bar {
@@ -352,15 +342,15 @@ meter.user-meter:-moz-meter-sub-optimum::-moz-meter-bar {
 }
 
 meter.user-meter::-webkit-meter-suboptimum-value {
-background: var(--sub-optimum);
+    background: var(--sub-optimum);
 }
 
 meter.user-meter:-moz-meter-sub-sub-optimum::-moz-meter-bar {
-background: var(--sub-sub-optimum);
+    background: var(--sub-sub-optimum);
 }
 
 meter.user-meter::-webkit-meter-even-less-good-value {
-background: var(--sub-sub-optimum);
+    background: var(--sub-sub-optimum);
 }
 
 /**************************************************

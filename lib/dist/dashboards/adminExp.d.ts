@@ -8,12 +8,12 @@ export declare class ExperimentalDashboard extends Dashboard {
     sorted: string;
     sort: Sort;
     help: Help;
+    constructor(data: IAdminAnalyticsDataStats[]);
     preloadGroups(entries: IAdminAnalyticsData[]): IAdminAnalyticsData[];
     handleGroups(): void;
     handleGroupsColours(): void;
     handleGroupsSort(): void;
     handleFilterButton(): void;
-    constructor(data: IAdminAnalyticsDataStats[]);
     extendBarChart(dashboard: ExperimentalDashboard): void;
     extendHistogram(dashboard: ExperimentalDashboard): import("../charts/admin/histogram.js").Histogram<ExperimentalDashboard>;
     extendTimeline(dashboard: ExperimentalDashboard): import("../charts/admin/timeline.js").Timeline<ExperimentalDashboard>;

@@ -47,7 +47,7 @@ export class Histogram<T> extends ChartSeries {
         let _this = this
 
         d3.select(`#${_this.id} .card-subtitle`)
-            .html(_this.data.length == 1 ? `Filtering by <span class="badge badge-pill badge-info">${_this.data[0].group} <i class="fas fa-window-close"></i></span>` :
+            .html(_this.data.length == 1 ? `Filtering by <span class="badge badge-pill badge-info pointer">${_this.data[0].group} <i class="fas fa-window-close"></i></span>` :
                 "");
 
         //Process histogram

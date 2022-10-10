@@ -1,6 +1,6 @@
 import d3 from "d3";
 import { Help } from "../charts/help.js";
-import { IAdminAnalyticsData, IAdminAnalyticsDataStats, IReflectionAuthor, AdminAnalyticsData, AdminAnalyticsDataStats } from "../data/data.js";
+import { IAdminAnalyticsData, IAdminAnalyticsDataStats, AdminAnalyticsData, AdminAnalyticsDataStats } from "../data/data.js";
 import { IAdminAnalyticsDataRaw, AdminAnalyticsDataRaw } from "../data/db.js";
 import { Loading } from "../utils/loading.js";
 import { Tutorial, TutorialData } from "../utils/tutorial.js";
@@ -61,17 +61,6 @@ export class Dashboard {
                 .property("disabled", !enable))
 
         return allEntries;
-    };
-    protected getUserStatisticBinName(data: IReflectionAuthor, thresholds: number[]): string {
-        let distressed = thresholds[0];
-        let soaring = thresholds[1];
-        if (data.point <= distressed) {
-            return "Distressed";
-        } else if (data.point >= soaring) {
-            return "Soaring";
-        } else {
-            return "GoingOK";
-        }
     }
 }
 
