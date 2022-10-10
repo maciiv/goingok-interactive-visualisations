@@ -1,8 +1,9 @@
 import d3 from "d3";
-import { HistogramData, IAdminAnalyticsData, IAdminAnalyticsDataStats, IHistogramData } from "../../data/data.js";
+import { HistogramData, IAdminAnalyticsData, IAdminAnalyticsDataStats, IHistogramData, IReflectionAuthor } from "../../data/data.js";
 import { ClickAdmin } from "../../interactions/click.js";
 import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
 import { Transitions } from "../../interactions/transitions.js";
+import { groupBy, calculateMean } from "../../utils/utils.js";
 import { ChartSeries, ChartPadding, ExtendChart } from "../chartBase.js";
 import { ChartElements } from "../render.js";
 import { ChartSeriesAxis } from "../scaleBase.js";
@@ -21,7 +22,7 @@ export class Histogram<T> extends ChartSeries {
         return this._data
     }
     set data(entries: IAdminAnalyticsData[]) {
-        this._data = entries.filter(d => d.selected).map(d => d.getUsersData())
+        this._data = entries.filter(d => d.selected)
         this.x.scale.domain(entries.filter(d => d.selected).map(d => d.group));
         this.bandwidth = d3.scaleLinear()
             .range([0, this.x.scale.bandwidth()])
@@ -40,8 +41,9 @@ export class Histogram<T> extends ChartSeries {
         this.data = data
     }
     getBinData(d: IAdminAnalyticsData): HistogramData[] {
-        let bin = d3.bin().domain([0, 100]).thresholds([0, this.elements.getThresholdsValues(this)[0], this.elements.getThresholdsValues(this)[1]]);
-        return bin(d.value.map(d => d.point)).map(c => { return new HistogramData(d.value, d.group, d.colour, c, Math.round(c.length / d.value.length * 100)) })
+        const bin = d3.bin().domain([0, 100]).thresholds([0, this.elements.getThresholdsValues(this)[0], this.elements.getThresholdsValues(this)[1]])
+        const usersData = groupBy(d.value, "pseudonym").map(c => { return { "pseudonym": c.key, "point": calculateMean(c.value.map(r => r.point))} })
+        return bin(usersData.map(c => c.point)).map(c => { return new HistogramData(d.value, d.group, d.colour, c, Math.round(c.length / usersData.length * 100)) })
     }
     render() {
         let _this = this

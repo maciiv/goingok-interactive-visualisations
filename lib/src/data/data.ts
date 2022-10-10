@@ -18,7 +18,6 @@ export interface IAdminAnalyticsData {
     createDate: Date;
     colour: string;
     selected: boolean;
-    getUsersData(): AdminAnalyticsData;
 }
 
 export class AdminAnalyticsData implements IAdminAnalyticsData {
@@ -33,10 +32,6 @@ export class AdminAnalyticsData implements IAdminAnalyticsData {
         this.createDate = createDate;
         this.colour = colour;
         this.selected = selected;
-    }
-    getUsersData(): AdminAnalyticsData {
-        let usersMean = groupBy(this.value, "pseudonym").map(d => { return { "pseudonym": d.key, "point": calculateMean(d.value.map(d => d.point))} as IReflectionAuthor})
-        return new AdminAnalyticsData(this.group, usersMean, this.createDate, this.colour);
     }
 }
 
@@ -119,7 +114,7 @@ export class HistogramData extends AdminAnalyticsData implements IHistogramData 
     bin: d3.Bin<number, number>;
     percentage: number;
     constructor(value: IReflectionAuthor[], group: string, colour: string, bin: d3.Bin<number, number>, percentage: number) {
-        super(group, value, undefined, colour);
+        super(group, bin.x0 === 0 ? value.filter(d => d.point < bin.x1) : bin.x1 === 100 ? value.filter(d => d.point > bin.x0) : value.filter(d => d.point < bin.x1 && d.point > bin.x0), undefined, colour);
         this.bin = bin;
         this.percentage = percentage;
     }

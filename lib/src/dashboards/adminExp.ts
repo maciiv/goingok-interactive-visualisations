@@ -181,7 +181,8 @@ export class ExperimentalDashboard extends Dashboard {
         d3.select(`#${chart.id} .badge`).on("click", () => _this.handleFilterButton())
 
         chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
-            chart.clicking.removeClick(chart);
+            chart.clicking.removeClick(chart)
+            _this.timeline.data = chart.data
         });
 
         //Add drag functions to the distressed threshold
@@ -243,12 +244,13 @@ export class ExperimentalDashboard extends Dashboard {
         function onClick(e: Event, d: HistogramData) {
             if (d3.select(this).attr("class").includes("clicked")) {
                 chart.clicking.removeClick(chart)
+                _this.timeline.data = chart.data
                 return
             }
             chart.clicking.removeClick(chart)
             chart.click = true
             chart.clicking.appendThresholdPercentages(chart, chart.data, d)
-            _this.timeline.data = chart.data.filter(c => c.value.map(r => d.bin.x0 === 0 ? r.point < d.bin.x1 : d.bin.x1 === 100 ? r.point > d.bin.x0 : r.point > d.bin.x0 && r.point < d.bin.x1))
+            _this.timeline.data = [d]
         }
 
         return chart;
@@ -271,9 +273,11 @@ export class ExperimentalDashboard extends Dashboard {
         if (_this.histogram.click) {
             d3.select(`#${chart.id} .instructions`)
                 .append("span")
-                .attr("class", "badge badge-pill badge-info pointer distribution")
-                .html(`<i class="fas fa-window-close"></i>`)
-                .on("click", () => _this.handleFilterButton())
+                .attr("class", "badge badge-pill badge-info pointer")
+                .html(`Users <i class="fas fa-window-close"></i>`)
+                .on("click", () => {
+                    _this.histogram.clicking.removeClick(_this.histogram)
+                })
         }
 
         chart.clicking.enableClick(chart, onClick)

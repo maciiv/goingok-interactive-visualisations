@@ -14,7 +14,6 @@ export interface IAdminAnalyticsData {
     createDate: Date;
     colour: string;
     selected: boolean;
-    getUsersData(): AdminAnalyticsData;
 }
 export declare class AdminAnalyticsData implements IAdminAnalyticsData {
     group: string;
@@ -23,7 +22,6 @@ export declare class AdminAnalyticsData implements IAdminAnalyticsData {
     colour: string;
     selected: boolean;
     constructor(group: string, value: IReflectionAuthor[], createDate?: Date, colour?: string, selected?: boolean);
-    getUsersData(): AdminAnalyticsData;
 }
 export interface IDataStats {
     stat: string;
