@@ -48,7 +48,7 @@ export class Histogram<T> extends ChartSeries {
         })
     }
     render() {
-        let _this = this
+        const _this = this
 
         d3.select(`#${_this.id} .card-subtitle`)
             .html(_this.data.length == 1 ? `Filtering by <span class="badge badge-pill badge-info pointer">${_this.data[0].group} <i class="fas fa-window-close"></i></span>` :
@@ -124,6 +124,11 @@ export class Histogram<T> extends ChartSeries {
             _this.tooltip.removeTooltip(_this);
         }
 
+        if (_this.click) {
+            const clickData = this.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IHistogramData
+            _this.clicking.removeClick(this)
+            _this.clicking.appendThresholdPercentages(this, _this.data, clickData)
+        }
     }
 }
 

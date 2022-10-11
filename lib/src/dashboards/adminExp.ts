@@ -138,6 +138,7 @@ export class ExperimentalDashboard extends Dashboard {
     handleFilterButton(): void {
         const data = this.entries.filter(d => d.selected)
         this.barChart.clicking.removeClick(this.barChart)
+        this.histogram.clicking.removeClick(this.histogram)
         this.histogram.data = data
         this.timeline.data = data
         this.totals.data = data
@@ -150,6 +151,7 @@ export class ExperimentalDashboard extends Dashboard {
         chart.clicking.enableClick(chart, onClick)
         chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
             chart.clicking.removeClick(chart)
+            _this.histogram.clicking.removeClick(_this.histogram)
             _this.totals.data = chart.data
             _this.histogram.data = chart.data
             _this.timeline.data = chart.data
