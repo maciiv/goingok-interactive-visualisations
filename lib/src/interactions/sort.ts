@@ -28,7 +28,9 @@ export class Sort implements ISort {
     setChevronVisibility(id: string, option: string): void {
         const parentEl = this.getParentEl(id, option)
         document.querySelectorAll(`#${id} .btn-group-toggle i`).forEach(c => c.classList.add("d-none"))
+        document.querySelectorAll(`#${id} .btn-group-toggle label`).forEach(c => c.classList.remove("active"))
         parentEl.querySelector("i").classList.remove("d-none")
+        parentEl.classList.add("active")
     }
     handleChevronChange(id: string, option: string, chevron: string): void {
         const parentEl = this.getParentEl(id, option)

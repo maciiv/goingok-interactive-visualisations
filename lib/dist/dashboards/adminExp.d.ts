@@ -1,4 +1,4 @@
-import { IAdminAnalyticsData, IAdminAnalyticsDataStats } from "../data/data.js";
+import { IAdminAnalyticsData } from "../data/data.js";
 import { Dashboard } from "./adminControl.js";
 import { IAdminAnalyticsDataRaw } from "../data/db.js";
 import { Sort } from "../interactions/sort.js";
@@ -8,7 +8,7 @@ export declare class ExperimentalDashboard extends Dashboard {
     sorted: string;
     sort: Sort;
     help: Help;
-    constructor(data: IAdminAnalyticsDataStats[]);
+    constructor(data: IAdminAnalyticsData[]);
     preloadGroups(entries: IAdminAnalyticsData[]): IAdminAnalyticsData[];
     handleGroups(): void;
     handleGroupsColours(): void;

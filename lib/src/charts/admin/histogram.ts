@@ -1,5 +1,5 @@
 import d3 from "d3";
-import { HistogramData, IAdminAnalyticsData, IAdminAnalyticsDataStats, IHistogramData, IReflectionAuthor } from "../../data/data.js";
+import { HistogramData, IAdminAnalyticsData, IHistogramData } from "../../data/data.js";
 import { ClickAdmin } from "../../interactions/click.js";
 import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
 import { Transitions } from "../../interactions/transitions.js";
@@ -31,7 +31,7 @@ export class Histogram<T> extends ChartSeries {
         this.render();
         this.extend !== undefined && this.dashboard !== undefined ? this.extend(this.dashboard) : null
     }
-    constructor(data: IAdminAnalyticsDataStats[]) {
+    constructor(data: IAdminAnalyticsData[]) {
         super("histogram", data.map(d => d.group));
         this.padding = new ChartPadding(40, 75, 5, 85);
         this.x = new ChartSeriesAxis("Group Code", data.map(d => d.group), [0, this.width - this.padding.yAxis - this.padding.right]);
@@ -42,8 +42,10 @@ export class Histogram<T> extends ChartSeries {
     }
     getBinData(d: IAdminAnalyticsData): HistogramData[] {
         const bin = d3.bin().domain([0, 100]).thresholds([0, this.elements.getThresholdsValues(this)[0], this.elements.getThresholdsValues(this)[1]])
-        const usersData = groupBy(d.value, "pseudonym").map(c => { return { "pseudonym": c.key, "point": calculateMean(c.value.map(r => r.point))} })
-        return bin(usersData.map(c => c.point)).map(c => { return new HistogramData(d.value, d.group, d.colour, c, Math.round(c.length / usersData.length * 100)) })
+        const usersData = groupBy(d.value, "pseudonym").map(c => { return { "pseudonym": c.key, "mean": calculateMean(c.value.map(r => r.point))} })
+        return bin(usersData.map(c => c.mean)).map(c => { 
+            return new HistogramData(d.value.filter(a => usersData.filter(r => c.includes(r.mean)).map(r => r.pseudonym).includes(a.pseudonym)), d.group, d.colour, c, Math.round(c.length / usersData.length * 100)) 
+        })
     }
     render() {
         let _this = this

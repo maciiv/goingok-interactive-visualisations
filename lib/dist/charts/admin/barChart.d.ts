@@ -1,4 +1,4 @@
-import { IAdminAnalyticsDataStats } from "../../data/data.js";
+import { IAdminAnalyticsData } from "../../data/data.js";
 import { ClickAdmin } from "../../interactions/click.js";
 import { Tooltip } from "../../interactions/tooltip.js";
 import { Transitions } from "../../interactions/transitions.js";
@@ -10,8 +10,8 @@ export declare class BarChart<T> extends ChartSeries {
     dashboard?: T;
     extend?: ExtendChart<T>;
     private _data;
-    get data(): IAdminAnalyticsDataStats[];
-    set data(entries: IAdminAnalyticsDataStats[]);
-    constructor(data: IAdminAnalyticsDataStats[]);
+    get data(): IAdminAnalyticsData[];
+    set data(entries: IAdminAnalyticsData[]);
+    constructor(data: IAdminAnalyticsData[]);
     render(): void;
 }

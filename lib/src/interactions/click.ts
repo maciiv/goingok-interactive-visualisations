@@ -1,4 +1,4 @@
-import { IReflectionAuthor, IAdminAnalyticsDataStats, IAdminAnalyticsData, IHistogramData, ClickTextData, IDataStats, HistogramData, IClickTextData } from "../data/data.js";
+import { IReflectionAuthor, IAdminAnalyticsData, IHistogramData, ClickTextData, IDataStats, IClickTextData } from "../data/data.js";
 import { IChart, ChartTime, ChartSeries } from "../charts/chartBase.js";
 import { ITooltipValues } from "./tooltip.js";
 import { Histogram } from "../charts/admin/histogram.js";
@@ -25,7 +25,7 @@ export class Click implements IClick {
 export interface IClickAdmin<T> extends IClick {
     appendScatterText(chart: IChart, d: IReflectionAuthor, title: string, values: ITooltipValues[]): void;
     positionClickContainer(chart: ChartTime, box: any, text: any, d: IReflectionAuthor): string;
-    appendGroupsText(chart: ChartSeries, data: IAdminAnalyticsDataStats[], clickData: IAdminAnalyticsDataStats): void;
+    appendGroupsText(chart: ChartSeries, data: IAdminAnalyticsData[], clickData: IAdminAnalyticsData): void;
     appendThresholdPercentages(chart: Histogram<T>, data: IAdminAnalyticsData[], clickData: IHistogramData): void;
 }
 
@@ -67,8 +67,8 @@ export class ClickAdmin<T> extends Click implements IClickAdmin<T> {
         };
         return `translate(${positionX}, ${positionY})`;
     };
-    appendGroupsText(chart: ChartSeries, data: IAdminAnalyticsDataStats[], clickData: IAdminAnalyticsDataStats): void {
-        chart.elements.content.classed("clicked", (d: IAdminAnalyticsDataStats) => d.group == clickData.group);
+    appendGroupsText(chart: ChartSeries, data: IAdminAnalyticsData[], clickData: IAdminAnalyticsData): void {
+        chart.elements.content.classed("clicked", (d: IAdminAnalyticsData) => d.group == clickData.group);
 
         chart.elements.contentContainer.selectAll<SVGGElement, unknown>(".click-container")
             .data(data)

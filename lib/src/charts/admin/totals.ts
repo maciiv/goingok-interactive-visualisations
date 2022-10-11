@@ -1,16 +1,16 @@
 import d3 from "d3";
-import { IAdminAnalyticsDataStats } from "../../data/data.js";
+import { IAdminAnalyticsData } from "../../data/data.js";
 
 export class Totals {
-    private _data: IAdminAnalyticsDataStats[]
+    private _data: IAdminAnalyticsData[]
     get data() {
         return this._data
     }
-    set data(entries: IAdminAnalyticsDataStats[]) {
+    set data(entries: IAdminAnalyticsData[]) {
         this._data = entries.filter(d => d.selected)
         this.render()
     }
-    constructor(data: IAdminAnalyticsDataStats[]) {
+    constructor(data: IAdminAnalyticsData[]) {
         this.data = data;
     }
     render() : void {

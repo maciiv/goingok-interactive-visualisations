@@ -12,7 +12,9 @@ export class Users {
         return this._data
     }
     set data(entries: IAdminAnalyticsData[]) {
-        this._data = entries.filter(d => d.selected);
+        this._data = entries.filter(d => d.selected)
+        this.sort.setChevronVisibility("sort-users", "name")
+        this.sort.handleChevronChange("sort-users", "name", "fa-chevron-down")
         this.render()
     }
     private _thresholds = [30 , 70]

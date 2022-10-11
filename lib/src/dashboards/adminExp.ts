@@ -1,6 +1,6 @@
 import d3 from "d3";
 import { ChartSeries } from "../charts/chartBase.js";
-import { IAdminAnalyticsData, IAdminAnalyticsDataStats, AdminAnalyticsDataStats, IHistogramData, IReflectionAuthor, HistogramData, ITimelineData, AdminAnalyticsData } from "../data/data.js";
+import { IAdminAnalyticsData, IHistogramData, IReflectionAuthor, HistogramData, ITimelineData, AdminAnalyticsData } from "../data/data.js";
 import { Dashboard } from "./adminControl.js";
 import { IAdminAnalyticsDataRaw, AdminAnalyticsDataRaw } from "../data/db.js";
 import { Loading } from "../utils/loading.js";
@@ -13,7 +13,7 @@ export class ExperimentalDashboard extends Dashboard {
     sorted = ""
     sort = new Sort()
     help = new Help()
-    constructor(data: IAdminAnalyticsDataStats[]) {
+    constructor(data: IAdminAnalyticsData[]) {
         super(data)
         this.barChart.extend = this.extendBarChart
         this.barChart.dashboard = this
@@ -43,11 +43,11 @@ export class ExperimentalDashboard extends Dashboard {
         return d3.filter(entries, d => d.selected == true);
     }
     handleGroups(): void {
-        let _this = this;
-        let inputs = d3.selectAll("#all-groups input[type=checkbox]")
+        const _this = this;
+        const inputs = d3.selectAll("#all-groups input[type=checkbox]")
         inputs.on("change", (e: Event) => {
-            let target = e.target as HTMLInputElement;
-            let entry = _this.entries.find(d => d.group == target.value)
+            const target = e.target as HTMLInputElement;
+            const entry = _this.entries.find(d => d.group == target.value)
             if (target.checked) {
                 if (entry !== undefined) {
                     entry.selected = true
@@ -63,8 +63,8 @@ export class ExperimentalDashboard extends Dashboard {
                     inputs.property("checked", false)
                 };
             }
-            let data = _this.entries.map(d => new AdminAnalyticsDataStats(d))
-            let clickData = _this.getClickData(_this.barChart.elements.contentContainer) as IAdminAnalyticsDataStats;
+            let data = _this.entries
+            let clickData = _this.getClickData(_this.barChart.elements.contentContainer) as IAdminAnalyticsData;
             _this.barChart.data = data
             if (_this.barChart.click) {
                 if (!target.checked && target.value == clickData.group) {
@@ -84,15 +84,15 @@ export class ExperimentalDashboard extends Dashboard {
         });
     }
     handleGroupsColours(): void {
-        let _this = this;
+        const _this = this;
         d3.selectAll("#groups input[type=color]").on("change", (e: Event) => {
             let target = e.target as HTMLInputElement;
             let groupId = target.id.replace("colour-", "");
             _this.entries.find(d => d.group == groupId).colour = target.value;
-            let data = _this.entries.filter(d => d.selected).map(d => new AdminAnalyticsDataStats(d))
+            let data = _this.entries.filter(d => d.selected)
             _this.barChart.data = data
             if (_this.barChart.click) {
-                let clickData = _this.getClickData(_this.barChart.elements.contentContainer) as IAdminAnalyticsDataStats;
+                let clickData = _this.getClickData(_this.barChart.elements.contentContainer) as IAdminAnalyticsData;
                 if (clickData.group == groupId) {
                     _this.timeline.data = [_this.entries.find(d => d.group == groupId)];
                     _this.histogram.data = [clickData];
@@ -123,9 +123,9 @@ export class ExperimentalDashboard extends Dashboard {
                 }
             });
             _this.sorted = _this.sort.setSorted(_this.sorted, selectedOption);
-            let data = _this.entries.filter(d => d.selected).map(d => new AdminAnalyticsDataStats(d))
+            let data = _this.entries.filter(d => d.selected)
             _this.barChart.data = data
-            let groupClickData = _this.getClickData(_this.barChart.elements.contentContainer) as IAdminAnalyticsDataStats;
+            let groupClickData = _this.getClickData(_this.barChart.elements.contentContainer) as IAdminAnalyticsData;
             if (_this.barChart.click) {              
                 _this.barChart.clicking.appendGroupsText(_this.barChart, data, groupClickData);               
             } else {
@@ -136,8 +136,8 @@ export class ExperimentalDashboard extends Dashboard {
         });
     }
     handleFilterButton(): void {
-        const data = this.entries.filter(d => d.selected).map(d => new AdminAnalyticsDataStats(d))
-        this.barChart.clicking.removeClick(this.barChart);
+        const data = this.entries.filter(d => d.selected)
+        this.barChart.clicking.removeClick(this.barChart)
         this.histogram.data = data
         this.timeline.data = data
         this.totals.data = data
@@ -155,7 +155,7 @@ export class ExperimentalDashboard extends Dashboard {
             _this.timeline.data = chart.data
             _this.users.data = chart.data
         });
-        function onClick(e: Event, d: IAdminAnalyticsDataStats) {
+        function onClick(e: Event, d: IAdminAnalyticsData) {
             if (d3.select(this).attr("class").includes("clicked")) {
                 chart.clicking.removeClick(chart)
                 _this.totals.data = chart.data
@@ -182,7 +182,9 @@ export class ExperimentalDashboard extends Dashboard {
 
         chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
             chart.clicking.removeClick(chart)
+            _this.totals.data = chart.data
             _this.timeline.data = chart.data
+            _this.users.data = chart.data
         });
 
         //Add drag functions to the distressed threshold
@@ -236,6 +238,8 @@ export class ExperimentalDashboard extends Dashboard {
             if (chart.click) {
                 let clickData = chart.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IHistogramData
                 chart.clicking.appendThresholdPercentages(chart, chart.data, clickData)
+                _this.timeline.data = [clickData]
+                _this.users.data = [clickData]
             } 
             _this.users.thresholds = chart.elements.getThresholdsValues(chart)
         }
@@ -244,13 +248,17 @@ export class ExperimentalDashboard extends Dashboard {
         function onClick(e: Event, d: HistogramData) {
             if (d3.select(this).attr("class").includes("clicked")) {
                 chart.clicking.removeClick(chart)
+                _this.totals.data = chart.data
                 _this.timeline.data = chart.data
+                _this.users.data = chart.data
                 return
             }
             chart.clicking.removeClick(chart)
             chart.click = true
             chart.clicking.appendThresholdPercentages(chart, chart.data, d)
+            _this.totals.data = [d]
             _this.timeline.data = [d]
+            _this.users.data = [d]
         }
 
         return chart;
@@ -277,6 +285,12 @@ export class ExperimentalDashboard extends Dashboard {
                 .html(`Users <i class="fas fa-window-close"></i>`)
                 .on("click", () => {
                     _this.histogram.clicking.removeClick(_this.histogram)
+                    if (_this.barChart.click) {
+                        _this.timeline.data = _this.histogram.data
+                        _this.users.data = _this.histogram.data
+                    } else {
+                        _this.handleFilterButton()  
+                    }                 
                 })
         }
 
@@ -368,13 +382,12 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAdminAnal
     loading.isLoading = false;
     loading.removeDiv();
     async function drawCharts(allEntries: IAdminAnalyticsData[]) {
-        const data = allEntries.map(d => new AdminAnalyticsDataStats(d));
-        const dashboard = new ExperimentalDashboard(data);
+        const dashboard = new ExperimentalDashboard(allEntries)
         //Handle sidebar button
-        dashboard.sidebarBtn();
+        dashboard.sidebarBtn()
 
         //Preloaded groups
-        dashboard.preloadGroups(allEntries);
+        dashboard.preloadGroups(allEntries)
 
         //Handle groups chart help
         dashboard.help.helpPopover(dashboard.barChart.id, `<b>Bar chart</b><br>

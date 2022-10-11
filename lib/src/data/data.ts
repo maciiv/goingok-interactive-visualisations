@@ -13,25 +13,43 @@ export interface IReflectionAuthor extends IReflection {
 }
 
 export interface IAdminAnalyticsData {
-    group: string;
-    value: IReflectionAuthor[];
-    createDate: Date;
-    colour: string;
-    selected: boolean;
+    group: string
+    value: IReflectionAuthor[]
+    createDate: Date
+    colour: string
+    selected: boolean
+    stats: IDataStats[]
+    getStat(stat: string): IDataStats
 }
 
 export class AdminAnalyticsData implements IAdminAnalyticsData {
-    group: string;
-    value: IReflectionAuthor[];
-    createDate: Date;
-    colour: string;
-    selected: boolean;
+    group: string
+    value: IReflectionAuthor[]
+    createDate: Date
+    colour: string
+    selected: boolean
+    stats = [] as IDataStats[]
     constructor(group: string, value: IReflectionAuthor[], createDate: Date = undefined, colour: string = undefined, selected: boolean = true) {
-        this.group = group;
-        this.value = value;
-        this.createDate = createDate;
-        this.colour = colour;
-        this.selected = selected;
+        this.group = group
+        this.value = value
+        this.createDate = createDate
+        this.colour = colour
+        this.selected = selected
+        let uniqueUsers = groupBy(value, "pseudonym")
+        this.stats.push(new DataStats("usersTotal", "Users", uniqueUsers.length))
+        this.stats.push(new DataStats("refTotal", "Reflections", value.length))
+        this.stats.push(new DataStats("mean", "Mean", Math.round(calculateMean(value.map(r => r.point)))));
+        this.stats.push(new DataStats("oldRef", "Oldest reflection", new Date(Math.min.apply(null, value.map(r => new Date(r.timestamp))))))
+        this.stats.push(new DataStats("newRef", "Newest reflection", new Date(Math.max.apply(null, value.map(r => new Date(r.timestamp))))))
+        this.stats.push(new DataStats("ruRate", "Reflections per user", Math.round(value.length / uniqueUsers.length * 100) / 100))
+    }
+    getStat(stat: string): IDataStats {
+        var exists = this.stats.find(d => d.stat == stat);
+        if (exists != undefined) {
+            return exists;
+        } else {
+            return new DataStats("na", "Not found", 0);
+        }
     }
 }
 
@@ -49,34 +67,6 @@ export class DataStats implements IDataStats {
         this.stat = stat,
         this.displayName = displayName,
         this.value = value
-    }
-}
-
-export interface IAdminAnalyticsDataStats extends IAdminAnalyticsData {
-    stats: IDataStats[];
-    getStat(stat: string): IDataStats;
-}
-
-export class AdminAnalyticsDataStats extends AdminAnalyticsData implements IAdminAnalyticsDataStats {
-    stats: IDataStats[];
-    constructor(entries: IAdminAnalyticsData) {
-        super(entries.group, entries.value, entries.createDate, entries.colour, entries.selected);
-        let uniqueUsers = groupBy(entries.value, "pseudonym");
-        this.stats = [];
-        this.stats.push(new DataStats("usersTotal", "Users", uniqueUsers.length))
-        this.stats.push(new DataStats("refTotal", "Reflections", entries.value.length))
-        this.stats.push(new DataStats("mean", "Mean", Math.round(calculateMean(entries.value.map(r => r.point)))));
-        this.stats.push(new DataStats("oldRef", "Oldest reflection", new Date(Math.min.apply(null, entries.value.map(r => new Date(r.timestamp))))))
-        this.stats.push(new DataStats("newRef", "Newest reflection", new Date(Math.max.apply(null, entries.value.map(r => new Date(r.timestamp))))))
-        this.stats.push(new DataStats("ruRate", "Reflections per user", Math.round(entries.value.length / uniqueUsers.length * 100) / 100))
-    };
-    getStat(stat: string): IDataStats {
-        var exists = this.stats.find(d => d.stat == stat);
-        if (exists != undefined) {
-            return exists;
-        } else {
-            return new DataStats("na", "Not found", 0);
-        }
     }
 }
 
@@ -106,17 +96,17 @@ export class TimelineData implements ITimelineData {
 }
 
 export interface IHistogramData extends IAdminAnalyticsData {
-    bin: d3.Bin<number, number>;
-    percentage: number;
+    bin: d3.Bin<number, number>
+    percentage: number
 }
 
 export class HistogramData extends AdminAnalyticsData implements IHistogramData {    
-    bin: d3.Bin<number, number>;
-    percentage: number;
+    bin: d3.Bin<number, number>
+    percentage: number
     constructor(value: IReflectionAuthor[], group: string, colour: string, bin: d3.Bin<number, number>, percentage: number) {
-        super(group, bin.x0 === 0 ? value.filter(d => d.point < bin.x1) : bin.x1 === 100 ? value.filter(d => d.point > bin.x0) : value.filter(d => d.point < bin.x1 && d.point > bin.x0), undefined, colour);
-        this.bin = bin;
-        this.percentage = percentage;
+        super(group, value, undefined, colour)
+        this.bin = bin
+        this.percentage = percentage
     }
 }
 

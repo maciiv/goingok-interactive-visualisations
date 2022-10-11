@@ -1,5 +1,5 @@
 import d3 from "d3";
-import { IAdminAnalyticsDataStats } from "../../data/data.js";
+import { IAdminAnalyticsData } from "../../data/data.js";
 import { ClickAdmin } from "../../interactions/click.js";
 import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
 import { Transitions } from "../../interactions/transitions.js";
@@ -11,11 +11,11 @@ export class BarChart<T> extends ChartSeries {
     clicking = new ClickAdmin()
     dashboard?: T
     extend?: ExtendChart<T>
-    private _data: IAdminAnalyticsDataStats[]
+    private _data: IAdminAnalyticsData[]
     get data() {
         return this._data
     }
-    set data(entries: IAdminAnalyticsDataStats[]) {
+    set data(entries: IAdminAnalyticsData[]) {
         this._data = entries.filter(d => d.selected)
         if (this.data.length != 0) {
             this.y.scale.domain([0, d3.max(this.data.map(d => d.getStat("usersTotal").value as number))]);
@@ -25,7 +25,7 @@ export class BarChart<T> extends ChartSeries {
         this.render()
         this.extend !== undefined && this.dashboard !== undefined ? this.extend(this.dashboard) : null
     }
-    constructor(data: IAdminAnalyticsDataStats[]) {
+    constructor(data: IAdminAnalyticsData[]) {
         super("users", data.map(d => d.group), false, data.map(d => d.getStat("usersTotal").value as number))
         this.data = data
     }
@@ -39,7 +39,7 @@ export class BarChart<T> extends ChartSeries {
             .html(_this.data.length <= 1 ? "Add more group codes from the left bar" : "Click a group code to filter");
 
         //Boxes processing
-        _this.elements.content = _this.elements.contentContainer.selectAll<SVGRectElement, IAdminAnalyticsDataStats>(`#${_this.id}-data`)
+        _this.elements.content = _this.elements.contentContainer.selectAll<SVGRectElement, IAdminAnalyticsData>(`#${_this.id}-data`)
             .data(_this.data)
             .join(
                 enter => enter.append("rect")
@@ -74,7 +74,7 @@ export class BarChart<T> extends ChartSeries {
 
         //Enable tooltip
         _this.tooltip.enableTooltip(_this, onMouseover, onMouseout);
-        function onMouseover(e: Event, d: IAdminAnalyticsDataStats): void {
+        function onMouseover(e: Event, d: IAdminAnalyticsData): void {
             //If box is clicked not append tooltip
             if (d3.select(this).attr("class").includes("clicked")) {
                 return;

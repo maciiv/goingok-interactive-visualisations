@@ -1,6 +1,6 @@
 import d3 from "d3";
 import { Help } from "../charts/help.js";
-import { IAdminAnalyticsData, IAdminAnalyticsDataStats, AdminAnalyticsData, AdminAnalyticsDataStats } from "../data/data.js";
+import { IAdminAnalyticsData, AdminAnalyticsData } from "../data/data.js";
 import { IAdminAnalyticsDataRaw, AdminAnalyticsDataRaw } from "../data/db.js";
 import { Loading } from "../utils/loading.js";
 import { Tutorial, TutorialData } from "../utils/tutorial.js";
@@ -16,7 +16,7 @@ export class Dashboard {
     histogram: Histogram<this>
     timeline: Timeline<this>
     users: Users
-    constructor(data: IAdminAnalyticsDataStats[]) {
+    constructor(data: IAdminAnalyticsData[]) {
         this.totals = new Totals(data)
         this.barChart = new BarChart(data)
         this.histogram = new Histogram(data)
@@ -79,9 +79,8 @@ export async function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyti
     loading.isLoading = false;
     loading.removeDiv();
     async function drawCharts(allEntries: IAdminAnalyticsData[]) {
-        const data = allEntries.map(d => new AdminAnalyticsDataStats(d));
         const help = new Help()
-        const dashboard = new Dashboard(data);
+        const dashboard = new Dashboard(allEntries);
         //Handle sidebar button
         dashboard.sidebarBtn();
         dashboard.preloadGroups(allEntries);

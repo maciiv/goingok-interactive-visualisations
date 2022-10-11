@@ -1,5 +1,5 @@
 ;
-import { HistogramData, IAdminAnalyticsData, IAdminAnalyticsDataStats } from "../../data/data.js";
+import { HistogramData, IAdminAnalyticsData } from "../../data/data.js";
 import { ClickAdmin } from "../../interactions/click.js";
 import { Tooltip } from "../../interactions/tooltip.js";
 import { Transitions } from "../../interactions/transitions.js";
@@ -17,7 +17,7 @@ export declare class Histogram<T> extends ChartSeries {
     private _data;
     get data(): IAdminAnalyticsData[];
     set data(entries: IAdminAnalyticsData[]);
-    constructor(data: IAdminAnalyticsDataStats[]);
+    constructor(data: IAdminAnalyticsData[]);
     getBinData(d: IAdminAnalyticsData): HistogramData[];
     render(): void;
 }

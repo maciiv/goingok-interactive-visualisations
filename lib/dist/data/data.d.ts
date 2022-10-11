@@ -14,6 +14,8 @@ export interface IAdminAnalyticsData {
     createDate: Date;
     colour: string;
     selected: boolean;
+    stats: IDataStats[];
+    getStat(stat: string): IDataStats;
 }
 export declare class AdminAnalyticsData implements IAdminAnalyticsData {
     group: string;
@@ -21,7 +23,9 @@ export declare class AdminAnalyticsData implements IAdminAnalyticsData {
     createDate: Date;
     colour: string;
     selected: boolean;
+    stats: IDataStats[];
     constructor(group: string, value: IReflectionAuthor[], createDate?: Date, colour?: string, selected?: boolean);
+    getStat(stat: string): IDataStats;
 }
 export interface IDataStats {
     stat: string;
@@ -33,15 +37,6 @@ export declare class DataStats implements IDataStats {
     displayName: string;
     value: number | Date;
     constructor(stat: string, displayName: string, value: number | Date);
-}
-export interface IAdminAnalyticsDataStats extends IAdminAnalyticsData {
-    stats: IDataStats[];
-    getStat(stat: string): IDataStats;
-}
-export declare class AdminAnalyticsDataStats extends AdminAnalyticsData implements IAdminAnalyticsDataStats {
-    stats: IDataStats[];
-    constructor(entries: IAdminAnalyticsData);
-    getStat(stat: string): IDataStats;
 }
 export interface ITimelineData extends IReflectionAuthor {
     colour: string;

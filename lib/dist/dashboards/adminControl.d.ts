@@ -1,4 +1,4 @@
-import { IAdminAnalyticsData, IAdminAnalyticsDataStats } from "../data/data.js";
+import { IAdminAnalyticsData } from "../data/data.js";
 import { IAdminAnalyticsDataRaw } from "../data/db.js";
 import { Histogram } from "../charts/admin/histogram.js";
 import { BarChart } from "../charts/admin/barChart.js";
@@ -11,7 +11,7 @@ export declare class Dashboard {
     histogram: Histogram<this>;
     timeline: Timeline<this>;
     users: Users;
-    constructor(data: IAdminAnalyticsDataStats[]);
+    constructor(data: IAdminAnalyticsData[]);
     sidebarBtn(): void;
     preloadGroups(allEntries: IAdminAnalyticsData[], enable?: boolean): IAdminAnalyticsData[];
 }

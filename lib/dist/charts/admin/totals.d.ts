@@ -1,8 +1,8 @@
-import { IAdminAnalyticsDataStats } from "../../data/data.js";
+import { IAdminAnalyticsData } from "../../data/data.js";
 export declare class Totals {
     private _data;
-    get data(): IAdminAnalyticsDataStats[];
-    set data(entries: IAdminAnalyticsDataStats[]);
-    constructor(data: IAdminAnalyticsDataStats[]);
+    get data(): IAdminAnalyticsData[];
+    set data(entries: IAdminAnalyticsData[]);
+    constructor(data: IAdminAnalyticsData[]);
     render(): void;
 }
