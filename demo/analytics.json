@@ -22,7 +22,7 @@
         ],
         "analytics": [
             {
-                "name": "Your Timeline",
+                "name": "0",
                 "description": "Timeline chart author",
                 "nodes": [
                     { 
@@ -159,7 +159,7 @@
                 "edges":[]
             },
             {
-                "name": "Your Network",
+                "name": "1",
                 "description": "Network chart author",
                 "nodes": [
                     { 

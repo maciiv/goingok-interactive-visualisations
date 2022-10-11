@@ -165,20 +165,30 @@ export interface INodes extends d3.SimulationNodeDatum {
 
 export interface IEdges<T> extends d3.SimulationLinkDatum<T> {
     idx: number
-    edgeType: string,
-    directional: boolean,
-    weight: number;
-    labelType: string,
-    name: string,
-    description: string,
+    edgeType: string
+    directional: boolean
+    weight: number
+    labelType: string
+    name: string
+    description: string
     selected?: boolean
-    properties: any,
-    isReflection?: boolean,
+    properties: any
+    isReflection?: boolean
 }
 
 export interface IReflectionAnalytics {
-    name: string,
-    description: string,
-    nodes: INodes[],
+    name: string
+    description: string
+    nodes: INodes[]
     edges: IEdges<INodes>[]
+}
+
+export interface IAuthorAnalyticsData {
+    reflections: IReflection[]
+    analytics: IReflectionAnalytics[]
+}
+
+export enum AnalyticsType {
+    Timeline,
+    Network
 }

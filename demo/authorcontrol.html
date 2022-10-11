@@ -104,7 +104,7 @@
         <script type="module">
             import * as chart from "../lib/dist/index.js"
             d3.json("analytics.json").then(function (c) {  
-                chart.buildControlAuthorAnalyticsCharts(c["data"]["reflections"], c["data"]["analytics"]);
+                chart.buildControlAuthorAnalyticsCharts(c["data"])
             });
         </script>
     </body>

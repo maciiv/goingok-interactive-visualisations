@@ -1,18 +1,17 @@
 import d3 from "d3";
 import { IAuthorExperimentalInteractions, AuthorExperimentalInteractions } from "../charts/interactions.js";
-import { IReflectionAnalytics, IReflection, INodes } from "../data/data.js";
+import { IReflectionAnalytics, IReflection, INodes, IAuthorAnalyticsData } from "../data/data.js";
 import { AuthorControlCharts, IAuthorControlCharts } from "./authorControl.js";
 import { Loading } from "../utils/loading.js";
 import { Tutorial, TutorialData } from "../utils/tutorial.js";
-import { ChartPadding } from "../charts/chartBase.js";
-import { ChartNetwork } from "../charts/chartNetwork.js";
-import { ChartTimeNetwork } from "../charts/chartTimeNetwork.js";
+import { Network } from "../charts/author/network.js";
+import { TimelineNetwork } from "../charts/author/timelineNetwork.js";
 
 export interface IAuthorExperimentalCharts extends IAuthorControlCharts {
     interactions: IAuthorExperimentalInteractions;
     allAnalytics: IReflectionAnalytics[];
-    timelineChart: ChartTimeNetwork;
-    networkChart: ChartNetwork;
+    timelineChart: TimelineNetwork;
+    networkChart: Network;
     sorted: string;
     handleTags(): void;
     handleTagsColours(): void;
@@ -22,8 +21,8 @@ export interface IAuthorExperimentalCharts extends IAuthorControlCharts {
 export class AuthorExperimentalCharts extends AuthorControlCharts implements IAuthorExperimentalCharts {
     interactions = new AuthorExperimentalInteractions();
     allAnalytics: IReflectionAnalytics[];
-    timelineChart: ChartTimeNetwork;
-    networkChart: ChartNetwork;
+    timelineChart: TimelineNetwork;
+    networkChart: Network;
     sorted = "date";
 
     preloadTags(entries: IReflectionAnalytics[], enable?: boolean): INodes[] {
@@ -131,7 +130,7 @@ export class AuthorExperimentalCharts extends AuthorControlCharts implements IAu
         return { "name": data.name, "description": data.description, "nodes": nodes, "edges": edges }
     }
 
-    renderTimeline(chart: ChartTimeNetwork, data: IReflection[], analytics: IReflectionAnalytics): ChartTimeNetwork {
+    renderTimeline(chart: TimelineNetwork, data: IReflection[], analytics: IReflectionAnalytics): TimelineNetwork {
         chart = super.renderTimeline(chart, data, analytics);    
 
         const _this = this
@@ -168,7 +167,7 @@ export class AuthorExperimentalCharts extends AuthorControlCharts implements IAu
         return chart;
     }
 
-    renderNetwork(chart: ChartNetwork, data: IReflectionAnalytics, reflection?: IReflection): ChartNetwork {
+    renderNetwork(chart: Network, data: IReflectionAnalytics, reflection?: IReflection): Network {
         chart = super.renderNetwork(chart, data, reflection);
 
         const _this = this;
@@ -231,12 +230,13 @@ export class AuthorExperimentalCharts extends AuthorControlCharts implements IAu
     }
 }
 
-export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflection[], analyticsRaw: IReflectionAnalytics[]) {
+export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IAuthorAnalyticsData) {
     const loading = new Loading();
     const colourScale = d3.scaleOrdinal(d3.schemeCategory10);
-    const entries = d3.sort(entriesRaw.map(d => { return { "refId": d.refId, "timestamp": new Date(d.timestamp), "point": d.point, "text": d.text } as IReflection }), d => d.timestamp);
-    const analytics = analyticsRaw.map(d => { return {"name": d.name, "description": d.description, "nodes": d.nodes.map(c => processColour(c)), "edges": d.edges } })
-    await drawCharts(entries, analytics);
+    const entries = d3.sort(entriesRaw.reflections.map(d => { return { "refId": d.refId, "timestamp": new Date(d.timestamp), "point": d.point, "text": d.text } as IReflection }), d => d.timestamp);
+    const analytics = entriesRaw.analytics.map(d => { return {"name": d.name, "description": d.description, "nodes": d.nodes.map(c => processColour(c)), "edges": d.edges, "reflections": entries } })
+    const authorAnalyticsData = {"reflections": entries, "analytics": analytics}
+    await drawCharts(authorAnalyticsData);
     new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
     new TutorialData("#timeline .circle", "Hover for information on demand"),
     new TutorialData("#network .network-node-group", "Hover for information on demand, zoom is also available")]);
@@ -250,7 +250,7 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflecti
         return node;
     }
 
-    async function drawCharts(entries: IReflection[], analytics: IReflectionAnalytics[]) {
+    async function drawCharts(data: IAuthorAnalyticsData) {
         const authorExperimentalCharts = new AuthorExperimentalCharts();
         authorExperimentalCharts.resizeTimeline()
         authorExperimentalCharts.preloadTags(analytics, true)
@@ -259,7 +259,7 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflecti
         if (analytics.find(d => d.name == "Your Network") === undefined) {
             d3.select("#network .chart-container.network").html("Chart not found  <br> Interactions won't work")
         } else {
-            authorExperimentalCharts.networkChart = new ChartNetwork("network", "chart-container.network", entries.map(d => d.timestamp));
+            authorExperimentalCharts.networkChart = new Network(data);
             authorExperimentalCharts.networkChart.simulation = authorExperimentalCharts.processSimulation(authorExperimentalCharts.networkChart, authorExperimentalCharts.allAnalytics.find(d => d.name == "Your Network"));
             authorExperimentalCharts.renderNetwork(authorExperimentalCharts.networkChart, authorExperimentalCharts.allAnalytics.find(d => d.name == "Your Network"));
     
@@ -275,7 +275,7 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflecti
         if (analytics.find(d => d.name == "Your Timeline") === undefined) {
             d3.select("#timeline .chart-container").html("Chart not found <br> Interactions won't work")
         } else {
-            authorExperimentalCharts.timelineChart = new ChartTimeNetwork("timeline", entries.map(d => d.timestamp), new ChartPadding(40, 75, 10, 10));
+            authorExperimentalCharts.timelineChart = new TimelineNetwork(data);
             entries.forEach(c => authorExperimentalCharts.processTimelineSimulation(authorExperimentalCharts.timelineChart, authorExperimentalCharts.timelineChart.x.scale(c.timestamp), authorExperimentalCharts.timelineChart.y.scale(c.point), authorExperimentalCharts.allNodes.filter(d => d.refId == c.refId)));
             authorExperimentalCharts.renderTimeline(authorExperimentalCharts.timelineChart, authorExperimentalCharts.allEntries, authorExperimentalCharts.allAnalytics.find(d => d.name == "Your Timeline"));
     

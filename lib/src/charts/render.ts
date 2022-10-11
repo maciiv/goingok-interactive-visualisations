@@ -1,41 +1,28 @@
 import d3 from "d3";
-import { IChart } from "./chartBase.js";
+import { IChart, IChartBasic } from "./chartBase.js";
 
-export interface IChartElements {
-    svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>;
-    contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
-    content: d3.Selection<SVGRectElement | SVGCircleElement | SVGPathElement | d3.BaseType, unknown, SVGGElement, any>;
-    xAxis: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
-    yAxis: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
-    zoomSVG: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
-    zoomFocus: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
+export interface IChartElementsContainers {
+    svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>
+    contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>
+    content: d3.Selection<SVGRectElement | SVGCircleElement | SVGPathElement | d3.BaseType, unknown, SVGGElement, any>   
 }
 
-
-export class ChartElements implements IChartElements {
-    svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>;
-    contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
-    content: d3.Selection<SVGRectElement | SVGCircleElement | SVGPathElement, unknown, SVGGElement, any>;
-    xAxis: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
-    yAxis: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
-    zoomSVG: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
-    zoomFocus: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
-    constructor(chart: IChart, containerClass?: string) {
+export class ChartElementsContainers implements IChartElementsContainers {
+    svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>
+    contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>
+    content: d3.Selection<SVGRectElement | SVGCircleElement | SVGPathElement, unknown, SVGGElement, any>
+    constructor(chart: IChartBasic, containerClass?: string) {
         this.svg = this.appendSVG(chart, containerClass);
         this.contentContainer = this.appendContentContainer(chart);
-        this.xAxis = this.appendXAxis(chart);
-        this.appendXAxisLabel(chart);
-        this.yAxis = this.appendYAxis(chart);
-        this.appendYAxisLabel(chart);
     }
-    private appendSVG(chart: IChart, containerClass?: string): d3.Selection<SVGSVGElement, unknown, HTMLElement, any> {
+    private appendSVG(chart: IChartBasic, containerClass?: string): d3.Selection<SVGSVGElement, unknown, HTMLElement, any> {
         return d3.select(`#${chart.id} ${containerClass == undefined ? ".chart-container" : "." + containerClass}`)
             .append("svg")
             .attr("class", "chart-svg")
             .attr("preserveAspectRatio", "xMinYMin meet")
             .attr("viewBox", `0 0 ${chart.width} ${chart.height}`);
-    };
-    private appendContentContainer(chart: IChart): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
+    }
+    private appendContentContainer(chart: IChartBasic): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
         let result = this.svg.append("g")
             .attr("class", "content-container")
             .attr("transform", `translate(${chart.padding.yAxis}, ${chart.padding.top})`)
@@ -51,7 +38,28 @@ export class ChartElements implements IChartElements {
             .attr("width", chart.width - chart.padding.yAxis)
             .attr("height", chart.height - chart.padding.xAxis - chart.padding.top);
         return result;
-    };
+    }
+}
+
+export interface IChartElements extends IChartElementsContainers {
+    xAxis: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
+    yAxis: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
+    zoomSVG: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
+    zoomFocus: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
+}
+
+export class ChartElements extends ChartElementsContainers implements IChartElements {
+    xAxis: d3.Selection<SVGGElement, unknown, HTMLElement, any>
+    yAxis: d3.Selection<SVGGElement, unknown, HTMLElement, any>
+    zoomSVG: d3.Selection<SVGGElement, unknown, HTMLElement, any>
+    zoomFocus: d3.Selection<SVGGElement, unknown, HTMLElement, any>
+    constructor(chart: IChart, containerClass?: string) {
+        super(chart, containerClass)
+        this.xAxis = this.appendXAxis(chart);
+        this.appendXAxisLabel(chart);
+        this.yAxis = this.appendYAxis(chart);
+        this.appendYAxisLabel(chart);
+    }
     private appendXAxis(chart: IChart): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
         return this.svg.append("g")
             .attr("transform", `translate(${chart.padding.yAxis}, ${chart.height - chart.padding.xAxis})`)

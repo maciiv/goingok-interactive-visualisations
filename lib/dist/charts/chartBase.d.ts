@@ -54,6 +54,17 @@ export declare class ChartTime implements IChart {
     click: boolean;
     constructor(id: string, domain: Date[], chartPadding?: ChartPadding);
 }
+export declare class ChartNetwork implements IChart {
+    id: string;
+    width: number;
+    height: number;
+    x: ChartTimeAxis;
+    y: ChartLinearAxis;
+    padding: IChartPadding;
+    click: boolean;
+    elements: IChartElements;
+    constructor(id: string, containerClass: string, domain: Date[]);
+}
 export declare class UserChart implements IChart {
     id: string;
     width: number;

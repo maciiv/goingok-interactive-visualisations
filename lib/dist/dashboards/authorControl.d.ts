@@ -1,9 +1,14 @@
 ;
 import { IHelp, Help } from "../charts/help.js";
 import { IAuthorControlInteractions, AuthorControlInteractions } from "../charts/interactions.js";
-import { IReflectionAuthor, IReflectionAnalytics, IReflection, INodes } from "../data/data.js";
-import { ChartNetwork } from "../charts/chartNetwork.js";
-import { ChartTimeNetwork } from "../charts/chartTimeNetwork.js";
+import { IReflectionAuthor, IReflectionAnalytics, IReflection, INodes, IAuthorAnalyticsData } from "../data/data.js";
+import { Network } from "../charts/author/network.js";
+import { TimelineNetwork } from "../charts/author/timelineNetwork.js";
+export declare class Dashboard {
+    timeline: TimelineNetwork;
+    network: Network;
+    constructor(data: IAuthorAnalyticsData);
+}
 export interface IAuthorControlCharts {
     help: IHelp;
     interactions: IAuthorControlInteractions;
@@ -11,11 +16,11 @@ export interface IAuthorControlCharts {
     allEntries: IReflection[];
     resizeTimeline(): void;
     preloadTags(entries: IReflectionAnalytics[], enable?: boolean): INodes[];
-    processSimulation(chart: ChartNetwork, data: IReflectionAnalytics): void;
-    processTimelineSimulation(chart: ChartTimeNetwork, centerX: number, centerY: number, nodes: INodes[]): void;
+    processSimulation(chart: Network, data: IReflectionAnalytics): void;
+    processTimelineSimulation(chart: TimelineNetwork, centerX: number, centerY: number, nodes: INodes[]): void;
     getTooltipNodes(data: IReflectionAnalytics, nodeData: INodes): INodes[];
-    renderTimeline(chart: ChartTimeNetwork, data: IReflection[], analytics: IReflectionAnalytics): ChartTimeNetwork;
-    renderNetwork(chart: ChartNetwork, data: IReflectionAnalytics, reflection?: IReflection): ChartNetwork;
+    renderTimeline(chart: TimelineNetwork, data: IReflection[], analytics: IReflectionAnalytics): TimelineNetwork;
+    renderNetwork(chart: Network, data: IReflectionAnalytics, reflection?: IReflection): Network;
     renderReflections(data: IReflectionAuthor[]): void;
 }
 export declare class AuthorControlCharts implements IAuthorControlCharts {
@@ -25,12 +30,12 @@ export declare class AuthorControlCharts implements IAuthorControlCharts {
     allEntries: IReflection[];
     resizeTimeline(): void;
     preloadTags(analytics: IReflectionAnalytics[], enable?: boolean): INodes[];
-    processSimulation(chart: ChartNetwork, data: IReflectionAnalytics): d3.Simulation<INodes, undefined>;
-    processTimelineSimulation(chart: ChartTimeNetwork, centerX: number, centerY: number, nodes: INodes[]): void;
+    processSimulation(chart: Network, data: IReflectionAnalytics): d3.Simulation<INodes, undefined>;
+    processTimelineSimulation(chart: TimelineNetwork, centerX: number, centerY: number, nodes: INodes[]): void;
     getTooltipNodes(data: IReflectionAnalytics, nodeData: INodes): INodes[];
-    renderTimeline(chart: ChartTimeNetwork, data: IReflection[], analytics: IReflectionAnalytics): ChartTimeNetwork;
-    renderNetwork(chart: ChartNetwork, data: IReflectionAnalytics, reflection?: IReflection): ChartNetwork;
+    renderTimeline(chart: TimelineNetwork, data: IReflection[], analytics: IReflectionAnalytics): TimelineNetwork;
+    renderNetwork(chart: Network, data: IReflectionAnalytics, reflection?: IReflection): Network;
     renderReflections(data: IReflection[]): void;
     processReflectionsText(data: IReflection): string;
 }
-export declare function buildControlAuthorAnalyticsCharts(entriesRaw: IReflection[], analyticsRaw: IReflectionAnalytics[]): Promise<void>;
+export declare function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorAnalyticsData): Promise<void>;

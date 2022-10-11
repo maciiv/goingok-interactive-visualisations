@@ -1,13 +1,21 @@
 import d3 from "d3";
 import { IHelp, Help } from "../charts/help.js";
 import { IAuthorControlInteractions, AuthorControlInteractions } from "../charts/interactions.js";
-import { IReflectionAuthor, IReflectionAnalytics, IReflection, INodes, IEdges } from "../data/data.js";
+import { IReflectionAuthor, IReflectionAnalytics, IReflection, INodes, IEdges, IAuthorAnalyticsData } from "../data/data.js";
 import { Loading } from "../utils/loading.js";
 import { Tutorial, TutorialData } from "../utils/tutorial.js";
 import { TooltipValues } from "../interactions/tooltip.js";
-import { ChartPadding } from "../charts/chartBase.js";
-import { ChartNetwork } from "../charts/chartNetwork.js";
-import { ChartTimeNetwork } from "../charts/chartTimeNetwork.js";
+import { Network } from "../charts/author/network.js";
+import { TimelineNetwork } from "../charts/author/timelineNetwork.js";
+
+export class Dashboard {
+    timeline: TimelineNetwork
+    network: Network
+    constructor(data: IAuthorAnalyticsData) {
+        this.timeline = new TimelineNetwork(data)
+        this.network = new Network(data)
+    }
+}
 
 export interface IAuthorControlCharts {
     help: IHelp;
@@ -16,11 +24,11 @@ export interface IAuthorControlCharts {
     allEntries: IReflection[];
     resizeTimeline(): void;
     preloadTags(entries: IReflectionAnalytics[], enable?: boolean): INodes[];
-    processSimulation(chart: ChartNetwork, data: IReflectionAnalytics): void;
-    processTimelineSimulation(chart: ChartTimeNetwork, centerX: number, centerY: number, nodes: INodes[]): void;
+    processSimulation(chart: Network, data: IReflectionAnalytics): void;
+    processTimelineSimulation(chart: TimelineNetwork, centerX: number, centerY: number, nodes: INodes[]): void;
     getTooltipNodes(data: IReflectionAnalytics, nodeData: INodes): INodes[];
-    renderTimeline(chart: ChartTimeNetwork, data: IReflection[], analytics: IReflectionAnalytics): ChartTimeNetwork;
-    renderNetwork(chart: ChartNetwork, data: IReflectionAnalytics, reflection?: IReflection): ChartNetwork;
+    renderTimeline(chart: TimelineNetwork, data: IReflection[], analytics: IReflectionAnalytics): TimelineNetwork;
+    renderNetwork(chart: Network, data: IReflectionAnalytics, reflection?: IReflection): Network;
     renderReflections(data: IReflectionAuthor[]): void;
 }
 
@@ -67,7 +75,7 @@ export class AuthorControlCharts implements IAuthorControlCharts {
         return uniqueTags;
     }
 
-    processSimulation(chart: ChartNetwork, data: IReflectionAnalytics): d3.Simulation<INodes, undefined> {
+    processSimulation(chart: Network, data: IReflectionAnalytics): d3.Simulation<INodes, undefined> {
         return d3.forceSimulation<INodes, undefined>(data.nodes)
             .force("link", d3.forceLink<INodes, IEdges<INodes>>()
                 .id(d => d.idx)
@@ -78,7 +86,7 @@ export class AuthorControlCharts implements IAuthorControlCharts {
             .force("center", d3.forceCenter((chart.width -chart.padding.yAxis - chart.padding.right - 10) / 2, (chart.height - chart.padding.top - chart.padding.xAxis + 5) / 2));
     }
 
-    processTimelineSimulation(chart: ChartTimeNetwork, centerX: number, centerY: number, nodes: INodes[]): void {
+    processTimelineSimulation(chart: TimelineNetwork, centerX: number, centerY: number, nodes: INodes[]): void {
         let simulation = d3.forceSimulation<INodes, undefined>(nodes)
             .force("collide", d3.forceCollide().radius(5))
             .force("forceRadial", d3.forceRadial(0, 0).radius(15));
@@ -104,7 +112,7 @@ export class AuthorControlCharts implements IAuthorControlCharts {
         return edges;
     }
 
-    renderTimeline(chart: ChartTimeNetwork, data: IReflection[], analytics: IReflectionAnalytics): ChartTimeNetwork {
+    renderTimeline(chart: TimelineNetwork, data: IReflection[], analytics: IReflectionAnalytics): TimelineNetwork {
         const _this = this;
 
         const hardLine = d3.line<IReflection>()
@@ -210,7 +218,7 @@ export class AuthorControlCharts implements IAuthorControlCharts {
         return chart;
     }
 
-    renderNetwork(chart: ChartNetwork, data: IReflectionAnalytics, reflection?: IReflection): ChartNetwork {
+    renderNetwork(chart: Network, data: IReflectionAnalytics, reflection?: IReflection): Network {
         const _this = this;
 
         d3.select(`#${chart.id} .card-subtitle`)
@@ -397,12 +405,13 @@ export class AuthorControlCharts implements IAuthorControlCharts {
     }
 }
 
-export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflection[], analyticsRaw: IReflectionAnalytics[]) {
+export async function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorAnalyticsData) {
     const loading = new Loading();
     const colourScale = d3.scaleOrdinal(d3.schemeCategory10);
-    const entries = d3.sort(entriesRaw.map(d => { return { "refId": d.refId, "timestamp": new Date(d.timestamp), "point": d.point, "text": d.text } as IReflection }), d => d.timestamp);
-    const analytics = analyticsRaw.map(d => { return { "name": d.name, "description": d.description, "nodes": d.nodes.map(c => processColour(c)), "edges": d.edges } })
-    await drawCharts(entries, analytics);
+    const entries = d3.sort(entriesRaw.reflections.map(d => { return { "refId": d.refId, "timestamp": new Date(d.timestamp), "point": d.point, "text": d.text } as IReflection }), d => d.timestamp)
+    const analytics = entriesRaw.analytics.map(d => { return { "name": d.name, "description": d.description, "nodes": d.nodes.map(c => processColour(c)), "edges": d.edges } })
+    const authorAnalyticsData = {"reflections": entries, "analytics": analytics}
+    await drawCharts(authorAnalyticsData);
     new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
     new TutorialData("#timeline .circle", "Hover for information on demand"),
     new TutorialData("#network .network-node-group", "Hover for information on demand, zoom is also available")]);
@@ -416,42 +425,44 @@ export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflection[
         return node;
     }
 
-    async function drawCharts(entries: IReflection[], analytics: IReflectionAnalytics[]) {
-        const authorControlCharts = new AuthorControlCharts();
-        authorControlCharts.resizeTimeline();
-        authorControlCharts.preloadTags(analytics);
+    async function drawCharts(data: IAuthorAnalyticsData) {
+        const dashboard = new Dashboard(data)
+        
+        // const authorControlCharts = new AuthorControlCharts();
+        // authorControlCharts.resizeTimeline();
+        // authorControlCharts.preloadTags(analytics);
 
-        if (analytics.find(d => d.name == "Your Network") === undefined) {
-            d3.select("#network .chart-container.network").html("Chart not found")
-        } else {
-            const networkChart = new ChartNetwork("network", "chart-container.network", entries.map(d => d.timestamp));
-            networkChart.simulation = authorControlCharts.processSimulation(networkChart, analytics.find(d => d.name == "Your Network"));
-            authorControlCharts.renderNetwork(networkChart, analytics.find(d => d.name == "Your Network"));
+        // if (analytics.find(d => d.name == "Your Network") === undefined) {
+        //     d3.select("#network .chart-container.network").html("Chart not found")
+        // } else {
+        //     const networkChart = new Network(data);
+        //     networkChart.simulation = authorControlCharts.processSimulation(networkChart, analytics.find(d => d.name == "Your Network"));
+        //     authorControlCharts.renderNetwork(networkChart, analytics.find(d => d.name == "Your Network"));
 
-            //Handle timeline chart help
-            authorControlCharts.help.helpPopover(networkChart.id, `<b>Network diagram</b><br>
-                A network diagram that shows the phrases and tags associated to your reflections<br>The data represented are your <i>reflections over time</i><br>
-                Use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move<br>
-                <u><i>Hover</i></u> over the network nodes for information on demand`) 
-        }
+        //     //Handle timeline chart help
+        //     authorControlCharts.help.helpPopover(networkChart.id, `<b>Network diagram</b><br>
+        //         A network diagram that shows the phrases and tags associated to your reflections<br>The data represented are your <i>reflections over time</i><br>
+        //         Use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move<br>
+        //         <u><i>Hover</i></u> over the network nodes for information on demand`) 
+        // }
 
-        if (analytics.find(d => d.name == "Your Timeline") === undefined) {
-            d3.select("#timeline .chart-container").html("Chart not found")
-        } else {
-            const timelineChart = new ChartTimeNetwork("timeline", entries.map(d => d.timestamp), new ChartPadding(40, 75, 10, 10));
-            entries.forEach(c => authorControlCharts.processTimelineSimulation(timelineChart, timelineChart.x.scale(c.timestamp), timelineChart.y.scale(c.point), authorControlCharts.allNodes.filter(d => d.refId == c.refId)));
-            authorControlCharts.renderTimeline(timelineChart, entries, analytics.find(d => d.name == "Your Timeline"));
+        // if (analytics.find(d => d.name == "Your Timeline") === undefined) {
+        //     d3.select("#timeline .chart-container").html("Chart not found")
+        // } else {
+        //     const timelineChart = new TimelineNetwork(data);
+        //     entries.forEach(c => authorControlCharts.processTimelineSimulation(timelineChart, timelineChart.x.scale(c.timestamp), timelineChart.y.scale(c.point), authorControlCharts.allNodes.filter(d => d.refId == c.refId)));
+        //     authorControlCharts.renderTimeline(timelineChart, entries, analytics.find(d => d.name == "Your Timeline"));
     
-            //Handle timeline chart help
-            authorControlCharts.help.helpPopover(timelineChart.id, `<b>Timeline</b><br>
-                Your reflections and the tags associated to them are shown over time<br>
-                <u><i>Hover</i></u> over a reflection point for information on demand`)
-        }
+        //     //Handle timeline chart help
+        //     authorControlCharts.help.helpPopover(timelineChart.id, `<b>Timeline</b><br>
+        //         Your reflections and the tags associated to them are shown over time<br>
+        //         <u><i>Hover</i></u> over a reflection point for information on demand`)
+        // }
 
-        authorControlCharts.renderReflections(entries);
+        // authorControlCharts.renderReflections(entries);
 
-        //Handle users histogram chart help
-        authorControlCharts.help.helpPopover("reflections", `<b>Reflections</b><br>
-            Your reflections are shown sorted by time. The words with associated tags have a different background colour`)
+        // //Handle users histogram chart help
+        // authorControlCharts.help.helpPopover("reflections", `<b>Reflections</b><br>
+        //     Your reflections are shown sorted by time. The words with associated tags have a different background colour`)
     }
 }

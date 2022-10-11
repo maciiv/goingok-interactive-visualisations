@@ -1,6 +1,5 @@
 ;
-import { ChartTime } from "../charts/chartBase.js";
-import { ChartNetwork } from "../charts/chartNetwork.js";
+import { ChartNetwork, ChartTime } from "../charts/chartBase.js";
 export interface IZoom {
     enableZoom(chart: ChartTime, zoomed: any): void;
     appendZoomBar(chart: ChartTime): d3.Selection<SVGGElement, unknown, HTMLElement, any>;

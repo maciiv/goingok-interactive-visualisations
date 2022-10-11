@@ -9,11 +9,11 @@ export interface IChartScales {
 }
 
 export interface IChartBasic {
-    id: string;
-    width: number;
-    height: number;
-    padding: IChartPadding;
-    click: boolean;
+    id: string
+    width: number
+    height: number
+    padding: IChartPadding
+    click: boolean
 }
 
 
@@ -22,7 +22,7 @@ export type ExtendChart<T> = {
 }
 
 export interface IChart extends IChartScales, IChartBasic {
-    elements: IChartElements;
+    elements: IChartElements
 }
 
 export interface IChartPadding {
@@ -91,6 +91,30 @@ export class ChartTime implements IChart {
         this.x = new ChartTimeAxis("Time", domain, [0, this.width - this.padding.yAxis]);
         this.click = false;
         this.elements = new ChartElements(this);
+    }
+}
+
+export class ChartNetwork implements IChart {
+    id: string
+    width: number
+    height: number
+    x: ChartTimeAxis;
+    y: ChartLinearAxis;
+    padding: IChartPadding
+    click: boolean
+    elements: IChartElements
+    constructor(id: string, containerClass: string, domain: Date[]) {
+        this.id = id
+        let containerDimensions = getDOMRect(`#${id} .${containerClass}`)
+        this.width = containerDimensions.width
+        this.height = containerDimensions.height
+        this.padding = new ChartPadding(30, 10, 10, 10)
+        this.y = new ChartLinearAxis("", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left")       
+        this.x = new ChartTimeAxis("", domain, [0, this.width - this.padding.yAxis - this.padding.right])
+        this.click = false;
+        this.elements = new ChartElements(this, containerClass);
+        this.elements.yAxis.remove();
+        this.elements.xAxis.remove();
     }
 }
 

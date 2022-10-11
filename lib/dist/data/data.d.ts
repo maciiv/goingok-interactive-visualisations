@@ -127,3 +127,11 @@ export interface IReflectionAnalytics {
     nodes: INodes[];
     edges: IEdges<INodes>[];
 }
+export interface IAuthorAnalyticsData {
+    reflections: IReflection[];
+    analytics: IReflectionAnalytics[];
+}
+export declare enum AnalyticsType {
+    Timeline = 0,
+    Network = 1
+}

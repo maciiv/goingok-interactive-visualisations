@@ -1,6 +1,5 @@
 import d3 from "d3";
-import { ChartTime } from "../charts/chartBase.js";
-import { ChartNetwork } from "../charts/chartNetwork.js";
+import { ChartNetwork, ChartTime } from "../charts/chartBase.js";
 
 export interface IZoom {
     enableZoom(chart: ChartTime, zoomed: any): void;
