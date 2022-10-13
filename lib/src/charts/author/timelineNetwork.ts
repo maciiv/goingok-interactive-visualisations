@@ -1,36 +1,27 @@
 import d3 from "d3";
-import { AnalyticsType, IAuthorAnalyticsData, INodes, IReflection, IReflectionAnalytics } from "../../data/data.js";
+import { IAuthorAnalyticsData, INodes, IReflection, IReflectionAnalytics } from "../../data/data.js";
 import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
 import { addDays, maxDate, minDate } from "../../utils/utils.js";
 import { ChartPadding, ChartTime } from "../chartBase.js";
 
 export class TimelineNetwork extends ChartTime {
     tooltip = new Tooltip()
-    analytics: IReflectionAnalytics
     private _data: IAuthorAnalyticsData
     get data() {
         return this._data
     }
     set data(entries: IAuthorAnalyticsData) {
         this._data = entries
-        if (this.analytics === undefined) {
-            d3.select(`#${this.id} .chart-container`).html("Chart not found")
-            return
-        }
         this.render()
     }
     constructor(data: IAuthorAnalyticsData){
         super("timeline", [addDays(minDate(data.reflections.map(d => d.timestamp)), -30), addDays(maxDate(data.reflections.map(d => d.timestamp)), 30)], new ChartPadding(40, 75, 10, 10))
-        this.analytics = data.analytics.find(c => c.name == AnalyticsType.Timeline.toString())
-        this.analytics === undefined ? 
-            d3.select(`#${this.id} .chart-container`).html("Chart not found") : 
-            data.reflections.forEach(c => this.simulation(this.y.scale(c.timestamp), this.x.scale(c.point)))
         this.data = data
     }
     render() {
         const _this = this
 
-        const hardLine = d3.line<IReflection>()
+        const hardLine = d3.line<IReflectionAnalytics>()
             .x(d => _this.x.scale(d.timestamp))
             .y(d => _this.y.scale(d.point))
             .curve(d3.curveMonotoneX);
@@ -64,7 +55,28 @@ export class TimelineNetwork extends ChartTime {
                     .style("stroke", "#999999"))
                     .call(update => _this.renderReflectionNetwork(update)),
                 exit => exit.remove()
-            );
+            )
+            .each(function(d) {
+                const _thisContainer = this
+                _this.simulation(d.nodes).on("tick", function() {
+                    d3.select(_thisContainer).selectAll(".circle-tag").attr("transform", (c: INodes) => { 
+                        const centerY = _this.y.scale(d.point)
+                        const centerX = _this.x.scale(d.timestamp)
+                        if (centerY < 20) {
+                            this.force("forceY", d3.forceY(20).strength(0.25))
+                        }
+                        if (_this.height - _this.padding.top - _this.padding.xAxis - 20 < centerY) {
+                            this.force("forceY", d3.forceY(-20).strength(0.25))
+                        }
+                        if (centerX < 20) {
+                            this.force("forceX", d3.forceX(20).strength(0.25))
+                        }
+                        if (_this.width - _this.padding.yAxis - _this.padding.right - 20 < centerX) {
+                            this.force("forceX", d3.forceX(-20).strength(0.25))
+                        }
+                        return `translate(${c.x}, ${c.y})`})
+                })
+            })
         
         _this.elements.content = _this.elements.contentContainer.selectAll(".circle");
 
@@ -76,7 +88,7 @@ export class TimelineNetwork extends ChartTime {
             }
             _this.tooltip.appendTooltipContainer(_this);
             let tooltipValues = [new TooltipValues("Point", d.point)];
-            let tags = Array.from(d3.rollup(_this.analytics.nodes.filter(c => c.refId == d.refId), d => d.length, d  => d.name), ([name, total]) => ({name, total}));
+            let tags = Array.from(d3.rollup(_this.data.analytics.nodes.filter(c => c.refId == d.refId), d => d.length, d  => d.name), ([name, total]) => ({name, total}));
             tags.forEach(c => {
                 tooltipValues.push(new TooltipValues(c.name, c.total));
             })
@@ -109,9 +121,10 @@ export class TimelineNetwork extends ChartTime {
             _this.tooltip.removeTooltip(_this);
         }
     }
-    private renderReflectionNetwork(enter: d3.Selection<SVGGElement | d3.BaseType, IReflection, SVGGElement, unknown>) {
-        enter.selectAll(".circle-tag")
-            .data(d => this.analytics.nodes.filter(c => c.refId == d.refId))
+    private renderReflectionNetwork(enter: d3.Selection<SVGGElement | d3.BaseType, IReflectionAnalytics, SVGGElement, unknown>) {
+        const _this = this
+        const nodes = enter.selectAll(".circle-tag")
+            .data(d => d.nodes)
             .join(
                 enter => enter.append("circle")
                     .attr("class", "circle-tag")
@@ -127,24 +140,11 @@ export class TimelineNetwork extends ChartTime {
                     .style("fill", d => d.properties["color"])
                     .style("stroke", d => d.properties["color"])),
                 exit => exit.remove()
-            )              
+            )
     }
-    private simulation(centerY: number, centerX: number): void {
-        let simulation = d3.forceSimulation<INodes, undefined>(this.analytics.nodes)
+    private simulation(nodes: INodes[]): d3.Simulation<INodes, undefined> {
+        return d3.forceSimulation<INodes, undefined>(nodes)
             .force("collide", d3.forceCollide().radius(5))
             .force("forceRadial", d3.forceRadial(0, 0).radius(15));
-        if (centerY < 20) {
-            simulation.force("forceY", d3.forceY(20).strength(0.25))
-        }
-        if (this.height - this.padding.top - this.padding.xAxis - 20 < centerY) {
-            simulation.force("forceY", d3.forceY(-20).strength(0.25))
-        }
-        if (centerX < 20) {
-            simulation.force("forceX", d3.forceX(20).strength(0.25))
-        }
-        if (this.width - this.padding.yAxis - this.padding.right - 20 < centerX) {
-            simulation.force("forceX", d3.forceX(-20).strength(0.25))
-        }
-        return simulation.tick(300);
     }
 }

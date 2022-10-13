@@ -1,19 +1,23 @@
 import d3 from "d3";
 import { IHelp, Help } from "../charts/help.js";
 import { IAuthorControlInteractions, AuthorControlInteractions } from "../charts/interactions.js";
-import { IReflectionAuthor, IReflectionAnalytics, IReflection, INodes, IEdges, IAuthorAnalyticsData } from "../data/data.js";
+import { IReflectionAuthor, IReflection, INodes, IEdges, IAuthorAnalyticsData, IAnalytics } from "../data/data.js";
 import { Loading } from "../utils/loading.js";
 import { Tutorial, TutorialData } from "../utils/tutorial.js";
 import { TooltipValues } from "../interactions/tooltip.js";
 import { Network } from "../charts/author/network.js";
 import { TimelineNetwork } from "../charts/author/timelineNetwork.js";
+import { AuthorAnalyticsDataRaw, IAuthorAnalyticsDataRaw } from "../data/db.js";
+import { Reflections } from "../charts/author/reflections.js";
 
 export class Dashboard {
     timeline: TimelineNetwork
     network: Network
+    reflections: Reflections
     constructor(data: IAuthorAnalyticsData) {
         this.timeline = new TimelineNetwork(data)
         this.network = new Network(data)
+        this.reflections = new Reflections(data)
     }
 }
 
@@ -23,12 +27,12 @@ export interface IAuthorControlCharts {
     allNodes: INodes[];
     allEntries: IReflection[];
     resizeTimeline(): void;
-    preloadTags(entries: IReflectionAnalytics[], enable?: boolean): INodes[];
-    processSimulation(chart: Network, data: IReflectionAnalytics): void;
+    preloadTags(entries: IAnalytics[], enable?: boolean): INodes[];
+    processSimulation(chart: Network, data: IAnalytics): void;
     processTimelineSimulation(chart: TimelineNetwork, centerX: number, centerY: number, nodes: INodes[]): void;
-    getTooltipNodes(data: IReflectionAnalytics, nodeData: INodes): INodes[];
-    renderTimeline(chart: TimelineNetwork, data: IReflection[], analytics: IReflectionAnalytics): TimelineNetwork;
-    renderNetwork(chart: Network, data: IReflectionAnalytics, reflection?: IReflection): Network;
+    getTooltipNodes(data: IAnalytics, nodeData: INodes): INodes[];
+    renderTimeline(chart: TimelineNetwork, data: IReflection[], analytics: IAnalytics): TimelineNetwork;
+    renderNetwork(chart: Network, data: IAnalytics, reflection?: IReflection): Network;
     renderReflections(data: IReflectionAuthor[]): void;
 }
 
@@ -43,7 +47,7 @@ export class AuthorControlCharts implements IAuthorControlCharts {
         document.querySelector("#timeline .chart-container").setAttribute("style", `min-height:${height - 80}px`)
     }
 
-    preloadTags(analytics: IReflectionAnalytics[], enable: boolean = false): INodes[] {
+    preloadTags(analytics: IAnalytics[], enable: boolean = false): INodes[] {
         analytics.forEach(c => {
             this.allNodes = this.allNodes.concat(c.nodes)
         })
@@ -75,7 +79,7 @@ export class AuthorControlCharts implements IAuthorControlCharts {
         return uniqueTags;
     }
 
-    processSimulation(chart: Network, data: IReflectionAnalytics): d3.Simulation<INodes, undefined> {
+    processSimulation(chart: Network, data: IAnalytics): d3.Simulation<INodes, undefined> {
         return d3.forceSimulation<INodes, undefined>(data.nodes)
             .force("link", d3.forceLink<INodes, IEdges<INodes>>()
                 .id(d => d.idx)
@@ -105,14 +109,14 @@ export class AuthorControlCharts implements IAuthorControlCharts {
         return simulation.tick(300);
     }
 
-    getTooltipNodes(data: IReflectionAnalytics, nodeData: INodes): INodes[] {
+    getTooltipNodes(data: IAnalytics, nodeData: INodes): INodes[] {
         let edges = data.edges.filter(d => d.source === nodeData).map(d => d.target as INodes);
         edges = edges.concat(data.edges.filter(d => d.target === nodeData).map(d => d.source as INodes));
         edges.push(nodeData);
         return edges;
     }
 
-    renderTimeline(chart: TimelineNetwork, data: IReflection[], analytics: IReflectionAnalytics): TimelineNetwork {
+    renderTimeline(chart: TimelineNetwork, data: IReflection[], analytics: IAnalytics): TimelineNetwork {
         const _this = this;
 
         const hardLine = d3.line<IReflection>()
@@ -151,7 +155,7 @@ export class AuthorControlCharts implements IAuthorControlCharts {
                 exit => exit.remove()
             );
         
-        function renderTimelineNetwork(enter: d3.Selection<SVGGElement | d3.BaseType, IReflection, SVGGElement, unknown>, analytics: IReflectionAnalytics) {
+        function renderTimelineNetwork(enter: d3.Selection<SVGGElement | d3.BaseType, IReflection, SVGGElement, unknown>, analytics: IAnalytics) {
             enter.selectAll(".circle-tag")
                 .data(d => analytics.nodes.filter(c => c.refId == d.refId))
                 .join(
@@ -218,7 +222,7 @@ export class AuthorControlCharts implements IAuthorControlCharts {
         return chart;
     }
 
-    renderNetwork(chart: Network, data: IReflectionAnalytics, reflection?: IReflection): Network {
+    renderNetwork(chart: Network, data: IAnalytics, reflection?: IReflection): Network {
         const _this = this;
 
         d3.select(`#${chart.id} .card-subtitle`)
@@ -405,13 +409,12 @@ export class AuthorControlCharts implements IAuthorControlCharts {
     }
 }
 
-export async function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorAnalyticsData) {
-    const loading = new Loading();
-    const colourScale = d3.scaleOrdinal(d3.schemeCategory10);
-    const entries = d3.sort(entriesRaw.reflections.map(d => { return { "refId": d.refId, "timestamp": new Date(d.timestamp), "point": d.point, "text": d.text } as IReflection }), d => d.timestamp)
-    const analytics = entriesRaw.analytics.map(d => { return { "name": d.name, "description": d.description, "nodes": d.nodes.map(c => processColour(c)), "edges": d.edges } })
-    const authorAnalyticsData = {"reflections": entries, "analytics": analytics}
-    await drawCharts(authorAnalyticsData);
+export async function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorAnalyticsDataRaw) {
+    const loading = new Loading()
+    const colourScale = d3.scaleOrdinal(d3.schemeCategory10)
+    const entries = new AuthorAnalyticsDataRaw(entriesRaw).transformData()
+    entries.analytics.nodes.forEach(c => processColour(c))
+    await drawCharts(entries)
     new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
     new TutorialData("#timeline .circle", "Hover for information on demand"),
     new TutorialData("#network .network-node-group", "Hover for information on demand, zoom is also available")]);

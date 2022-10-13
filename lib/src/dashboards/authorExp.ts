@@ -1,15 +1,16 @@
 import d3 from "d3";
 import { IAuthorExperimentalInteractions, AuthorExperimentalInteractions } from "../charts/interactions.js";
-import { IReflectionAnalytics, IReflection, INodes, IAuthorAnalyticsData } from "../data/data.js";
+import { IAnalytics, IReflection, INodes, IAuthorAnalyticsData } from "../data/data.js";
 import { AuthorControlCharts, IAuthorControlCharts } from "./authorControl.js";
 import { Loading } from "../utils/loading.js";
 import { Tutorial, TutorialData } from "../utils/tutorial.js";
 import { Network } from "../charts/author/network.js";
 import { TimelineNetwork } from "../charts/author/timelineNetwork.js";
+import { IAuthorAnalyticsDataRaw } from "../data/db.js";
 
 export interface IAuthorExperimentalCharts extends IAuthorControlCharts {
     interactions: IAuthorExperimentalInteractions;
-    allAnalytics: IReflectionAnalytics[];
+    allAnalytics: IAnalytics[];
     timelineChart: TimelineNetwork;
     networkChart: Network;
     sorted: string;
@@ -20,12 +21,12 @@ export interface IAuthorExperimentalCharts extends IAuthorControlCharts {
 
 export class AuthorExperimentalCharts extends AuthorControlCharts implements IAuthorExperimentalCharts {
     interactions = new AuthorExperimentalInteractions();
-    allAnalytics: IReflectionAnalytics[];
+    allAnalytics: IAnalytics[];
     timelineChart: TimelineNetwork;
     networkChart: Network;
     sorted = "date";
 
-    preloadTags(entries: IReflectionAnalytics[], enable?: boolean): INodes[] {
+    preloadTags(entries: IAnalytics[], enable?: boolean): INodes[] {
         let nodes = super.preloadTags(entries, true);
         this.allAnalytics = entries
 
@@ -106,7 +107,7 @@ export class AuthorExperimentalCharts extends AuthorControlCharts implements IAu
         this.renderTimeline(this.timelineChart, this.allEntries, analytics.find(d => d.name == "Your Timeline"));
     };
 
-    private getUpdatedAnalyticsData(): IReflectionAnalytics[] {
+    private getUpdatedAnalyticsData(): IAnalytics[] {
         const _this = this;
         return _this.allAnalytics.map(c => { 
             let nodes = c.nodes.filter(d => _this.allNodes.filter(c => c.selected).map(r => r.name).includes(d.name));
@@ -114,7 +115,7 @@ export class AuthorExperimentalCharts extends AuthorControlCharts implements IAu
         });
     }
 
-    private getUpdatedNetworkData(analytics?: IReflectionAnalytics): IReflectionAnalytics {
+    private getUpdatedNetworkData(analytics?: IAnalytics): IAnalytics {
         const _this = this;
         let data = analytics === undefined ? _this.allAnalytics.find(d => d.name == "Your Network") : analytics;
         let nodes = data.nodes.filter(d => { 
@@ -130,7 +131,7 @@ export class AuthorExperimentalCharts extends AuthorControlCharts implements IAu
         return { "name": data.name, "description": data.description, "nodes": nodes, "edges": edges }
     }
 
-    renderTimeline(chart: TimelineNetwork, data: IReflection[], analytics: IReflectionAnalytics): TimelineNetwork {
+    renderTimeline(chart: TimelineNetwork, data: IReflection[], analytics: IAnalytics): TimelineNetwork {
         chart = super.renderTimeline(chart, data, analytics);    
 
         const _this = this
@@ -167,7 +168,7 @@ export class AuthorExperimentalCharts extends AuthorControlCharts implements IAu
         return chart;
     }
 
-    renderNetwork(chart: Network, data: IReflectionAnalytics, reflection?: IReflection): Network {
+    renderNetwork(chart: Network, data: IAnalytics, reflection?: IReflection): Network {
         chart = super.renderNetwork(chart, data, reflection);
 
         const _this = this;
@@ -230,13 +231,12 @@ export class AuthorExperimentalCharts extends AuthorControlCharts implements IAu
     }
 }
 
-export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IAuthorAnalyticsData) {
+export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IAuthorAnalyticsDataRaw) {
     const loading = new Loading();
     const colourScale = d3.scaleOrdinal(d3.schemeCategory10);
-    const entries = d3.sort(entriesRaw.reflections.map(d => { return { "refId": d.refId, "timestamp": new Date(d.timestamp), "point": d.point, "text": d.text } as IReflection }), d => d.timestamp);
-    const analytics = entriesRaw.analytics.map(d => { return {"name": d.name, "description": d.description, "nodes": d.nodes.map(c => processColour(c)), "edges": d.edges, "reflections": entries } })
-    const authorAnalyticsData = {"reflections": entries, "analytics": analytics}
-    await drawCharts(authorAnalyticsData);
+    const entries = entriesRaw.transformData()
+    entries.analytics.nodes.forEach(c => processColour(c))
+    await drawCharts(entries);
     new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
     new TutorialData("#timeline .circle", "Hover for information on demand"),
     new TutorialData("#network .network-node-group", "Hover for information on demand, zoom is also available")]);
@@ -252,50 +252,50 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IAuthorAn
 
     async function drawCharts(data: IAuthorAnalyticsData) {
         const authorExperimentalCharts = new AuthorExperimentalCharts();
-        authorExperimentalCharts.resizeTimeline()
-        authorExperimentalCharts.preloadTags(analytics, true)
-        authorExperimentalCharts.allEntries = entries
+        // authorExperimentalCharts.resizeTimeline()
+        // authorExperimentalCharts.preloadTags(analytics, true)
+        // authorExperimentalCharts.allEntries = entries
 
-        if (analytics.find(d => d.name == "Your Network") === undefined) {
-            d3.select("#network .chart-container.network").html("Chart not found  <br> Interactions won't work")
-        } else {
-            authorExperimentalCharts.networkChart = new Network(data);
-            authorExperimentalCharts.networkChart.simulation = authorExperimentalCharts.processSimulation(authorExperimentalCharts.networkChart, authorExperimentalCharts.allAnalytics.find(d => d.name == "Your Network"));
-            authorExperimentalCharts.renderNetwork(authorExperimentalCharts.networkChart, authorExperimentalCharts.allAnalytics.find(d => d.name == "Your Network"));
+        // if (analytics.find(d => d.name == "Your Network") === undefined) {
+        //     d3.select("#network .chart-container.network").html("Chart not found  <br> Interactions won't work")
+        // } else {
+        //     authorExperimentalCharts.networkChart = new Network(data);
+        //     authorExperimentalCharts.networkChart.simulation = authorExperimentalCharts.processSimulation(authorExperimentalCharts.networkChart, authorExperimentalCharts.allAnalytics.find(d => d.name == "Your Network"));
+        //     authorExperimentalCharts.renderNetwork(authorExperimentalCharts.networkChart, authorExperimentalCharts.allAnalytics.find(d => d.name == "Your Network"));
     
-            //Handle timeline chart help
-            authorExperimentalCharts.help.helpPopover(authorExperimentalCharts.networkChart.id, `<b>Network diagram</b><br>
-                A network diagram that shows the phrases and tags associated to your reflections<br>The data represented are your <i>reflections over time</i><br>
-                Use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move<br>
-                <u><i>Hover</i></u> over the network nodes for information on demand<br>
-                <u><i>Drag</i></u> the network nodes to rearrange the network<br>
-                <u><i>Click</i></u> to highlight the nodes in the reflection text`) 
-        }
+        //     //Handle timeline chart help
+        //     authorExperimentalCharts.help.helpPopover(authorExperimentalCharts.networkChart.id, `<b>Network diagram</b><br>
+        //         A network diagram that shows the phrases and tags associated to your reflections<br>The data represented are your <i>reflections over time</i><br>
+        //         Use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move<br>
+        //         <u><i>Hover</i></u> over the network nodes for information on demand<br>
+        //         <u><i>Drag</i></u> the network nodes to rearrange the network<br>
+        //         <u><i>Click</i></u> to highlight the nodes in the reflection text`) 
+        // }
 
-        if (analytics.find(d => d.name == "Your Timeline") === undefined) {
-            d3.select("#timeline .chart-container").html("Chart not found <br> Interactions won't work")
-        } else {
-            authorExperimentalCharts.timelineChart = new TimelineNetwork(data);
-            entries.forEach(c => authorExperimentalCharts.processTimelineSimulation(authorExperimentalCharts.timelineChart, authorExperimentalCharts.timelineChart.x.scale(c.timestamp), authorExperimentalCharts.timelineChart.y.scale(c.point), authorExperimentalCharts.allNodes.filter(d => d.refId == c.refId)));
-            authorExperimentalCharts.renderTimeline(authorExperimentalCharts.timelineChart, authorExperimentalCharts.allEntries, authorExperimentalCharts.allAnalytics.find(d => d.name == "Your Timeline"));
+        // if (analytics.find(d => d.name == "Your Timeline") === undefined) {
+        //     d3.select("#timeline .chart-container").html("Chart not found <br> Interactions won't work")
+        // } else {
+        //     authorExperimentalCharts.timelineChart = new TimelineNetwork(data);
+        //     entries.forEach(c => authorExperimentalCharts.processTimelineSimulation(authorExperimentalCharts.timelineChart, authorExperimentalCharts.timelineChart.x.scale(c.timestamp), authorExperimentalCharts.timelineChart.y.scale(c.point), authorExperimentalCharts.allNodes.filter(d => d.refId == c.refId)));
+        //     authorExperimentalCharts.renderTimeline(authorExperimentalCharts.timelineChart, authorExperimentalCharts.allEntries, authorExperimentalCharts.allAnalytics.find(d => d.name == "Your Timeline"));
     
-            //Handle timeline chart help
-            authorExperimentalCharts.help.helpPopover(authorExperimentalCharts.timelineChart.id, `<b>Timeline</b><br>
-                Your reflections and the tags associated to them are shown over time<br>
-                <u><i>Hover</i></u> over a reflection point for information on demand<br>
-                <u><i>Click</i></u> a reflection point to filter the network diagram`)
-        }
+        //     //Handle timeline chart help
+        //     authorExperimentalCharts.help.helpPopover(authorExperimentalCharts.timelineChart.id, `<b>Timeline</b><br>
+        //         Your reflections and the tags associated to them are shown over time<br>
+        //         <u><i>Hover</i></u> over a reflection point for information on demand<br>
+        //         <u><i>Click</i></u> a reflection point to filter the network diagram`)
+        // }
 
-        authorExperimentalCharts.renderReflections(entries);
+        // authorExperimentalCharts.renderReflections(entries);
 
-        //Handle reflections chart help
-        authorExperimentalCharts.help.helpPopover("reflections", `<b>Reflections</b><br>
-            Your reflections are shown sorted by time. The words with associated tags have a different background colour`)
+        // //Handle reflections chart help
+        // authorExperimentalCharts.help.helpPopover("reflections", `<b>Reflections</b><br>
+        //     Your reflections are shown sorted by time. The words with associated tags have a different background colour`)
 
-        if (analytics.find(d => d.name == "Your Network") !== undefined && analytics.find(d => d.name == "Your Timeline") !== undefined) {
-            authorExperimentalCharts.handleTags();
-            authorExperimentalCharts.handleTagsColours();
-            authorExperimentalCharts.handleReflectionsSort();
-        }      
+        // if (analytics.find(d => d.name == "Your Network") !== undefined && analytics.find(d => d.name == "Your Timeline") !== undefined) {
+        //     authorExperimentalCharts.handleTags();
+        //     authorExperimentalCharts.handleTagsColours();
+        //     authorExperimentalCharts.handleReflectionsSort();
+        // }      
     }
 }

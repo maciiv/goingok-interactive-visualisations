@@ -1,5 +1,5 @@
 ;
-import { IAuthorAnalyticsData, INodes, IReflectionAnalytics } from "../../data/data.js";
+import { IAuthorAnalyticsData, INodes } from "../../data/data.js";
 import { Tooltip } from "../../interactions/tooltip.js";
 import { Zoom } from "../../interactions/zoom.js";
 import { ChartNetwork } from "../chartBase.js";
@@ -9,7 +9,6 @@ export declare class Network extends ChartNetwork {
     zoom: Zoom;
     help: Help;
     simulation: d3.Simulation<INodes, undefined>;
-    analytics: IReflectionAnalytics;
     private _data;
     get data(): IAuthorAnalyticsData;
     set data(entries: IAuthorAnalyticsData);

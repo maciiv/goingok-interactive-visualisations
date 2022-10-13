@@ -1,4 +1,4 @@
-import { IReflectionAuthor, AdminAnalyticsData } from "./data.js";
+import { IReflectionAuthor, AdminAnalyticsData, AuthorAnalyticsData, IReflection, IAnalytics } from "./data.js";
 
 export interface IReflectionAuthorRaw {
     refId: string
@@ -31,5 +31,25 @@ export class AdminAnalyticsDataRaw implements IAdminAnalyticsDataRaw {
                 refId: parseInt(d.refId), timestamp: new Date(d.timestamp), pseudonym: d.pseudonym, point: parseInt(d.point), text: d.text
             }
         }) as IReflectionAuthor[], new Date(this.createDate), undefined, false);
+    }
+}
+
+export interface IAuthorAnalyticsDataRaw {
+    reflections: IReflectionAuthorRaw[]
+    analytics: IAnalytics
+    transformData(): AuthorAnalyticsData
+}
+
+export class AuthorAnalyticsDataRaw implements IAuthorAnalyticsDataRaw {
+    reflections: IReflectionAuthorRaw[]
+    analytics: IAnalytics
+    constructor(data: AuthorAnalyticsDataRaw) {
+        this.reflections = data.reflections
+        this.analytics = data.analytics
+    }
+    transformData(): AuthorAnalyticsData {
+        return new AuthorAnalyticsData(this.reflections.map(d => { 
+            return { "refId": parseInt(d.refId), "timestamp": new Date(d.timestamp), "point": parseInt(d.point), "text": d.text } 
+        }) as IReflection[], this.analytics )
     }
 }

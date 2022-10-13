@@ -1,3 +1,4 @@
+import { IGroupBy } from "../utils/utils.js";
 export interface IReflection {
     refId: number;
     timestamp: Date;
@@ -121,15 +122,25 @@ export interface IEdges<T> extends d3.SimulationLinkDatum<T> {
     properties: any;
     isReflection?: boolean;
 }
-export interface IReflectionAnalytics {
+export interface IAnalytics {
     name: string;
     description: string;
     nodes: INodes[];
     edges: IEdges<INodes>[];
 }
+export interface IReflectionAnalytics extends IReflection {
+    nodes: INodes[];
+}
 export interface IAuthorAnalyticsData {
-    reflections: IReflection[];
-    analytics: IReflectionAnalytics[];
+    reflections: IReflectionAnalytics[];
+    analytics: IAnalytics;
+    tags: IGroupBy<INodes>[];
+}
+export declare class AuthorAnalyticsData implements IAuthorAnalyticsData {
+    reflections: IReflectionAnalytics[];
+    analytics: IAnalytics;
+    tags: IGroupBy<INodes>[];
+    constructor(reflections: IReflection[], analytics: IAnalytics);
 }
 export declare enum AnalyticsType {
     Timeline = 0,

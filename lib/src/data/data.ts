@@ -1,10 +1,10 @@
-import { calculateMean, groupBy } from "../utils/utils.js";
+import { calculateMean, groupBy, IGroupBy } from "../utils/utils.js";
 
 export interface IReflection {
-    refId: number;
-    timestamp: Date;
-    point: number;
-    text: string;
+    refId: number
+    timestamp: Date
+    point: number
+    text: string
 }
 
 export interface IReflectionAuthor extends IReflection {
@@ -176,16 +176,46 @@ export interface IEdges<T> extends d3.SimulationLinkDatum<T> {
     isReflection?: boolean
 }
 
-export interface IReflectionAnalytics {
+export interface IAnalytics {
     name: string
     description: string
     nodes: INodes[]
     edges: IEdges<INodes>[]
 }
 
+export interface IReflectionAnalytics extends IReflection {
+    nodes: INodes[]
+}
+
 export interface IAuthorAnalyticsData {
-    reflections: IReflection[]
-    analytics: IReflectionAnalytics[]
+    reflections: IReflectionAnalytics[]
+    analytics: IAnalytics
+    tags: IGroupBy<INodes>[]
+}
+
+export class AuthorAnalyticsData implements IAuthorAnalyticsData {
+    reflections: IReflectionAnalytics[]
+    analytics: IAnalytics
+    tags: IGroupBy<INodes>[]
+    constructor(reflections: IReflection[], analytics: IAnalytics) {
+        this.reflections = reflections.map(c => { 
+            let nodes = analytics.nodes.filter(r => r.refId === c.refId).map(d => { 
+                return {"idx": d.idx, 
+                    "nodeType": d.nodeType, 
+                    "refId": d.refId, 
+                    "startIdx": d.startIdx, 
+                    "endIdx": d.endIdx, 
+                    "expression": d.expression, 
+                    "labelType": d.labelType,
+                    "name": d.name,
+                    "description": d.description,
+                    "selected": d.selected,
+                    "properties": d.properties}
+            }) as INodes[]
+            return {"refId": c.refId, "timestamp": c.timestamp, "point": c.point, "text": c.text, "nodes": nodes }})
+        this.analytics = analytics
+        this.tags = groupBy(analytics.nodes, "name")
+    }
 }
 
 export enum AnalyticsType {

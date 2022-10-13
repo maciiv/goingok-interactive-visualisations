@@ -1,5 +1,5 @@
 import d3 from "d3";
-import { AnalyticsType, IAuthorAnalyticsData, IEdges, INodes, IReflectionAnalytics } from "../../data/data.js";
+import { IAnalytics, IAuthorAnalyticsData, IEdges, INodes } from "../../data/data.js";
 import { Tooltip } from "../../interactions/tooltip.js";
 import { Zoom } from "../../interactions/zoom.js";
 import { addDays, maxDate, minDate } from "../../utils/utils.js";
@@ -12,42 +12,28 @@ export class Network extends ChartNetwork {
     zoom = new Zoom()
     help = new Help()
     simulation: d3.Simulation<INodes, undefined>
-    analytics: IReflectionAnalytics
     private _data: IAuthorAnalyticsData
     get data() {
         return this._data
     }
     set data(entries: IAuthorAnalyticsData) {
         this._data = entries
-        if (this.analytics === undefined) {
-            d3.select(`#${this.id} .chart-container`).html("Chart not found")
-            return
-        }
         this.render()
     }
     constructor(data: IAuthorAnalyticsData) {
         super("network", "chart-container.network", [addDays(minDate(data.reflections.map(d => d.timestamp)), -30), addDays(maxDate(data.reflections.map(d => d.timestamp)), 30)])
-        this.analytics = data.analytics.find(c => c.name == AnalyticsType.Network.toString())
-        this.analytics === undefined ? 
-            d3.select(`#${this.id} .chart-container`).html("Chart not found") : 
-            this.simulation = this.processSimulation()
-        this._data = data
+        this.simulation = this.processSimulation(data)
+        this.data = data
     }
     render() {
         const _this = this
-        const analytics = _this.data.analytics.find(c => c.name === AnalyticsType.Network.toString())
-
-        if (analytics === undefined) {
-            d3.select(`#${_this.id} .chart-container.network`).html("Chart not found")
-            return
-        }
 
         // d3.select(`#${_this.id} .card-subtitle`)
         //     .html(reflection !== undefined ? `Filtering by <span class="badge badge-pill badge-info">${reflection.timestamp.toDateString()} <i class="fas fa-window-close"></i></span>`:
         //         "")
 
         let edges = _this.elements.contentContainer.selectAll(".network-link")
-            .data(analytics.edges)
+            .data(_this.data.analytics.edges)
             .join(
                 enter => enter.append("line")
                     .attr("class", "network-link")
@@ -55,13 +41,7 @@ export class Network extends ChartNetwork {
                     .attr("x1", _this.width / 2)
                     .attr("y1", _this.height / 2)
                     .attr("x2", _this.width / 2)
-                    .attr("y2", _this.height / 2)
-                    .call(enter => enter.transition()
-                        .duration(750)               
-                        .attr("x1", d => (d.source as INodes).x)
-                        .attr("y1", d => (d.source as INodes).y)
-                        .attr("x2", d => (d.target as INodes).x)
-                        .attr("y2", d => (d.target as INodes).y)),
+                    .attr("y2", _this.height / 2),
                 update => update.call(update => update.classed("reflection-link", d => d.isReflection)
                     .transition()
                     .duration(750)               
@@ -73,7 +53,7 @@ export class Network extends ChartNetwork {
             );
         
         let nodes = _this.elements.content = _this.elements.contentContainer.selectAll(".network-node-group")
-            .data(analytics.nodes)
+            .data(_this.data.analytics.nodes)
             .join(
                 enter => enter.append("g")
                     .attr("class", "network-node-group")
@@ -89,10 +69,7 @@ export class Network extends ChartNetwork {
                         .attr("x", -5)
                         .attr("y", -5)
                         .attr("width", 10)
-                        .attr("height", 10))
-                    .call(enter => enter.transition()
-                        .duration(750)
-                        .attr("transform", d => `translate(${d.x}, ${d.y})`)),
+                        .attr("height", 10)),
                 update => update.call(update => update.transition()
                     .duration(750)
                     .attr("transform", d => `translate(${d.x}, ${d.y})`))
@@ -112,9 +89,9 @@ export class Network extends ChartNetwork {
             edges.attr("x1", d => (d.source as INodes).x)
             .attr("y1", d => (d.source as INodes).y)
             .attr("x2", d => (d.target as INodes).x)
-            .attr("y2", d => (d.target as INodes).y);
+            .attr("y2", d => (d.target as INodes).y)
 
-            nodes.attr("transform", (d: INodes) => `translate(${d.x}, ${d.y})`);
+            nodes.attr("transform", (d: INodes) => `translate(${d.x}, ${d.y})`)
         }
 
         //Enable tooltip       
@@ -125,7 +102,7 @@ export class Network extends ChartNetwork {
             }
 
             d3.selectAll<SVGGElement, INodes>(".network-node-group")
-                .filter(c => _this.getTooltipNodes(analytics, d).includes(c))
+                .filter(c => _this.getTooltipNodes(_this.data.analytics, d).includes(c))
                 .call(enter => enter.select("text")
                     .text(d => d.expression)
                     .style("opacity", 0)
@@ -187,18 +164,18 @@ export class Network extends ChartNetwork {
         this.x.axis.ticks((this.width - this.padding.yAxis - this.padding.right) / 75);
         this.elements.xAxis.transition().duration(750).call(this.x.axis);
     }
-    private getTooltipNodes(data: IReflectionAnalytics, nodeData: INodes): INodes[] {
+    private getTooltipNodes(data: IAnalytics, nodeData: INodes): INodes[] {
         let edges = data.edges.filter(d => d.source === nodeData).map(d => d.target as INodes);
         edges = edges.concat(data.edges.filter(d => d.target === nodeData).map(d => d.source as INodes));
         edges.push(nodeData);
         return edges;
     }
-    private processSimulation(): d3.Simulation<INodes, undefined> {
-        return d3.forceSimulation<INodes, undefined>(this.analytics.nodes)
+    private processSimulation(data: IAuthorAnalyticsData): d3.Simulation<INodes, undefined> {
+        return d3.forceSimulation<INodes, undefined>(data.analytics.nodes)
             .force("link", d3.forceLink<INodes, IEdges<INodes>>()
                 .id(d => d.idx)
                 .distance(100)
-                .links(this.analytics.edges))
+                .links(data.analytics.edges))
             .force("charge", d3.forceManyBody().strength(-25))
             .force("collide", d3.forceCollide().radius(30).iterations(5))
             .force("center", d3.forceCenter((this.width -this.padding.yAxis - this.padding.right - 10) / 2, (this.height - this.padding.top - this.padding.xAxis + 5) / 2));
