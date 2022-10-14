@@ -1,34 +1,24 @@
-import { IAuthorExperimentalInteractions, AuthorExperimentalInteractions } from "../charts/interactions.js";
-import { IAnalytics, IReflection, INodes } from "../data/data.js";
-import { AuthorControlCharts, IAuthorControlCharts } from "./authorControl.js";
-import { Network } from "../charts/author/network.js";
-import { TimelineNetwork } from "../charts/author/timelineNetwork.js";
+import { IAnalytics, IAuthorAnalyticsData, ITags, IReflectionAnalytics } from "../data/data.js";
+import { Dashboard } from "./authorControl.js";
 import { IAuthorAnalyticsDataRaw } from "../data/db.js";
-export interface IAuthorExperimentalCharts extends IAuthorControlCharts {
-    interactions: IAuthorExperimentalInteractions;
-    allAnalytics: IAnalytics[];
-    timelineChart: TimelineNetwork;
-    networkChart: Network;
+import { Help } from "../charts/help.js";
+import { Sort } from "../interactions/sort.js";
+export declare class ExperimentalDashboard extends Dashboard {
+    tags: ITags[];
+    reflectionAnalytics: IReflectionAnalytics[];
+    analytics: IAnalytics;
     sorted: string;
+    sort: Sort;
+    help: Help;
+    constructor(data: IAuthorAnalyticsData);
+    preloadTags(entries: IAuthorAnalyticsData): ITags[];
     handleTags(): void;
     handleTagsColours(): void;
-    handleReflectionsSort(): void;
-}
-export declare class AuthorExperimentalCharts extends AuthorControlCharts implements IAuthorExperimentalCharts {
-    interactions: AuthorExperimentalInteractions;
-    allAnalytics: IAnalytics[];
-    timelineChart: TimelineNetwork;
-    networkChart: Network;
-    sorted: string;
-    preloadTags(entries: IAnalytics[], enable?: boolean): INodes[];
-    handleTags(): void;
-    handleTagsColours(): void;
-    handleReflectionsSort(): void;
-    handleFilterButton(): void;
-    private getUpdatedAnalyticsData;
-    private getUpdatedNetworkData;
-    renderTimeline(chart: TimelineNetwork, data: IReflection[], analytics: IAnalytics): TimelineNetwork;
-    renderNetwork(chart: Network, data: IAnalytics, reflection?: IReflection): Network;
-    renderReflections(data: IReflection[]): void;
+    extendTimeline(dashboard: ExperimentalDashboard): void;
+    extendNetwork(dashboard: ExperimentalDashboard): import("../charts/author/network.js").Network<ExperimentalDashboard>;
+    extendReflections(dashboard: ExperimentalDashboard): void;
+    private handleFilterButton;
+    private updateReflectionNodesData;
+    private updateAnalyticsData;
 }
 export declare function buildExperimentAuthorAnalyticsCharts(entriesRaw: IAuthorAnalyticsDataRaw): Promise<void>;

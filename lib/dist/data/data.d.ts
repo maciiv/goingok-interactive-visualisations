@@ -1,4 +1,3 @@
-import { IGroupBy } from "../utils/utils.js";
 export interface IReflection {
     refId: number;
     timestamp: Date;
@@ -131,18 +130,18 @@ export interface IAnalytics {
 export interface IReflectionAnalytics extends IReflection {
     nodes: INodes[];
 }
+export interface ITags {
+    name: string;
+    properties: any;
+    selected?: boolean;
+}
 export interface IAuthorAnalyticsData {
     reflections: IReflectionAnalytics[];
     analytics: IAnalytics;
-    tags: IGroupBy<INodes>[];
 }
 export declare class AuthorAnalyticsData implements IAuthorAnalyticsData {
     reflections: IReflectionAnalytics[];
     analytics: IAnalytics;
-    tags: IGroupBy<INodes>[];
-    constructor(reflections: IReflection[], analytics: IAnalytics);
-}
-export declare enum AnalyticsType {
-    Timeline = 0,
-    Network = 1
+    constructor(reflections: IReflection[], analytics: IAnalytics, colourScale: Function);
+    private processColour;
 }

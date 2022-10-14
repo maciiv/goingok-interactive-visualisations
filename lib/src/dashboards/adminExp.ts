@@ -40,7 +40,7 @@ export class ExperimentalDashboard extends Dashboard {
             .attr("value", d => d.group)
             .property("checked", true)
 
-        return d3.filter(entries, d => d.selected == true);
+        return entries.filter(c => c.selected)
     }
     handleGroups(): void {
         const _this = this;
@@ -135,7 +135,7 @@ export class ExperimentalDashboard extends Dashboard {
             _this.removeAllHelp(_this.barChart);
         });
     }
-    handleFilterButton(): void {
+    private handleFilterButton(): void {
         const data = this.entries.filter(d => d.selected)
         this.barChart.clicking.removeClick(this.barChart)
         this.histogram.clicking.removeClick(this.histogram)

@@ -1,27 +1,33 @@
 import d3 from "d3";
-import { IAnalytics, IAuthorAnalyticsData, IEdges, INodes } from "../../data/data.js";
+import { IAnalytics, IEdges, INodes } from "../../data/data.js";
+import { Click } from "../../interactions/click.js";
 import { Tooltip } from "../../interactions/tooltip.js";
 import { Zoom } from "../../interactions/zoom.js";
 import { addDays, maxDate, minDate } from "../../utils/utils.js";
-import { ChartNetwork } from "../chartBase.js";
+import { ChartNetwork, ExtendChart } from "../chartBase.js";
 import { Help } from "../help.js";
 
 // Basic class for network chart timeline
-export class Network extends ChartNetwork {
+export class Network<T> extends ChartNetwork {
     tooltip = new Tooltip()
     zoom = new Zoom()
     help = new Help()
+    clicking = new Click()
     simulation: d3.Simulation<INodes, undefined>
-    private _data: IAuthorAnalyticsData
+    dashboard?: T
+    extend?: ExtendChart<T>
+    private _data: IAnalytics
     get data() {
         return this._data
     }
-    set data(entries: IAuthorAnalyticsData) {
-        this._data = entries
+    set data(entries: IAnalytics) {
+        this._data = this.filterData(entries)
+        this.resetZoomRange()
         this.render()
+        this.extend !== undefined && this.dashboard !== undefined ? this.extend(this.dashboard) : null
     }
-    constructor(data: IAuthorAnalyticsData) {
-        super("network", "chart-container.network", [addDays(minDate(data.reflections.map(d => d.timestamp)), -30), addDays(maxDate(data.reflections.map(d => d.timestamp)), 30)])
+    constructor(data: IAnalytics, domain: Date[]) {
+        super("network", "chart-container.network", [addDays(minDate(domain), -30), addDays(maxDate(domain), 30)])
         this.simulation = this.processSimulation(data)
         this.data = data
     }
@@ -33,7 +39,7 @@ export class Network extends ChartNetwork {
         //         "")
 
         let edges = _this.elements.contentContainer.selectAll(".network-link")
-            .data(_this.data.analytics.edges)
+            .data(_this.data.edges)
             .join(
                 enter => enter.append("line")
                     .attr("class", "network-link")
@@ -41,9 +47,14 @@ export class Network extends ChartNetwork {
                     .attr("x1", _this.width / 2)
                     .attr("y1", _this.height / 2)
                     .attr("x2", _this.width / 2)
-                    .attr("y2", _this.height / 2),
-                update => update.call(update => update.classed("reflection-link", d => d.isReflection)
-                    .transition()
+                    .attr("y2", _this.height / 2)
+                    .call(enter => enter.transition()
+                    .duration(750)
+                    .attr("x1", d => (d.source as INodes).x)
+                    .attr("y1", d => (d.source as INodes).y)
+                    .attr("x2", d => (d.target as INodes).x)
+                    .attr("y2", d => (d.target as INodes).y)),
+                update => update.call(update => update.transition()
                     .duration(750)               
                     .attr("x1", d => (d.source as INodes).x)
                     .attr("y1", d => (d.source as INodes).y)
@@ -53,7 +64,7 @@ export class Network extends ChartNetwork {
             );
         
         let nodes = _this.elements.content = _this.elements.contentContainer.selectAll(".network-node-group")
-            .data(_this.data.analytics.nodes)
+            .data(_this.data.nodes)
             .join(
                 enter => enter.append("g")
                     .attr("class", "network-node-group")
@@ -69,7 +80,10 @@ export class Network extends ChartNetwork {
                         .attr("x", -5)
                         .attr("y", -5)
                         .attr("width", 10)
-                        .attr("height", 10)),
+                        .attr("height", 10))
+                    .call(enter => enter.transition()
+                        .duration(750)
+                        .attr("transform", d => `translate(${d.x}, ${d.y})`)),
                 update => update.call(update => update.transition()
                     .duration(750)
                     .attr("transform", d => `translate(${d.x}, ${d.y})`))
@@ -102,7 +116,7 @@ export class Network extends ChartNetwork {
             }
 
             d3.selectAll<SVGGElement, INodes>(".network-node-group")
-                .filter(c => _this.getTooltipNodes(_this.data.analytics, d).includes(c))
+                .filter(c => _this.getTooltipNodes(_this.data, d).includes(c))
                 .call(enter => enter.select("text")
                     .text(d => d.expression)
                     .style("opacity", 0)
@@ -164,20 +178,25 @@ export class Network extends ChartNetwork {
         this.x.axis.ticks((this.width - this.padding.yAxis - this.padding.right) / 75);
         this.elements.xAxis.transition().duration(750).call(this.x.axis);
     }
-    private getTooltipNodes(data: IAnalytics, nodeData: INodes): INodes[] {
+    getTooltipNodes(data: IAnalytics, nodeData: INodes): INodes[] {
         let edges = data.edges.filter(d => d.source === nodeData).map(d => d.target as INodes);
         edges = edges.concat(data.edges.filter(d => d.target === nodeData).map(d => d.source as INodes));
         edges.push(nodeData);
         return edges;
     }
-    private processSimulation(data: IAuthorAnalyticsData): d3.Simulation<INodes, undefined> {
-        return d3.forceSimulation<INodes, undefined>(data.analytics.nodes)
+    private processSimulation(data: IAnalytics): d3.Simulation<INodes, undefined> {
+        return d3.forceSimulation<INodes, undefined>(data.nodes)
             .force("link", d3.forceLink<INodes, IEdges<INodes>>()
                 .id(d => d.idx)
                 .distance(100)
-                .links(data.analytics.edges))
+                .links(data.edges))
             .force("charge", d3.forceManyBody().strength(-25))
             .force("collide", d3.forceCollide().radius(30).iterations(5))
             .force("center", d3.forceCenter((this.width -this.padding.yAxis - this.padding.right - 10) / 2, (this.height - this.padding.top - this.padding.xAxis + 5) / 2));
+    }
+    private filterData(data: IAnalytics): IAnalytics {
+        let nodes = data.nodes.filter(d => d.selected)
+        let edges = data.edges.filter(d => (d.source as INodes).selected && (d.target as INodes).selected)
+        return { "name": data.name, "description": data.description, "nodes": nodes, "edges": edges }
     }
 }

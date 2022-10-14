@@ -187,38 +187,33 @@ export interface IReflectionAnalytics extends IReflection {
     nodes: INodes[]
 }
 
+export interface ITags {
+    name: string
+    properties: any
+    selected?: boolean
+}
+
 export interface IAuthorAnalyticsData {
     reflections: IReflectionAnalytics[]
     analytics: IAnalytics
-    tags: IGroupBy<INodes>[]
 }
 
 export class AuthorAnalyticsData implements IAuthorAnalyticsData {
     reflections: IReflectionAnalytics[]
     analytics: IAnalytics
-    tags: IGroupBy<INodes>[]
-    constructor(reflections: IReflection[], analytics: IAnalytics) {
+    constructor(reflections: IReflection[], analytics: IAnalytics, colourScale: Function) {
         this.reflections = reflections.map(c => { 
-            let nodes = analytics.nodes.filter(r => r.refId === c.refId).map(d => { 
-                return {"idx": d.idx, 
-                    "nodeType": d.nodeType, 
-                    "refId": d.refId, 
-                    "startIdx": d.startIdx, 
-                    "endIdx": d.endIdx, 
-                    "expression": d.expression, 
-                    "labelType": d.labelType,
-                    "name": d.name,
-                    "description": d.description,
-                    "selected": d.selected,
-                    "properties": d.properties}
-            }) as INodes[]
-            return {"refId": c.refId, "timestamp": c.timestamp, "point": c.point, "text": c.text, "nodes": nodes }})
+            let nodes = JSON.parse(JSON.stringify(analytics.nodes.filter(r => r.refId === c.refId))) as INodes[]
+            nodes.forEach(r => this.processColour(r, colourScale))
+            return {"refId": c.refId, "timestamp": c.timestamp, "point": c.point, "text": c.text, "nodes": nodes }
+        })
+        analytics.nodes.forEach(r => this.processColour(r, colourScale))
         this.analytics = analytics
-        this.tags = groupBy(analytics.nodes, "name")
     }
-}
-
-export enum AnalyticsType {
-    Timeline,
-    Network
+    private processColour(node: INodes, colourScale: Function): INodes {
+        if (node.properties["color"] === undefined) {
+            node.properties = {"color": colourScale(node.name)}
+        }
+        return node;
+    }
 }

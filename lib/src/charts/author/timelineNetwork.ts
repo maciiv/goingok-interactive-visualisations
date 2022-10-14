@@ -1,22 +1,33 @@
 import d3 from "d3";
-import { IAuthorAnalyticsData, INodes, IReflection, IReflectionAnalytics } from "../../data/data.js";
+import { INodes, IReflectionAnalytics } from "../../data/data.js";
+import { Click } from "../../interactions/click.js";
 import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
-import { addDays, maxDate, minDate } from "../../utils/utils.js";
-import { ChartPadding, ChartTime } from "../chartBase.js";
+import { addDays, groupBy, maxDate, minDate } from "../../utils/utils.js";
+import { ChartPadding, ChartTime, ExtendChart } from "../chartBase.js";
 
-export class TimelineNetwork extends ChartTime {
+export class TimelineNetwork<T> extends ChartTime {
     tooltip = new Tooltip()
-    private _data: IAuthorAnalyticsData
+    clicking = new Click()
+    dashboard?: T
+    extend?: ExtendChart<T>
+    private _data: IReflectionAnalytics[]
     get data() {
         return this._data
     }
-    set data(entries: IAuthorAnalyticsData) {
-        this._data = entries
+    set data(entries: IReflectionAnalytics[]) {
+        this._data = entries.map(c => {
+            c.nodes = c.nodes.filter(d => d.selected)
+            return c
+        })
         this.render()
+        this.extend !== undefined && this.dashboard !== undefined ? this.extend(this.dashboard) : null
     }
-    constructor(data: IAuthorAnalyticsData){
-        super("timeline", [addDays(minDate(data.reflections.map(d => d.timestamp)), -30), addDays(maxDate(data.reflections.map(d => d.timestamp)), 30)], new ChartPadding(40, 75, 10, 10))
-        this.data = data
+    constructor(data: IReflectionAnalytics[]){
+        super("timeline", [addDays(minDate(data.map(d => d.timestamp)), -30), addDays(maxDate(data.map(d => d.timestamp)), 30)], new ChartPadding(40, 75, 10, 10))
+        this.data = data.map(c => {
+            this.simulation(c)
+            return c
+        })
     }
     render() {
         const _this = this
@@ -28,13 +39,13 @@ export class TimelineNetwork extends ChartTime {
 
         if (_this.elements.contentContainer.select(".hardline").empty()) {
             _this.elements.contentContainer.append("path")
-                .datum(d3.sort(_this.data.reflections, d => d.timestamp))
+                .datum(d3.sort(_this.data, d => d.timestamp))
                 .attr("class", "hardline")
                 .attr("d", d => hardLine(d));
         }
         
         _this.elements.contentContainer.selectAll(".circle-tag-container")
-            .data(_this.data.reflections)
+            .data(_this.data)
             .join(
                 enter => enter.append("g")
                     .attr("class", "circle-tag-container")
@@ -56,39 +67,18 @@ export class TimelineNetwork extends ChartTime {
                     .call(update => _this.renderReflectionNetwork(update)),
                 exit => exit.remove()
             )
-            .each(function(d) {
-                const _thisContainer = this
-                _this.simulation(d.nodes).on("tick", function() {
-                    d3.select(_thisContainer).selectAll(".circle-tag").attr("transform", (c: INodes) => { 
-                        const centerY = _this.y.scale(d.point)
-                        const centerX = _this.x.scale(d.timestamp)
-                        if (centerY < 20) {
-                            this.force("forceY", d3.forceY(20).strength(0.25))
-                        }
-                        if (_this.height - _this.padding.top - _this.padding.xAxis - 20 < centerY) {
-                            this.force("forceY", d3.forceY(-20).strength(0.25))
-                        }
-                        if (centerX < 20) {
-                            this.force("forceX", d3.forceX(20).strength(0.25))
-                        }
-                        if (_this.width - _this.padding.yAxis - _this.padding.right - 20 < centerX) {
-                            this.force("forceX", d3.forceX(-20).strength(0.25))
-                        }
-                        return `translate(${c.x}, ${c.y})`})
-                })
-            })
         
         _this.elements.content = _this.elements.contentContainer.selectAll(".circle");
 
         //Enable tooltip       
         _this.tooltip.enableTooltip(_this, onMouseover, onMouseout);
-        function onMouseover(e: Event, d: IReflection) {
+        function onMouseover(e: Event, d: IReflectionAnalytics) {
             if (d3.select(this).attr("class").includes("clicked")) {
                 return;
             }
             _this.tooltip.appendTooltipContainer(_this);
-            let tooltipValues = [new TooltipValues("Point", d.point)];
-            let tags = Array.from(d3.rollup(_this.data.analytics.nodes.filter(c => c.refId == d.refId), d => d.length, d  => d.name), ([name, total]) => ({name, total}));
+            let tooltipValues = [new TooltipValues("Point", d.point)]
+            let tags = groupBy(_this.data.find(c => c.refId === d.refId).nodes, "name").map(c => { return {"name": c.key, "total": c.value.length}})
             tags.forEach(c => {
                 tooltipValues.push(new TooltipValues(c.name, c.total));
             })
@@ -122,8 +112,7 @@ export class TimelineNetwork extends ChartTime {
         }
     }
     private renderReflectionNetwork(enter: d3.Selection<SVGGElement | d3.BaseType, IReflectionAnalytics, SVGGElement, unknown>) {
-        const _this = this
-        const nodes = enter.selectAll(".circle-tag")
+        enter.selectAll(".circle-tag")
             .data(d => d.nodes)
             .join(
                 enter => enter.append("circle")
@@ -142,9 +131,24 @@ export class TimelineNetwork extends ChartTime {
                 exit => exit.remove()
             )
     }
-    private simulation(nodes: INodes[]): d3.Simulation<INodes, undefined> {
-        return d3.forceSimulation<INodes, undefined>(nodes)
+    private simulation(reflection: IReflectionAnalytics): void {
+        let simulation = d3.forceSimulation<INodes, undefined>(reflection.nodes)
             .force("collide", d3.forceCollide().radius(5))
-            .force("forceRadial", d3.forceRadial(0, 0).radius(15));
+            .force("forceRadial", d3.forceRadial(0, 0).radius(15))
+        const centerY = this.y.scale(reflection.point)
+        const centerX = this.x.scale(reflection.timestamp)
+        if (centerY < 20) {
+            simulation.force("forceY", d3.forceY(20).strength(0.25))
+        }
+        if (this.height - this.padding.top - this.padding.xAxis - 20 < centerY) {
+            simulation.force("forceY", d3.forceY(-20).strength(0.25))
+        }
+        if (centerX < 20) {
+            simulation.force("forceX", d3.forceX(20).strength(0.25))
+        }
+        if (this.width - this.padding.yAxis - this.padding.right - 20 < centerX) {
+            simulation.force("forceX", d3.forceX(-20).strength(0.25))
+        }
+        simulation.tick(300)
     }
 }

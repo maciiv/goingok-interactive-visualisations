@@ -1,20 +1,24 @@
 import d3 from "d3"
-import { IAuthorAnalyticsData, IReflection, IReflectionAnalytics } from "../../data/data.js"
+import { IReflection, IReflectionAnalytics } from "../../data/data.js"
 import { Sort } from "../../interactions/sort.js"
+import { ExtendChart } from "../chartBase.js"
 
-export class Reflections {
+export class Reflections<T> {
     id: string
     sorted = ""
     sort = new Sort()
-    private _data: IAuthorAnalyticsData
+    dashboard?: T
+    extend?: ExtendChart<T>
+    private _data: IReflectionAnalytics[]
     get data() {
         return this._data
     }
-    set data(entries: IAuthorAnalyticsData) {
+    set data(entries: IReflectionAnalytics[]) {
         this._data = entries
         this.render()
+        this.extend !== undefined && this.dashboard !== undefined ? this.extend(this.dashboard) : null
     }
-    constructor(data: IAuthorAnalyticsData) {
+    constructor(data: IReflectionAnalytics[]) {
         this.id = "reflections"
         this.data = data
     }
@@ -22,12 +26,12 @@ export class Reflections {
         const _this = this
 
         d3.select("#reflections .card-subtitle")
-        .html(_this.data.reflections.length == 1 ? `Filtering by <span class="badge badge-pill badge-info">${_this.data.reflections[0].timestamp.toDateString()} <i class="fas fa-window-close"></i></span>`:
+        .html(_this.data.length == 1 ? `Filtering by <span class="badge badge-pill badge-info">${_this.data[0].timestamp.toDateString()} <i class="fas fa-window-close"></i></span>`:
             "");
 
         d3.select<HTMLDivElement, IReflection>("#reflections .reflections-tab")
             .selectAll(".reflection")
-            .data(_this.data.reflections)
+            .data(_this.data)
             .join(
                 enter => enter.append("div")
                     .attr("id", d => `ref-${d.refId}`)

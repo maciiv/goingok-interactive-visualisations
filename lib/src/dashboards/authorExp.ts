@@ -1,34 +1,35 @@
 import d3 from "d3";
-import { IAuthorExperimentalInteractions, AuthorExperimentalInteractions } from "../charts/interactions.js";
-import { IAnalytics, IReflection, INodes, IAuthorAnalyticsData } from "../data/data.js";
-import { AuthorControlCharts, IAuthorControlCharts } from "./authorControl.js";
+import { IAnalytics, IReflection, INodes, IAuthorAnalyticsData, ITags, IReflectionAnalytics } from "../data/data.js";
+import { Dashboard } from "./authorControl.js";
 import { Loading } from "../utils/loading.js";
 import { Tutorial, TutorialData } from "../utils/tutorial.js";
-import { Network } from "../charts/author/network.js";
-import { TimelineNetwork } from "../charts/author/timelineNetwork.js";
-import { IAuthorAnalyticsDataRaw } from "../data/db.js";
+import { AuthorAnalyticsDataRaw, IAuthorAnalyticsDataRaw } from "../data/db.js";
+import { Help } from "../charts/help.js";
+import { Sort } from "../interactions/sort.js";
 
-export interface IAuthorExperimentalCharts extends IAuthorControlCharts {
-    interactions: IAuthorExperimentalInteractions;
-    allAnalytics: IAnalytics[];
-    timelineChart: TimelineNetwork;
-    networkChart: Network;
-    sorted: string;
-    handleTags(): void;
-    handleTagsColours(): void;
-    handleReflectionsSort(): void;
-}
-
-export class AuthorExperimentalCharts extends AuthorControlCharts implements IAuthorExperimentalCharts {
-    interactions = new AuthorExperimentalInteractions();
-    allAnalytics: IAnalytics[];
-    timelineChart: TimelineNetwork;
-    networkChart: Network;
-    sorted = "date";
-
-    preloadTags(entries: IAnalytics[], enable?: boolean): INodes[] {
-        let nodes = super.preloadTags(entries, true);
-        this.allAnalytics = entries
+export class ExperimentalDashboard extends Dashboard {
+    tags: ITags[]
+    reflectionAnalytics: IReflectionAnalytics[]
+    analytics: IAnalytics
+    sorted = ""
+    sort = new Sort()
+    help = new Help()
+    constructor(data: IAuthorAnalyticsData) {
+        super(data)
+        this.timeline.extend = this.extendTimeline
+        this.timeline.dashboard = this
+        this.extendTimeline(this)
+        this.network.extend = this.extendNetwork
+        this.network.dashboard = this
+        this.extendNetwork(this)
+        this.reflections.extend = this.extendReflections
+        this.reflections.dashboard = this
+        this.extendReflections(this)
+    }
+    preloadTags(entries: IAuthorAnalyticsData): ITags[] {
+        this.tags = super.preloadTags(entries, true)
+        this.reflectionAnalytics = entries.reflections
+        this.analytics = entries.analytics
 
         d3.select("#tags").selectAll<HTMLLIElement, INodes>("li").select("div")
             .insert("div", "input")
@@ -40,145 +41,79 @@ export class AuthorExperimentalCharts extends AuthorControlCharts implements IAu
             .attr("value", d => d.name)
             .property("checked", true)
 
-        return nodes;
+        return this.tags.filter(c => c.selected)
     }
-
     handleTags(): void {
-        let _this = this;
+        const _this = this;
         d3.selectAll("#tags input[type=checkbox]").on("change", (e: Event) => {
-            let target = e.target as HTMLInputElement;
+            const target = e.target as HTMLInputElement;
             if (target.checked) {
-                _this.allNodes.filter(d => d.name == target.value).forEach(c => c.selected = true)
+                _this.tags.find(c => c.name === target.value).selected = true
             } else {
-                _this.allNodes.filter(d => d.name == target.value).forEach(c => c.selected = false)
+                _this.tags.find(c => c.name === target.value).selected = false
             }
 
-            let analytics = _this.getUpdatedAnalyticsData();
-            let networkData = _this.getUpdatedNetworkData();
-            _this.networkChart.resetZoomRange();
-            _this.renderNetwork(_this.networkChart, networkData);
-            _this.renderReflections(_this.allEntries);
-            _this.renderTimeline(_this.timelineChart, _this.allEntries, analytics.find(d => d.name == "Your Timeline"));
-        });
-    };
-
+            const reflectionsData = _this.updateReflectionNodesData()
+            _this.timeline.data = reflectionsData
+            _this.reflections.data = reflectionsData
+            _this.network.data = _this.updateAnalyticsData()
+        })
+    }
     handleTagsColours(): void {
         const _this = this;
         d3.selectAll("#tags input[type=color]").on("change", (e: Event) => {
-            let target = e.target as HTMLInputElement;
-            let name = target.id.replace("colour-", "");
-            _this.allAnalytics = _this.allAnalytics.map(c => { 
-                let nodes = c.nodes.filter(d => d.name === name);
-                for(var i = 0; i < nodes.length; i++) {
-                    c.nodes.find(d => d === nodes[i]).properties["color"] = target.value;
-                }
-                return c
-            });
+            const target = e.target as HTMLInputElement
+            const name = target.id.replace("colour-", "")
+            _this.tags.find(c => c.name === name).properties["color"] = target.value
 
-            let analytics = _this.getUpdatedAnalyticsData();
-            _this.networkChart.resetZoomRange();
-            _this.renderNetwork(_this.networkChart, analytics.find(d => d.name == "Your Network"));
-            _this.renderReflections(_this.allEntries);
-            _this.renderTimeline(_this.timelineChart, _this.allEntries, analytics.find(d => d.name == "Your Timeline"));
-        });
-    };
-
-    handleReflectionsSort(): void {
-        const _this = this;
-        d3.select("#sort .btn-group-toggle").on("click", (e: any) => {
-            var selectedOption = e.target.control.value;
-            _this.allEntries = _this.allEntries.sort(function (a, b) {
-                if (selectedOption == "date") {
-                    return _this.interactions.sort.sortData(a.timestamp, b.timestamp, _this.sorted == "date" ? true : false);
-                } else if (selectedOption == "point") {
-                    return _this.interactions.sort.sortData(a.point, b.point, _this.sorted == "point" ? true : false);
-                }
-            });
-            _this.sorted = _this.interactions.sort.setSorted(_this.sorted, selectedOption);
-            _this.renderReflections(_this.allEntries);
-        });
-    };
-
-    handleFilterButton(): void {
-        this.interactions.click.removeClick(this.timelineChart);
-        let analytics = this.getUpdatedAnalyticsData();
-        this.renderNetwork(this.networkChart, analytics.find(d => d.name == "Your Network"));
-        this.renderReflections(this.allEntries);
-        this.renderTimeline(this.timelineChart, this.allEntries, analytics.find(d => d.name == "Your Timeline"));
-    };
-
-    private getUpdatedAnalyticsData(): IAnalytics[] {
-        const _this = this;
-        return _this.allAnalytics.map(c => { 
-            let nodes = c.nodes.filter(d => _this.allNodes.filter(c => c.selected).map(r => r.name).includes(d.name));
-            return { "name": c.name, "description": c.description, "nodes": nodes, "edges": c.edges }
+            const reflectionsData = _this.updateReflectionNodesData()
+            _this.timeline.data = reflectionsData
+            _this.reflections.data = reflectionsData
+            _this.network.data = _this.updateAnalyticsData()
         });
     }
+    extendTimeline(dashboard: ExperimentalDashboard) {
+        const _this = dashboard
+        const chart = _this.timeline
 
-    private getUpdatedNetworkData(analytics?: IAnalytics): IAnalytics {
-        const _this = this;
-        let data = analytics === undefined ? _this.allAnalytics.find(d => d.name == "Your Network") : analytics;
-        let nodes = data.nodes.filter(d => { 
-            return _this.allNodes.filter(c => c.selected).map(r => r.name).includes(d.name) || d.name === "ref"
-        });
-        let edges = data.edges.filter(d => { 
-            return (_this.allNodes.filter(c => c.selected).map(r => r.name).includes((d.source as INodes).name) &&
-                _this.allNodes.filter(c => c.selected).map(r => r.name).includes((d.target as INodes).name)) ||
-                ((d.source as INodes).name === "ref"  && 
-                _this.allNodes.filter(c => c.selected).map(r => r.name).includes((d.target as INodes).name))
-        });
-
-        return { "name": data.name, "description": data.description, "nodes": nodes, "edges": edges }
-    }
-
-    renderTimeline(chart: TimelineNetwork, data: IReflection[], analytics: IAnalytics): TimelineNetwork {
-        chart = super.renderTimeline(chart, data, analytics);    
-
-        const _this = this
-        _this.interactions.click.enableClick(chart, onClick);
+        chart.clicking.enableClick(chart, onClick)
 
         chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
-            _this.interactions.click.removeClick(chart);
-            let analytics = _this.getUpdatedAnalyticsData();
-            _this.renderNetwork(_this.networkChart, analytics.find(d => d.name == "Your Network"));
-            _this.renderReflections(_this.allEntries);
+            chart.clicking.removeClick(chart)
+            _this.network.data = _this.updateAnalyticsData()
+            _this.reflections.data = _this.updateReflectionNodesData()
         });
 
-        function onClick(e: Event, d: IReflection) {
+        function onClick(e: Event, d: IReflectionAnalytics) {
             if (d3.select(this).attr("class").includes("clicked")) {
-                _this.interactions.click.removeClick(chart);
-                _this.renderNetwork(_this.networkChart, _this.allAnalytics.find(c => c.name == "Your Network"))
-                _this.renderReflections(data);
+                chart.clicking.removeClick(chart)
+                _this.network.data = _this.updateAnalyticsData()
+                _this.reflections.data = _this.updateReflectionNodesData()
                 return;
             }
-            _this.interactions.click.removeClick(chart);
+            chart.clicking.removeClick(chart);
             chart.click = true;
             d3.select(this).classed("clicked", true);
-            let nodes = _this.allAnalytics.find(c => c.name == "Your Network").nodes.filter(c => {
+            let nodes = _this.analytics.nodes.filter(c => {
                 return d.refId === c.refId || c.name === d.timestamp.toDateString()
             });
-            let edges = _this.allAnalytics.find(c => c.name == "Your Network").edges.filter(c => {
+            let edges = _this.analytics.edges.filter(c => {
                 return nodes.includes(c.source as INodes) || nodes.includes(c.target as INodes)
             })
-            let networkData = _this.getUpdatedNetworkData({"name": _this.allAnalytics.find(c => c.name == "Your Network").name, "description": _this.allAnalytics.find(c => c.name == "Your Network").description, "nodes": nodes, "edges": edges});
-            _this.renderNetwork(_this.networkChart, networkData, d);
-            _this.renderReflections([d]);
+            _this.network.data = {"name": _this.analytics.name, "description": _this.analytics.description, "nodes": nodes, "edges": edges}
+            _this.reflections.data = [d]
         }
-
-        return chart;
     }
-
-    renderNetwork(chart: Network, data: IAnalytics, reflection?: IReflection): Network {
-        chart = super.renderNetwork(chart, data, reflection);
-
-        const _this = this;
+    extendNetwork(dashboard: ExperimentalDashboard) {
+        const _this = dashboard
+        const chart = _this.network
 
         d3.select(`#${chart.id} .badge`).on("click", () => _this.handleFilterButton());
 
-        _this.interactions.click.enableClick(chart, onClick)
+        chart.clicking.enableClick(chart, onClick)
 
         function onClick(e: Event, d: INodes) {
-            let nodes = _this.getTooltipNodes(data, d);
+            let nodes = chart.getTooltipNodes(_this.analytics, d);
 
             d3.selectAll<HTMLDivElement, IReflection>("#reflections .reflections-tab div")
                 .filter(c => c.refId === d.refId)
@@ -200,7 +135,7 @@ export class AuthorExperimentalCharts extends AuthorControlCharts implements IAu
                 .on("end", dragEnd));
 
         function dragStart(e: d3.D3DragEvent<SVGGElement, INodes, INodes>) {
-            if (!e.active) _this.networkChart.simulation.alphaTarget(0.3).restart();
+            if (!e.active) chart.simulation.alphaTarget(0.3).restart();
             e.subject.fx = e.subject.x;
             e.subject.fy = e.subject.y;
             d3.select(this).attr("transform", `translate(${e.subject.fx}, ${e.subject.fy})`);
@@ -213,7 +148,7 @@ export class AuthorExperimentalCharts extends AuthorControlCharts implements IAu
         }
           
           function dragEnd(e: d3.D3DragEvent<SVGGElement, INodes, INodes>) {
-            if (!e.active) _this.networkChart.simulation.alphaTarget(0);
+            if (!e.active) chart.simulation.alphaTarget(0);
             e.subject.fx = null;
             e.subject.fy = null;
             d3.select(this).attr("transform", `translate(${e.subject.x}, ${e.subject.y})`);
@@ -221,21 +156,48 @@ export class AuthorExperimentalCharts extends AuthorControlCharts implements IAu
 
         return chart
     }
-
-    renderReflections(data: IReflection[]): void {
-        super.renderReflections(data)
-
-        const _this = this;
-
-        d3.select(`#reflections .badge`).on("click", () => _this.handleFilterButton());
+    extendReflections(dashboard: ExperimentalDashboard): void {
+        const _this = dashboard
+        d3.select(`#reflections .badge`).on("click", () => _this.handleFilterButton())
+    }
+    private handleFilterButton(): void {
+        this.timeline.clicking.removeClick(this.timeline)
+        const reflectionsData = this.updateReflectionNodesData()
+        this.timeline.data = reflectionsData
+        this.reflections.data = reflectionsData
+        this.network.data = this.updateAnalyticsData()
+    };
+    private updateReflectionNodesData(): IReflectionAnalytics[] {
+        return this.reflectionAnalytics.map(c => {
+            c.nodes = c.nodes.map(r => {
+                let tag = this.tags.find(d => d.name === r.name)
+                r.selected = tag.selected
+                r.properties["color"] = tag.properties["color"]
+                return r
+            })
+            return {"refId": c.refId, "point": c.point, "text": c.text, "timestamp": c.timestamp, "nodes": c.nodes}
+        })
+    }
+    private updateAnalyticsData(): IAnalytics {
+        let nodes = this.analytics.nodes.map(c => {
+            let tag = this.tags.find(d => d.name === c.name)
+            c.selected = tag.selected
+            c.properties["color"] = tag.properties["color"]
+            return c
+        })
+        let edges = this.analytics.edges.map(c => {
+            (c.source as INodes).selected = this.tags.find(d => d.name === (c.source as INodes).name).selected;
+            (c.target as INodes).selected = this.tags.find(d => d.name === (c.target as INodes).name).selected;
+            return c
+        })
+        return { "name": this.analytics.name, "description": this.analytics.description, "nodes": nodes, "edges": edges }
     }
 }
 
 export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IAuthorAnalyticsDataRaw) {
     const loading = new Loading();
     const colourScale = d3.scaleOrdinal(d3.schemeCategory10);
-    const entries = entriesRaw.transformData()
-    entries.analytics.nodes.forEach(c => processColour(c))
+    const entries = new AuthorAnalyticsDataRaw(entriesRaw).transformData(colourScale)
     await drawCharts(entries);
     new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
     new TutorialData("#timeline .circle", "Hover for information on demand"),
@@ -243,59 +205,30 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IAuthorAn
     loading.isLoading = false;
     loading.removeDiv();
 
-    function processColour(node: INodes): INodes {
-        if (node.properties["color"] === undefined) {
-            node.properties = {"color": colourScale(node.name)}
-        }
-        return node;
-    }
-
     async function drawCharts(data: IAuthorAnalyticsData) {
-        const authorExperimentalCharts = new AuthorExperimentalCharts();
-        // authorExperimentalCharts.resizeTimeline()
-        // authorExperimentalCharts.preloadTags(analytics, true)
-        // authorExperimentalCharts.allEntries = entries
+        const dashboard = new ExperimentalDashboard(data)
+        const help = new Help()
+        dashboard.preloadTags(data)
 
-        // if (analytics.find(d => d.name == "Your Network") === undefined) {
-        //     d3.select("#network .chart-container.network").html("Chart not found  <br> Interactions won't work")
-        // } else {
-        //     authorExperimentalCharts.networkChart = new Network(data);
-        //     authorExperimentalCharts.networkChart.simulation = authorExperimentalCharts.processSimulation(authorExperimentalCharts.networkChart, authorExperimentalCharts.allAnalytics.find(d => d.name == "Your Network"));
-        //     authorExperimentalCharts.renderNetwork(authorExperimentalCharts.networkChart, authorExperimentalCharts.allAnalytics.find(d => d.name == "Your Network"));
+        //Handle timeline chart help
+        help.helpPopover(dashboard.network.id, `<b>Network diagram</b><br>
+            A network diagram that shows the phrases and tags associated to your reflections<br>The data represented are your <i>reflections over time</i><br>
+            Use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move<br>
+            <u><i>Hover</i></u> over the network nodes for information on demand<br>
+            <u><i>Drag</i></u> the network nodes to rearrange the network<br>
+            <u><i>Click</i></u> to highlight the nodes in the reflection text`) 
     
-        //     //Handle timeline chart help
-        //     authorExperimentalCharts.help.helpPopover(authorExperimentalCharts.networkChart.id, `<b>Network diagram</b><br>
-        //         A network diagram that shows the phrases and tags associated to your reflections<br>The data represented are your <i>reflections over time</i><br>
-        //         Use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move<br>
-        //         <u><i>Hover</i></u> over the network nodes for information on demand<br>
-        //         <u><i>Drag</i></u> the network nodes to rearrange the network<br>
-        //         <u><i>Click</i></u> to highlight the nodes in the reflection text`) 
-        // }
+        //Handle timeline chart help
+        help.helpPopover(dashboard.timeline.id, `<b>Timeline</b><br>
+            Your reflections and the tags associated to them are shown over time<br>
+            <u><i>Hover</i></u> over a reflection point for information on demand<br>
+            <u><i>Click</i></u> a reflection point to filter the network diagram`)
 
-        // if (analytics.find(d => d.name == "Your Timeline") === undefined) {
-        //     d3.select("#timeline .chart-container").html("Chart not found <br> Interactions won't work")
-        // } else {
-        //     authorExperimentalCharts.timelineChart = new TimelineNetwork(data);
-        //     entries.forEach(c => authorExperimentalCharts.processTimelineSimulation(authorExperimentalCharts.timelineChart, authorExperimentalCharts.timelineChart.x.scale(c.timestamp), authorExperimentalCharts.timelineChart.y.scale(c.point), authorExperimentalCharts.allNodes.filter(d => d.refId == c.refId)));
-        //     authorExperimentalCharts.renderTimeline(authorExperimentalCharts.timelineChart, authorExperimentalCharts.allEntries, authorExperimentalCharts.allAnalytics.find(d => d.name == "Your Timeline"));
-    
-        //     //Handle timeline chart help
-        //     authorExperimentalCharts.help.helpPopover(authorExperimentalCharts.timelineChart.id, `<b>Timeline</b><br>
-        //         Your reflections and the tags associated to them are shown over time<br>
-        //         <u><i>Hover</i></u> over a reflection point for information on demand<br>
-        //         <u><i>Click</i></u> a reflection point to filter the network diagram`)
-        // }
-
-        // authorExperimentalCharts.renderReflections(entries);
-
-        // //Handle reflections chart help
-        // authorExperimentalCharts.help.helpPopover("reflections", `<b>Reflections</b><br>
-        //     Your reflections are shown sorted by time. The words with associated tags have a different background colour`)
-
-        // if (analytics.find(d => d.name == "Your Network") !== undefined && analytics.find(d => d.name == "Your Timeline") !== undefined) {
-        //     authorExperimentalCharts.handleTags();
-        //     authorExperimentalCharts.handleTagsColours();
-        //     authorExperimentalCharts.handleReflectionsSort();
-        // }      
+        //Handle reflections chart help
+        help.helpPopover(dashboard.reflections.id, `<b>Reflections</b><br>
+            Your reflections are shown sorted by time. The words with associated tags have a different background colour`)
+ 
+        dashboard.handleTags()  
+        dashboard.handleTagsColours()
     }
 }

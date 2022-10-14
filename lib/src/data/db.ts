@@ -47,9 +47,9 @@ export class AuthorAnalyticsDataRaw implements IAuthorAnalyticsDataRaw {
         this.reflections = data.reflections
         this.analytics = data.analytics
     }
-    transformData(): AuthorAnalyticsData {
+    transformData(colourScale?: Function): AuthorAnalyticsData {
         return new AuthorAnalyticsData(this.reflections.map(d => { 
             return { "refId": parseInt(d.refId), "timestamp": new Date(d.timestamp), "point": parseInt(d.point), "text": d.text } 
-        }) as IReflection[], this.analytics )
+        }) as IReflection[], this.analytics, colourScale)
     }
 }

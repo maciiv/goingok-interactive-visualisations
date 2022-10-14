@@ -1,20 +1,25 @@
 ;
-import { IAuthorAnalyticsData, INodes } from "../../data/data.js";
+import { IAnalytics, INodes } from "../../data/data.js";
+import { Click } from "../../interactions/click.js";
 import { Tooltip } from "../../interactions/tooltip.js";
 import { Zoom } from "../../interactions/zoom.js";
-import { ChartNetwork } from "../chartBase.js";
+import { ChartNetwork, ExtendChart } from "../chartBase.js";
 import { Help } from "../help.js";
-export declare class Network extends ChartNetwork {
+export declare class Network<T> extends ChartNetwork {
     tooltip: Tooltip;
     zoom: Zoom;
     help: Help;
+    clicking: Click;
     simulation: d3.Simulation<INodes, undefined>;
+    dashboard?: T;
+    extend?: ExtendChart<T>;
     private _data;
-    get data(): IAuthorAnalyticsData;
-    set data(entries: IAuthorAnalyticsData);
-    constructor(data: IAuthorAnalyticsData);
+    get data(): IAnalytics;
+    set data(entries: IAnalytics);
+    constructor(data: IAnalytics, domain: Date[]);
     render(): void;
     resetZoomRange(): void;
-    private getTooltipNodes;
+    getTooltipNodes(data: IAnalytics, nodeData: INodes): INodes[];
     private processSimulation;
+    private filterData;
 }

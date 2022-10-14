@@ -29,5 +29,5 @@ export declare class AuthorAnalyticsDataRaw implements IAuthorAnalyticsDataRaw {
     reflections: IReflectionAuthorRaw[];
     analytics: IAnalytics;
     constructor(data: AuthorAnalyticsDataRaw);
-    transformData(): AuthorAnalyticsData;
+    transformData(colourScale?: Function): AuthorAnalyticsData;
 }
