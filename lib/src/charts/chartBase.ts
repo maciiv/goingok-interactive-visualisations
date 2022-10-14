@@ -1,5 +1,5 @@
 import { ChartSeriesAxis, ChartTimeAxis, ChartLinearAxis } from "./scaleBase.js";
-import { IHelp, Help } from "./help.js";
+import { IHelp, Help } from "../utils/help.js";
 import { IChartElements, ChartElements } from "./render.js";
 import { getDOMRect } from "../utils/utils.js";
 
@@ -115,28 +115,5 @@ export class ChartNetwork implements IChart {
         this.elements = new ChartElements(this, containerClass);
         this.elements.yAxis.remove();
         this.elements.xAxis.remove();
-    }
-}
-
-export class UserChart implements IChart {
-    id: string;
-    width: number;
-    height: number;
-    x: ChartLinearAxis;
-    y: ChartSeriesAxis;
-    elements: IChartElements;
-    padding: IChartPadding;
-    click: boolean;
-    constructor(id: string, containerClass: string) {
-        this.id = id;
-        let containerDimensions = getDOMRect(`#${id} .${containerClass}`)
-        this.width = containerDimensions.width;
-        this.height = containerDimensions.height;
-        this.padding = new ChartPadding(40, 55, 10, 10);
-        this.y = new ChartSeriesAxis("", ["distressed", "going ok", "soaring"], [this.height - this.padding.xAxis - this.padding.top, 0], "left");
-        this.x = new ChartLinearAxis("", [0, 100], [0, this.width - this.padding.yAxis - this.padding.right], "bottom", false);
-        this.x.axis.tickValues([0, 25, 50, 75, 100]);
-        this.click = false;
-        this.elements = new ChartElements(this, containerClass);
     }
 }

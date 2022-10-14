@@ -6,7 +6,7 @@ import { IAdminAnalyticsDataRaw, AdminAnalyticsDataRaw } from "../data/db.js";
 import { Loading } from "../utils/loading.js";
 import { Tutorial, TutorialData } from "../utils/tutorial.js";
 import { Sort } from "../interactions/sort.js";
-import { Help } from "../charts/help.js";
+import { Help } from "../utils/help.js";
 
 export class ExperimentalDashboard extends Dashboard {
     entries: IAdminAnalyticsData[]
@@ -262,8 +262,6 @@ export class ExperimentalDashboard extends Dashboard {
             _this.timeline.data = [d]
             _this.users.data = [d]
         }
-
-        return chart;
     }
     extendTimeline(dashboard: ExperimentalDashboard) {
         const _this = dashboard
@@ -275,7 +273,6 @@ export class ExperimentalDashboard extends Dashboard {
             chart.elements.contentContainer.selectAll(".click-line").remove()
             chart.elements.zoomSVG = undefined
             chart.elements.zoomFocus = undefined
-            return chart
         }
 
         d3.select(`#${chart.id} .badge`).on("click", () => _this.handleFilterButton())

@@ -27,6 +27,9 @@ export class Sort implements ISort {
     }
     setChevronVisibility(id: string, option: string): void {
         const parentEl = this.getParentEl(id, option)
+        if (parentEl === undefined) {
+            return
+        }
         document.querySelectorAll(`#${id} .btn-group-toggle i`).forEach(c => c.classList.add("d-none"))
         document.querySelectorAll(`#${id} .btn-group-toggle label`).forEach(c => c.classList.remove("active"))
         parentEl.querySelector("i").classList.remove("d-none")
@@ -34,10 +37,13 @@ export class Sort implements ISort {
     }
     handleChevronChange(id: string, option: string, chevron: string): void {
         const parentEl = this.getParentEl(id, option)
+        if (parentEl === undefined) {
+            return
+        }
         parentEl.querySelector("i").classList.remove("fa-chevron-down", "fa-chevron-up")
         parentEl.querySelector("i").classList.add(chevron)
     }
     private getParentEl(id: string, option: string): HTMLElement {
-        return document.querySelector(`#${id} input[value="${option}"]`).parentElement
+        return document.querySelector(`#${id} input[value="${option}"]`)?.parentElement
     }
 }

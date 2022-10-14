@@ -1,5 +1,5 @@
 import d3 from "d3";
-import { Help } from "../charts/help.js";
+import { Help } from "../utils/help.js";
 import { IAdminAnalyticsData, AdminAnalyticsData } from "../data/data.js";
 import { IAdminAnalyticsDataRaw, AdminAnalyticsDataRaw } from "../data/db.js";
 import { Loading } from "../utils/loading.js";

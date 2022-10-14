@@ -5,7 +5,7 @@ import { Tooltip } from "../../interactions/tooltip.js";
 import { Zoom } from "../../interactions/zoom.js";
 import { addDays, maxDate, minDate } from "../../utils/utils.js";
 import { ChartNetwork, ExtendChart } from "../chartBase.js";
-import { Help } from "../help.js";
+import { Help } from "../../utils/help.js";
 
 // Basic class for network chart timeline
 export class Network<T> extends ChartNetwork {
@@ -33,10 +33,6 @@ export class Network<T> extends ChartNetwork {
     }
     render() {
         const _this = this
-
-        // d3.select(`#${_this.id} .card-subtitle`)
-        //     .html(reflection !== undefined ? `Filtering by <span class="badge badge-pill badge-info">${reflection.timestamp.toDateString()} <i class="fas fa-window-close"></i></span>`:
-        //         "")
 
         let edges = _this.elements.contentContainer.selectAll(".network-link")
             .data(_this.data.edges)

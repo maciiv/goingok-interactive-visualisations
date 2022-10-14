@@ -23,5 +23,3 @@ export declare class ClickAdmin<T> extends Click implements IClickAdmin<T> {
     appendThresholdPercentages(chart: Histogram<T>, data: IAdminAnalyticsData[], clickData: IHistogramData): void;
     private comparativeText;
 }
-export interface IClickAuthor extends IClick {
-}

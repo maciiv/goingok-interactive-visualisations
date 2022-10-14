@@ -1,5 +1,5 @@
 import d3 from "d3";
-import { Help } from "../charts/help.js";
+import { Help } from "../utils/help.js";
 import { IAuthorAnalyticsData, ITags } from "../data/data.js";
 import { Loading } from "../utils/loading.js";
 import { Tutorial, TutorialData } from "../utils/tutorial.js";

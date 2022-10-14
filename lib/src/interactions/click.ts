@@ -125,8 +125,7 @@ export class ClickAdmin<T> extends Click implements IClickAdmin<T> {
                         .text(c => `${c.percentage}% ` )
                         .append("tspan")
                         .attr("class", c => this.comparativeText(new ClickTextData(clickData.percentage, c.percentage, clickData.group, c.group))[0])
-                        .text(c => c.group != clickData.group && c.bin.x0 == clickData.bin.x0 && c.bin.x1 == clickData.bin.x1 ? `(${this.comparativeText(new ClickTextData(clickData.percentage, c.percentage, clickData.group, c.group))[1]})` : ""))
-                        ,
+                        .text(c => c.group != clickData.group && c.bin.x0 == clickData.bin.x0 && c.bin.x1 == clickData.bin.x1 ? `(${this.comparativeText(new ClickTextData(clickData.percentage, c.percentage, clickData.group, c.group))[1]})` : "")),
                 update => update.call(update => update.transition()
                     .duration(750)
                     .attr("transform", c => `translate(${chart.x.scale(c.group) + chart.x.scale.bandwidth() / 2}, 0)`))
@@ -173,8 +172,4 @@ export class ClickAdmin<T> extends Click implements IClickAdmin<T> {
             return [textClass, `${textSymbol}${(Math.abs(textValue))}`];
         }
     }
-}
-
-export interface IClickAuthor extends IClick {
-    
 }

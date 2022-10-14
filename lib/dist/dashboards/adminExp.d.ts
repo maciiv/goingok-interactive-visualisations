@@ -2,7 +2,7 @@ import { IAdminAnalyticsData } from "../data/data.js";
 import { Dashboard } from "./adminControl.js";
 import { IAdminAnalyticsDataRaw } from "../data/db.js";
 import { Sort } from "../interactions/sort.js";
-import { Help } from "../charts/help.js";
+import { Help } from "../utils/help.js";
 export declare class ExperimentalDashboard extends Dashboard {
     entries: IAdminAnalyticsData[];
     sorted: string;
@@ -15,8 +15,8 @@ export declare class ExperimentalDashboard extends Dashboard {
     handleGroupsSort(): void;
     private handleFilterButton;
     extendBarChart(dashboard: ExperimentalDashboard): void;
-    extendHistogram(dashboard: ExperimentalDashboard): import("../charts/admin/histogram.js").Histogram<ExperimentalDashboard>;
-    extendTimeline(dashboard: ExperimentalDashboard): import("../charts/admin/timeline.js").Timeline<ExperimentalDashboard>;
+    extendHistogram(dashboard: ExperimentalDashboard): void;
+    extendTimeline(dashboard: ExperimentalDashboard): void;
     private removeAllHelp;
     private getClickData;
 }
