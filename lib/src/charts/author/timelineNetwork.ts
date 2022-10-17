@@ -6,8 +6,8 @@ import { addDays, groupBy, maxDate, minDate } from "../../utils/utils.js";
 import { ChartPadding, ChartTime, ExtendChart } from "../chartBase.js";
 
 export class TimelineNetwork<T> extends ChartTime {
-    tooltip = new Tooltip()
-    clicking = new Click()
+    tooltip = new Tooltip(this)
+    clicking = new Click(this)
     dashboard?: T
     extend?: ExtendChart<T>
     private _data: IReflectionAnalytics[]
@@ -71,19 +71,19 @@ export class TimelineNetwork<T> extends ChartTime {
         _this.elements.content = _this.elements.contentContainer.selectAll(".circle");
 
         //Enable tooltip       
-        _this.tooltip.enableTooltip(_this, onMouseover, onMouseout);
+        _this.tooltip.enableTooltip(onMouseover, onMouseout);
         function onMouseover(e: Event, d: IReflectionAnalytics) {
             if (d3.select(this).attr("class").includes("clicked")) {
                 return;
             }
-            _this.tooltip.appendTooltipContainer(_this);
+            _this.tooltip.appendTooltipContainer();
             let tooltipValues = [new TooltipValues("Point", d.point)]
             let tags = groupBy(_this.data.find(c => c.refId === d.refId).nodes, "name").map(c => { return {"name": c.key, "total": c.value.length}})
             tags.forEach(c => {
                 tooltipValues.push(new TooltipValues(c.name, c.total));
             })
-            let tooltipBox = _this.tooltip.appendTooltipText(_this, d.timestamp.toDateString(), tooltipValues);
-            _this.tooltip.positionTooltipContainer(_this, xTooltip(d.timestamp, tooltipBox), yTooltip(d.point, tooltipBox));
+            let tooltipBox = _this.tooltip.appendTooltipText(d.timestamp.toDateString(), tooltipValues);
+            _this.tooltip.positionTooltipContainer(xTooltip(d.timestamp, tooltipBox), yTooltip(d.point, tooltipBox));
 
             function xTooltip(x: Date, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
                 let xTooltip = _this.x.scale(x);
@@ -101,14 +101,14 @@ export class TimelineNetwork<T> extends ChartTime {
                 return yTooltip;
             };
 
-            _this.tooltip.appendLine(_this, 0, _this.y.scale(d.point), _this.x.scale(d.timestamp), _this.y.scale(d.point), "#999999");
-            _this.tooltip.appendLine(_this, _this.x.scale(d.timestamp), _this.y.scale(0), _this.x.scale(d.timestamp), _this.y.scale(d.point), "#999999");
+            _this.tooltip.appendLine(0, _this.y.scale(d.point), _this.x.scale(d.timestamp), _this.y.scale(d.point), "#999999");
+            _this.tooltip.appendLine(_this.x.scale(d.timestamp), _this.y.scale(0), _this.x.scale(d.timestamp), _this.y.scale(d.point), "#999999");
         }
 
         function onMouseout() {
             _this.elements.svg.select(".tooltip-container").transition()
                 .style("opacity", 0);
-            _this.tooltip.removeTooltip(_this);
+            _this.tooltip.removeTooltip();
         }
     }
     private renderReflectionNetwork(enter: d3.Selection<SVGGElement | d3.BaseType, IReflectionAnalytics, SVGGElement, unknown>) {

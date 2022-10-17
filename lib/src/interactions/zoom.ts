@@ -21,6 +21,7 @@ export class Zoom implements IZoom {
     };
     appendZoomBar(chart: ChartTime): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
         return chart.elements.svg.append("g")
+            .attr("id", "zoom-container")
             .attr("class", "zoom-container")
             .attr("height", 30)
             .attr("width", chart.width - chart.padding.yAxis)

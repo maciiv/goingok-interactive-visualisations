@@ -9,9 +9,9 @@ export interface ITransitions {
 }
 
 export class Transitions {
-    axisSeries(chart: ChartSeries, data: IAdminAnalyticsData[]): void {
+    axisSeries(chart: ChartSeries, data: IAdminAnalyticsData[]) {
         chart.x.scale.domain(data.map(d => d.group));
-        d3.select<SVGGElement, unknown>(`#${chart.id} .x-axis`).transition()
+        return d3.select<SVGGElement, unknown>(`#${chart.id} .x-axis`).transition()
             .duration(750)
             .call(chart.x.axis);
     };

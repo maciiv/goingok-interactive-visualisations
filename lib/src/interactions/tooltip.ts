@@ -15,31 +15,35 @@ export class TooltipValues implements ITooltipValues {
 }
 
 export interface ITooltip {
-    enableTooltip(chart: IChart, onMouseover: any, onMouseout: any): void;
-    removeTooltip(chart: IChart): void
-    appendTooltipContainer(chart: IChart): void;
-    appendTooltipText(chart: IChart, title: string, values: ITooltipValues[]): d3.Selection<SVGRectElement, unknown, HTMLElement, any>;
-    positionTooltipContainer(chart: IChart, x: number, y: number): void;
-    appendLine(chart: IChart, x1: number, y1: number, x2: number, y2: number, colour: string): void;
+    enableTooltip(onMouseover: any, onMouseout: any): void;
+    removeTooltip(): void
+    appendTooltipContainer(): void;
+    appendTooltipText(title: string, values: ITooltipValues[]): d3.Selection<SVGRectElement, unknown, HTMLElement, any>;
+    positionTooltipContainer(x: number, y: number): void;
+    appendLine(x1: number, y1: number, x2: number, y2: number, colour: string): void;
 }
 
-export class Tooltip implements ITooltip {
-    enableTooltip(chart: IChart, onMouseover: any, onMouseout: any): void {
-        chart.elements.content.on("mouseover", onMouseover)
-        chart.elements.content.on("mouseout", onMouseout);
+export class Tooltip<T extends IChart> implements ITooltip {
+    protected chart: T
+    constructor(chart: T) {
+        this.chart = chart
+    }
+    enableTooltip(onMouseover: any, onMouseout: any): void {
+        this.chart.elements.content.on("mouseover", onMouseover)
+        this.chart.elements.content.on("mouseout", onMouseout);
     };
-    removeTooltip(chart: IChart): void {
-        chart.elements.contentContainer.selectAll(".tooltip-container").remove();
-        chart.elements.contentContainer.selectAll(".tooltip-line").remove();
+    removeTooltip(): void {
+        this.chart.elements.contentContainer.selectAll(".tooltip-container").remove();
+        this.chart.elements.contentContainer.selectAll(".tooltip-line").remove();
     };
-    appendTooltipContainer(chart: IChart): void {
-        chart.elements.contentContainer.append("g")
+    appendTooltipContainer(): void {
+        this.chart.elements.contentContainer.append("g")
             .attr("class", "tooltip-container");
     };
-    appendTooltipText(chart: IChart, title: string, values: ITooltipValues[] = null): d3.Selection<SVGRectElement, unknown, HTMLElement, any> {
-        let result = chart.elements.contentContainer.select<SVGRectElement>(".tooltip-container").append("rect")
+    appendTooltipText(title: string, values: ITooltipValues[] = null): d3.Selection<SVGRectElement, unknown, HTMLElement, any> {
+        let result = this.chart.elements.contentContainer.select<SVGRectElement>(".tooltip-container").append("rect")
             .attr("class", "tooltip-box");
-        let text = chart.elements.contentContainer.select(".tooltip-container").append("text")
+        let text = this.chart.elements.contentContainer.select(".tooltip-container").append("text")
             .attr("class", "tooltip-text title")
             .attr("x", 10)
             .text(title);
@@ -57,14 +61,14 @@ export class Tooltip implements ITooltip {
         return result.attr("width", text.node().getBBox().width + 20)
             .attr("height", text.node().getBBox().height + 5);
     };
-    positionTooltipContainer(chart: IChart, x: number, y: number): void {
-        chart.elements.contentContainer.select(".tooltip-container")
+    positionTooltipContainer(x: number, y: number): void {
+        this.chart.elements.contentContainer.select(".tooltip-container")
             .attr("transform", `translate(${x}, ${y})`)
             .transition()
             .style("opacity", 1);
     };
-    appendLine(chart: IChart, x1: number, y1: number, x2: number, y2: number, colour: string): void {
-        chart.elements.contentContainer.append("line")
+    appendLine(x1: number, y1: number, x2: number, y2: number, colour: string): void {
+        this.chart.elements.contentContainer.append("line")
             .attr("class", "tooltip-line")
             .attr("x1", x1)
             .attr("y1", y1)

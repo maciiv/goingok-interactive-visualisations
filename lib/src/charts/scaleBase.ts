@@ -4,13 +4,16 @@ interface IChartAxis {
     scale: d3.ScaleBand<string> | d3.ScaleLinear<number, number, never> | d3.ScaleTime<number, number, never>;
     axis: d3.Axis<d3.AxisDomain>;
     label: string;
+    transition(data: string[] | number[] | Date[]): void
 }
 
 export class ChartSeriesAxis implements IChartAxis {
+    protected id: string
     scale: d3.ScaleBand<string>;
     axis: d3.Axis<d3.AxisDomain>;
     label: string;
-    constructor(label: string, domain: string[], range: number[], position?: string) {
+    constructor(id: string, label: string, domain: string[], range: number[], position?: string) {
+        this.id = id
         this.label = label;
         this.scale = d3.scaleBand()
             .domain(domain)
@@ -23,14 +26,22 @@ export class ChartSeriesAxis implements IChartAxis {
             } else {
                 this.axis = d3.axisBottom(this.scale);
             }
+    }
+    transition(data: string[]) {
+        this.scale.domain(data)
+        d3.select<SVGGElement, unknown>(`#${this.id} .x-axis`).transition()
+            .duration(750)
+            .call(this.axis);
     };
 }
 
 export class ChartLinearAxis implements IChartAxis {
+    protected id: string
     scale: d3.ScaleLinear<number, number, never>;
     axis: d3.Axis<d3.AxisDomain>;
     label: string;
-    constructor(label: string, domain: number[], range: number[], position?: string, isGoingOk: boolean = true) {
+    constructor(id:string, label: string, domain: number[], range: number[], position?: string, isGoingOk: boolean = true) {
+        this.id = id
         this.label = label;
         this.scale = d3.scaleLinear()
             .domain([d3.min(domain) < 0 ? d3.min(domain) : 0, d3.max(domain)])
@@ -50,6 +61,12 @@ export class ChartLinearAxis implements IChartAxis {
             this.axis.tickValues([0, 25, 50, 75, 100])
                 .tickFormat(d => labels.get(d));
         }
+    }
+    transition(data: number[]): void {
+        this.scale.domain(data)
+        d3.select<SVGGElement, unknown>(`#${this.id} .y-axis`).transition()
+            .duration(750)
+            .call(this.axis);
     };
     setThresholdAxis(tDistressed: number, tSoaring: number) : d3.Axis<d3.NumberValue> {
         return d3.axisRight(this.scale)
@@ -59,14 +76,22 @@ export class ChartLinearAxis implements IChartAxis {
 }
 
 export class ChartTimeAxis implements IChartAxis {
+    protected id: string
     scale: d3.ScaleTime<number, number, never>;
     axis: d3.Axis<d3.AxisDomain>;
     label: string;
-    constructor(label: string, domain: Date[], range: number[]) {
+    constructor(id: string, label: string, domain: Date[], range: number[]) {
+        this.id = id
         this.label = label;
         this.scale = d3.scaleTime()
             .domain(d3.extent(domain))
             .range(range);
         this.axis = d3.axisBottom(this.scale)
+    }
+    transition(data: Date[]): void {
+        this.scale.domain(data);
+        d3.select<SVGGElement, unknown>(`#${this.id} .x-axis`).transition()
+            .duration(750)
+            .call(this.axis);
     };
 }

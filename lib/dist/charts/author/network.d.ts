@@ -6,10 +6,10 @@ import { Zoom } from "../../interactions/zoom.js";
 import { ChartNetwork, ExtendChart } from "../chartBase.js";
 import { Help } from "../../utils/help.js";
 export declare class Network<T> extends ChartNetwork {
-    tooltip: Tooltip;
+    tooltip: Tooltip<this>;
     zoom: Zoom;
     help: Help;
-    clicking: Click;
+    clicking: Click<this>;
     simulation: d3.Simulation<INodes, undefined>;
     dashboard?: T;
     extend?: ExtendChart<T>;

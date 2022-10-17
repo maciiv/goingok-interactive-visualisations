@@ -76,22 +76,22 @@ export class ExperimentalDashboard extends Dashboard {
         const _this = dashboard
         const chart = _this.timeline
 
-        chart.clicking.enableClick(chart, onClick)
+        chart.clicking.enableClick(onClick)
 
         chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
-            chart.clicking.removeClick(chart)
+            chart.clicking.removeClick()
             _this.network.data = _this.updateAnalyticsData()
             _this.reflections.data = _this.updateReflectionNodesData()
         });
 
         function onClick(e: Event, d: IReflectionAnalytics) {
             if (d3.select(this).attr("class").includes("clicked")) {
-                chart.clicking.removeClick(chart)
+                chart.clicking.removeClick()
                 _this.network.data = _this.updateAnalyticsData()
                 _this.reflections.data = _this.updateReflectionNodesData()
                 return;
             }
-            chart.clicking.removeClick(chart);
+            chart.clicking.removeClick();
             chart.click = true;
             d3.select(this).classed("clicked", true);
             let nodes = _this.analytics.nodes.filter(c => {
@@ -110,7 +110,7 @@ export class ExperimentalDashboard extends Dashboard {
 
         d3.select(`#${chart.id} .badge`).on("click", () => _this.handleFilterButton());
 
-        chart.clicking.enableClick(chart, onClick)
+        chart.clicking.enableClick(onClick)
 
         function onClick(e: Event, d: INodes) {
             let nodes = chart.getTooltipNodes(_this.analytics, d);
@@ -161,7 +161,7 @@ export class ExperimentalDashboard extends Dashboard {
         d3.select(`#reflections .badge`).on("click", () => _this.handleFilterButton())
     }
     private handleFilterButton(): void {
-        this.timeline.clicking.removeClick(this.timeline)
+        this.timeline.clicking.removeClick()
         const reflectionsData = this.updateReflectionNodesData()
         this.timeline.data = reflectionsData
         this.reflections.data = reflectionsData

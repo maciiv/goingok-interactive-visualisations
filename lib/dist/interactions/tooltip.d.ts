@@ -9,18 +9,20 @@ export declare class TooltipValues implements ITooltipValues {
     constructor(label?: string, value?: number | string);
 }
 export interface ITooltip {
-    enableTooltip(chart: IChart, onMouseover: any, onMouseout: any): void;
-    removeTooltip(chart: IChart): void;
-    appendTooltipContainer(chart: IChart): void;
-    appendTooltipText(chart: IChart, title: string, values: ITooltipValues[]): d3.Selection<SVGRectElement, unknown, HTMLElement, any>;
-    positionTooltipContainer(chart: IChart, x: number, y: number): void;
-    appendLine(chart: IChart, x1: number, y1: number, x2: number, y2: number, colour: string): void;
+    enableTooltip(onMouseover: any, onMouseout: any): void;
+    removeTooltip(): void;
+    appendTooltipContainer(): void;
+    appendTooltipText(title: string, values: ITooltipValues[]): d3.Selection<SVGRectElement, unknown, HTMLElement, any>;
+    positionTooltipContainer(x: number, y: number): void;
+    appendLine(x1: number, y1: number, x2: number, y2: number, colour: string): void;
 }
-export declare class Tooltip implements ITooltip {
-    enableTooltip(chart: IChart, onMouseover: any, onMouseout: any): void;
-    removeTooltip(chart: IChart): void;
-    appendTooltipContainer(chart: IChart): void;
-    appendTooltipText(chart: IChart, title: string, values?: ITooltipValues[]): d3.Selection<SVGRectElement, unknown, HTMLElement, any>;
-    positionTooltipContainer(chart: IChart, x: number, y: number): void;
-    appendLine(chart: IChart, x1: number, y1: number, x2: number, y2: number, colour: string): void;
+export declare class Tooltip<T extends IChart> implements ITooltip {
+    protected chart: T;
+    constructor(chart: T);
+    enableTooltip(onMouseover: any, onMouseout: any): void;
+    removeTooltip(): void;
+    appendTooltipContainer(): void;
+    appendTooltipText(title: string, values?: ITooltipValues[]): d3.Selection<SVGRectElement, unknown, HTMLElement, any>;
+    positionTooltipContainer(x: number, y: number): void;
+    appendLine(x1: number, y1: number, x2: number, y2: number, colour: string): void;
 }

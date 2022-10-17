@@ -1,7 +1,7 @@
 import d3 from "d3";
 import { IAdminAnalyticsData, IReflectionAuthor, ITimelineData, TimelineData } from "../../data/data.js";
-import { ClickAdmin } from "../../interactions/click.js";
-import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
+import { Click } from "../../interactions/click.js";
+import { ITooltipValues, Tooltip, TooltipValues } from "../../interactions/tooltip.js";
 import { Transitions } from "../../interactions/transitions.js";
 import { Zoom } from "../../interactions/zoom.js";
 import { maxDate, minDate } from "../../utils/utils.js";
@@ -10,10 +10,10 @@ import { ChartTimeAxis, ChartLinearAxis } from "../scaleBase.js";
 
 export class Timeline<T> extends ChartTime {
     zoomChart: ChartTimeZoom
-    tooltip = new Tooltip()
+    tooltip = new Tooltip(this)
     zoom = new Zoom()
     transitions = new Transitions()
-    clicking = new ClickAdmin()
+    clicking: ClickTimeline<this>
     dashboard?: T
     extend?: ExtendChart<T>
     private _data: IAdminAnalyticsData[]
@@ -25,14 +25,15 @@ export class Timeline<T> extends ChartTime {
         this.zoomChart.x.scale.domain([this.minTimelineDate(), this.maxTimelineDate()]);
         this.transitions.axisTime(this, this.data)
         if (this.click) {
-            this.clicking.removeClick(this);
+            this.clicking.removeClick();
         }
         this.render()
         this.extend !== undefined && this.dashboard !== undefined ? this.extend(this.dashboard) : null
     }
     constructor(data: IAdminAnalyticsData[]) {
         super("timeline", [minDate(data.map(d => minDate(d.value.map(c => c.timestamp)))), maxDate(data.map(d => maxDate(d.value.map(c => c.timestamp))))])
-        this.zoomChart = new ChartTimeZoom(this, [this.minTimelineDate(data), this.maxTimelineDate(data)]);
+        this.zoomChart = new ChartTimeZoom(this, [this.minTimelineDate(data), this.maxTimelineDate(data)])
+        this.clicking = new ClickTimeline(this)
         this.data = data
     }
     render() {
@@ -62,16 +63,16 @@ export class Timeline<T> extends ChartTime {
         _this.elements.content = _this.elements.contentContainer.selectAll(".circle");
 
         //Enable tooltip       
-        _this.tooltip.enableTooltip(_this, onMouseover, onMouseout);
+        _this.tooltip.enableTooltip(onMouseover, onMouseout);
         function onMouseover(e: Event, d: ITimelineData) {
             if (d3.select(this).attr("class").includes("clicked")) {
                 return;
             }
-            _this.tooltip.appendTooltipContainer(_this);
-            let tooltipBox = _this.tooltip.appendTooltipText(_this, d.timestamp.toDateString(), 
+            _this.tooltip.appendTooltipContainer();
+            let tooltipBox = _this.tooltip.appendTooltipText(d.timestamp.toDateString(), 
                 [new TooltipValues("User", d.pseudonym), 
                  new TooltipValues("Point", d.point)]);
-            _this.tooltip.positionTooltipContainer(_this, xTooltip(d.timestamp, tooltipBox), yTooltip(d.point, tooltipBox));
+            _this.tooltip.positionTooltipContainer(xTooltip(d.timestamp, tooltipBox), yTooltip(d.point, tooltipBox));
 
             function xTooltip(x: Date, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
                 let xTooltip = _this.x.scale(x);
@@ -89,13 +90,13 @@ export class Timeline<T> extends ChartTime {
                 return yTooltip;
             };
 
-            _this.tooltip.appendLine(_this, 0, _this.y.scale(d.point), _this.x.scale(d.timestamp), _this.y.scale(d.point), d.colour);
-            _this.tooltip.appendLine(_this, _this.x.scale(d.timestamp), _this.y.scale(0), _this.x.scale(d.timestamp), _this.y.scale(d.point), d.colour);
+            _this.tooltip.appendLine(0, _this.y.scale(d.point), _this.x.scale(d.timestamp), _this.y.scale(d.point), d.colour);
+            _this.tooltip.appendLine(_this.x.scale(d.timestamp), _this.y.scale(0), _this.x.scale(d.timestamp), _this.y.scale(d.point), d.colour);
         }
         function onMouseout() {
             _this.elements.svg.select(".tooltip-container").transition()
                 .style("opacity", 0);
-            _this.tooltip.removeTooltip(_this);
+            _this.tooltip.removeTooltip();
         }
 
         //Append zoom bar
@@ -184,7 +185,47 @@ class ChartTimeZoom implements IChartScales {
     x: ChartTimeAxis;
     y: ChartLinearAxis;
     constructor(chart: IChart, domain: Date[]) {
-        this.x = new ChartTimeAxis("", domain, [0, chart.width - chart.padding.yAxis - 5]);
-        this.y = new ChartLinearAxis("", [0, 100], [25, 0], "left");
+        this.x = new ChartTimeAxis("zoom-container", "", domain, [0, chart.width - chart.padding.yAxis - 5]);
+        this.y = new ChartLinearAxis("zoom-container", "", [0, 100], [25, 0], "left");
     }
+}
+
+class ClickTimeline<T extends Timeline<any>> extends Click<T> {
+    appendScatterText(d: IReflectionAuthor, title: string, values: ITooltipValues[] = null): void {
+        let container = this.chart.elements.contentContainer.append("g")
+            .datum(d)
+            .attr("class", "click-container");
+        let box = container.append("rect")
+            .attr("class", "click-box");
+        let text = container.append("text")
+            .attr("class", "click-text title")
+            .attr("x", 10)
+            .text(title);
+        let textSize = text.node().getBBox().height
+        text.attr("y", textSize);
+        if (values != null) {
+            values.forEach((c, i) => {
+                text.append("tspan")
+                    .attr("class", "click-text")
+                    .attr("y", textSize * (i + 2))
+                    .attr("x", 15)
+                    .text(`${c.label}: ${c.value}`);
+            });
+        }
+        box.attr("width", text.node().getBBox().width + 20)
+            .attr("height", text.node().getBBox().height + 5)
+            .attr("clip-path", `url(#clip-${this.chart.id})`);
+        container.attr("transform", this.positionClickContainer(box, text, d));
+    };
+    private positionClickContainer(box: any, text: any, d: IReflectionAuthor): string {
+        let positionX = (this.chart.x as ChartTimeAxis).scale(d.timestamp);
+        let positionY = (this.chart.y as ChartLinearAxis).scale(d.point) - box.node().getBBox().height - 10;
+        if (this.chart.width - this.chart.padding.yAxis < (this.chart.x as ChartTimeAxis).scale(d.timestamp) + text.node().getBBox().width) {
+            positionX = (this.chart.x as ChartTimeAxis).scale(d.timestamp) - box.node().getBBox().width;
+        };
+        if ((this.chart.y as ChartLinearAxis).scale(d.point) - box.node().getBBox().height - 10 < 0) {
+            positionY = positionY + box.node().getBBox().height + 20;
+        };
+        return `translate(${positionX}, ${positionY})`;
+    };
 }

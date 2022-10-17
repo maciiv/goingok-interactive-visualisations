@@ -68,12 +68,12 @@ export class ExperimentalDashboard extends Dashboard {
             _this.barChart.data = data
             if (_this.barChart.click) {
                 if (!target.checked && target.value == clickData.group) {
-                    _this.barChart.clicking.removeClick(_this.barChart);
+                    _this.barChart.clicking.removeClick();
                     _this.totals.data = data;
                     _this.timeline.data = data;
                     _this.histogram.data = data;
                 } else {
-                    _this.barChart.clicking.appendGroupsText(_this.barChart, data, clickData);
+                    _this.barChart.clicking.appendGroupsText(data, clickData);
                 }
             } else {
                 _this.totals.data = data;
@@ -127,7 +127,7 @@ export class ExperimentalDashboard extends Dashboard {
             _this.barChart.data = data
             let groupClickData = _this.getClickData(_this.barChart.elements.contentContainer) as IAdminAnalyticsData;
             if (_this.barChart.click) {              
-                _this.barChart.clicking.appendGroupsText(_this.barChart, data, groupClickData);               
+                _this.barChart.clicking.appendGroupsText(data, groupClickData);               
             } else {
                 _this.histogram.data = data
                 _this.users.data = data
@@ -137,8 +137,8 @@ export class ExperimentalDashboard extends Dashboard {
     }
     private handleFilterButton(): void {
         const data = this.entries.filter(d => d.selected)
-        this.barChart.clicking.removeClick(this.barChart)
-        this.histogram.clicking.removeClick(this.histogram)
+        this.barChart.clicking.removeClick()
+        this.histogram.clicking.removeClick()
         this.histogram.data = data
         this.timeline.data = data
         this.totals.data = data
@@ -148,10 +148,10 @@ export class ExperimentalDashboard extends Dashboard {
         const _this = dashboard
         const chart = _this.barChart
 
-        chart.clicking.enableClick(chart, onClick)
+        chart.clicking.enableClick(onClick)
         chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
-            chart.clicking.removeClick(chart)
-            _this.histogram.clicking.removeClick(_this.histogram)
+            chart.clicking.removeClick()
+            _this.histogram.clicking.removeClick()
             _this.totals.data = chart.data
             _this.histogram.data = chart.data
             _this.timeline.data = chart.data
@@ -159,16 +159,16 @@ export class ExperimentalDashboard extends Dashboard {
         });
         function onClick(e: Event, d: IAdminAnalyticsData) {
             if (d3.select(this).attr("class").includes("clicked")) {
-                chart.clicking.removeClick(chart)
+                chart.clicking.removeClick()
                 _this.totals.data = chart.data
                 _this.histogram.data = chart.data
                 _this.timeline.data = chart.data
                 _this.users.data = chart.data
                 return;
             }
-            chart.clicking.removeClick(chart)
+            chart.clicking.removeClick()
             chart.click = true
-            chart.clicking.appendGroupsText(chart, chart.data, d)
+            chart.clicking.appendGroupsText(chart.data, d)
             _this.totals.data = [d]
             _this.histogram.data = chart.data.filter(c => c.group == d.group)
             _this.timeline.data = [d]
@@ -183,7 +183,7 @@ export class ExperimentalDashboard extends Dashboard {
         d3.select(`#${chart.id} .badge`).on("click", () => _this.handleFilterButton())
 
         chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
-            chart.clicking.removeClick(chart)
+            chart.clicking.removeClick()
             _this.totals.data = chart.data
             _this.timeline.data = chart.data
             _this.users.data = chart.data
@@ -215,7 +215,7 @@ export class ExperimentalDashboard extends Dashboard {
                 }
             }
             
-            let thresholds = chart.elements.getThresholdsValues(chart)
+            let thresholds = chart.elements.getThresholdsValues()
             let tDistressed = thresholds[0]
             let tSoaring = thresholds[1]
 
@@ -239,25 +239,25 @@ export class ExperimentalDashboard extends Dashboard {
             d3.select(this).classed("grab", true)
             if (chart.click) {
                 let clickData = chart.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IHistogramData
-                chart.clicking.appendThresholdPercentages(chart, chart.data, clickData)
+                chart.clicking.appendThresholdPercentages(chart.data, clickData)
                 _this.timeline.data = [clickData]
                 _this.users.data = [clickData]
             } 
-            _this.users.thresholds = chart.elements.getThresholdsValues(chart)
+            _this.users.thresholds = chart.elements.getThresholdsValues()
         }
 
-        chart.clicking.enableClick(chart, onClick)
+        chart.clicking.enableClick(onClick)
         function onClick(e: Event, d: HistogramData) {
             if (d3.select(this).attr("class").includes("clicked")) {
-                chart.clicking.removeClick(chart)
+                chart.clicking.removeClick()
                 _this.totals.data = chart.data
                 _this.timeline.data = chart.data
                 _this.users.data = chart.data
                 return
             }
-            chart.clicking.removeClick(chart)
+            chart.clicking.removeClick()
             chart.click = true
-            chart.clicking.appendThresholdPercentages(chart, chart.data, d)
+            chart.clicking.appendThresholdPercentages(chart.data, d)
             _this.totals.data = [d]
             _this.timeline.data = [d]
             _this.users.data = [d]
@@ -283,7 +283,7 @@ export class ExperimentalDashboard extends Dashboard {
                 .attr("class", "badge badge-pill badge-info pointer")
                 .html(`Users <i class="fas fa-window-close"></i>`)
                 .on("click", () => {
-                    _this.histogram.clicking.removeClick(_this.histogram)
+                    _this.histogram.clicking.removeClick()
                     if (_this.barChart.click) {
                         _this.timeline.data = _this.histogram.data
                         _this.users.data = _this.histogram.data
@@ -293,16 +293,16 @@ export class ExperimentalDashboard extends Dashboard {
                 })
         }
 
-        chart.clicking.enableClick(chart, onClick)
+        chart.clicking.enableClick(onClick)
         chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
-            chart.clicking.removeClick(chart)
+            chart.clicking.removeClick()
             _this.users.data = chart.data
         });
 
         function onClick(e: Event, d: ITimelineData) {
             if (d3.select(this).attr("class").includes("clicked")) {
                 if (d3.select(this).attr("class").includes("main")) {
-                    chart.clicking.removeClick(chart);
+                    chart.clicking.removeClick();
                     _this.users.data = chart.data;
                     return;
                 } else {
@@ -310,7 +310,7 @@ export class ExperimentalDashboard extends Dashboard {
                 }
             }
 
-            chart.clicking.removeClick(chart);
+            chart.clicking.removeClick();
             
             _this.users.data = chart.data;
             chart.click = true;
@@ -342,7 +342,7 @@ export class ExperimentalDashboard extends Dashboard {
                 .style("stroke", d.colour);
 
             //Draw click containers
-            usersData.forEach(c => chart.clicking.appendScatterText(chart, c, c.point.toString()));
+            usersData.forEach(c => chart.clicking.appendScatterText(c, c.point.toString()));
 
             _this.users.data = [new AdminAnalyticsData(groupData.group, usersData, groupData.createDate, groupData.colour, groupData.selected)]
 

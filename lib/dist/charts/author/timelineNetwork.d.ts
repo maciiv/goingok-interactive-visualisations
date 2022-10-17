@@ -3,8 +3,8 @@ import { Click } from "../../interactions/click.js";
 import { Tooltip } from "../../interactions/tooltip.js";
 import { ChartTime, ExtendChart } from "../chartBase.js";
 export declare class TimelineNetwork<T> extends ChartTime {
-    tooltip: Tooltip;
-    clicking: Click;
+    tooltip: Tooltip<this>;
+    clicking: Click<this>;
     dashboard?: T;
     extend?: ExtendChart<T>;
     private _data;

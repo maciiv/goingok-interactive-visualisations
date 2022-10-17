@@ -9,10 +9,10 @@ import { Help } from "../../utils/help.js";
 
 // Basic class for network chart timeline
 export class Network<T> extends ChartNetwork {
-    tooltip = new Tooltip()
+    tooltip = new Tooltip(this)
     zoom = new Zoom()
     help = new Help()
-    clicking = new Click()
+    clicking = new Click(this)
     simulation: d3.Simulation<INodes, undefined>
     dashboard?: T
     extend?: ExtendChart<T>
@@ -105,7 +105,7 @@ export class Network<T> extends ChartNetwork {
         }
 
         //Enable tooltip       
-        _this.tooltip.enableTooltip(_this, onMouseover, onMouseout);
+        _this.tooltip.enableTooltip(onMouseover, onMouseout);
         function onMouseover(e: Event, d: INodes) {
             if (d3.select(this).attr("class").includes("clicked")) {
                 return;
@@ -147,7 +147,7 @@ export class Network<T> extends ChartNetwork {
             d3.selectAll<HTMLSpanElement, unknown>("#reflections .reflections-tab span")
                 .style("background-color", null)
             
-            _this.tooltip.removeTooltip(_this);
+            _this.tooltip.removeTooltip();
         }
 
         //Enable zoom

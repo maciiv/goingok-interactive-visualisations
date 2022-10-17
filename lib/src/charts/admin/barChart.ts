@@ -1,14 +1,14 @@
 import d3 from "d3";
-import { IAdminAnalyticsData } from "../../data/data.js";
-import { ClickAdmin } from "../../interactions/click.js";
+import { ClickTextData, IAdminAnalyticsData, IDataStats } from "../../data/data.js";
+import { Click } from "../../interactions/click.js";
 import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
 import { Transitions } from "../../interactions/transitions.js";
 import { ChartSeries, ExtendChart } from "../chartBase.js";
 
 export class BarChart<T> extends ChartSeries {
-    tooltip = new Tooltip()
+    tooltip = new Tooltip(this)
     transitions = new Transitions()
-    clicking = new ClickAdmin()
+    clicking: ClickBarChart<this>
     dashboard?: T
     extend?: ExtendChart<T>
     private _data: IAdminAnalyticsData[]
@@ -27,6 +27,7 @@ export class BarChart<T> extends ChartSeries {
     }
     constructor(data: IAdminAnalyticsData[]) {
         super("users", data.map(d => d.group), false, data.map(d => d.getStat("usersTotal").value as number))
+        this.clicking = new ClickBarChart(this)
         this.data = data
     }
     render(): void {
@@ -73,19 +74,19 @@ export class BarChart<T> extends ChartSeries {
             );      
 
         //Enable tooltip
-        _this.tooltip.enableTooltip(_this, onMouseover, onMouseout);
+        _this.tooltip.enableTooltip(onMouseover, onMouseout);
         function onMouseover(e: Event, d: IAdminAnalyticsData): void {
             //If box is clicked not append tooltip
             if (d3.select(this).attr("class").includes("clicked")) {
                 return;
             }
-            _this.tooltip.appendTooltipContainer(_this);
+            _this.tooltip.appendTooltipContainer();
 
             //Append tooltip box with text
-            let tooltipBox = _this.tooltip.appendTooltipText(_this, d.group, d.stats.filter((c, i) => i < 2).map(c => new TooltipValues(c.displayName, c.value as number)));
+            let tooltipBox = _this.tooltip.appendTooltipText(d.group, d.stats.filter((c, i) => i < 2).map(c => new TooltipValues(c.displayName, c.value as number)));
 
             //Position tooltip container
-            _this.tooltip.positionTooltipContainer(_this, xTooltip(d.group, tooltipBox), yTooltip(d.getStat("usersTotal").value as number, tooltipBox));
+            _this.tooltip.positionTooltipContainer(xTooltip(d.group, tooltipBox), yTooltip(d.getStat("usersTotal").value as number, tooltipBox));
             function xTooltip(x: string, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
                 //Position tooltip right of the box
                 let xTooltip = _this.x.scale(x) + _this.x.scale.bandwidth();
@@ -114,7 +115,49 @@ export class BarChart<T> extends ChartSeries {
                 .style("opacity", 0);
 
             //Remove tooltip
-            _this.tooltip.removeTooltip(_this);
+            _this.tooltip.removeTooltip();
         }
     }
+}
+
+class ClickBarChart<T extends BarChart<any>> extends Click<T> {
+    constructor(chart: T) {
+        super(chart)
+    }
+    appendGroupsText(data: IAdminAnalyticsData[], clickData: IAdminAnalyticsData): void {
+        this.chart.elements.content.classed("clicked", (d: IAdminAnalyticsData) => d.group == clickData.group);
+
+        this.chart.elements.contentContainer.selectAll<SVGGElement, unknown>(".click-container")
+            .data(data)
+            .join(
+                enter => enter .append("g")
+                    .attr("class", "click-container")
+                    .attr("transform", c => `translate(${this.chart.x.scale(c.group) + this.chart.x.scale.bandwidth() / 2}, 0)`)
+                    .call(enter => enter.selectAll("text")
+                        .data(c => c.stats.filter(d => d.stat == "q3" || d.stat == "median" || d.stat == "q1").map(d => new ClickTextData(clickData.stats.find(a => a.stat == d.stat), d, clickData.group, c.group)))
+                        .enter()
+                        .append("text")
+                        .attr("class", "click-text black")                       
+                        .attr("y", c => this.chart.y.scale((c.data.stat as IDataStats).value as number) - 5)
+                        .text(c => `${(c.data.stat as IDataStats).displayName}: ${(c.data.stat as IDataStats).value} `)
+                        .append("tspan")
+                        .attr("class", c => this.comparativeText(c)[0])
+                        .text(c => c.data.group != clickData.group ? `(${this.comparativeText(c)[1]})` : "")),
+                update => update.call(update => update.transition()
+                    .duration(750)
+                    .attr("transform", c => `translate(${this.chart.x.scale(c.group) + this.chart.x.scale.bandwidth() / 2}, 0)`))
+                    .call(update => update.selectAll("text")
+                    .data(c => c.stats.filter(d => d.stat == "q3" || d.stat == "median" || d.stat == "q1").map(d => new ClickTextData(clickData.stats.find(a => a.stat == d.stat), d, clickData.group, c.group)))
+                        .join(
+                            enter => enter,
+                            update => update.attr("y", c => this.chart.y.scale((c.data.stat as IDataStats).value as number) - 5)
+                                .text(c => `${(c.data.stat as IDataStats).displayName}: ${(c.data.stat as IDataStats).value} `)
+                                .append("tspan")
+                                .attr("class", c => this.comparativeText(c)[0])
+                                .text(c => c.data.group != clickData.group ? `(${this.comparativeText(c)[1]})` : ""),
+                            exit => exit
+                        )),
+                exit => exit.remove()
+            );
+    };
 }
