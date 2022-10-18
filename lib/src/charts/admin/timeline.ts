@@ -2,7 +2,6 @@ import d3 from "d3";
 import { IAdminAnalyticsData, IReflectionAuthor, ITimelineData, TimelineData } from "../../data/data.js";
 import { Click } from "../../interactions/click.js";
 import { ITooltipValues, Tooltip, TooltipValues } from "../../interactions/tooltip.js";
-import { Transitions } from "../../interactions/transitions.js";
 import { Zoom } from "../../interactions/zoom.js";
 import { maxDate, minDate } from "../../utils/utils.js";
 import { ChartTime, ExtendChart, IChart, IChartScales } from "../chartBase.js";
@@ -12,7 +11,6 @@ export class Timeline<T> extends ChartTime {
     zoomChart: ChartTimeZoom
     tooltip = new Tooltip(this)
     zoom = new Zoom()
-    transitions = new Transitions()
     clicking: ClickTimeline<this>
     dashboard?: T
     extend?: ExtendChart<T>
@@ -23,7 +21,7 @@ export class Timeline<T> extends ChartTime {
     set data(entries: IAdminAnalyticsData[]) {
         this._data = entries.filter(d => d.selected)
         this.zoomChart.x.scale.domain([this.minTimelineDate(), this.maxTimelineDate()]);
-        this.transitions.axisTime(this, this.data)
+        this.x.transition([minDate(this.data.map(d => minDate(d.value.map(c => c.timestamp)))), maxDate(this.data.map(d => maxDate(d.value.map(c => c.timestamp))))])
         if (this.click) {
             this.clicking.removeClick();
         }

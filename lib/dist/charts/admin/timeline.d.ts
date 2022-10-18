@@ -2,7 +2,6 @@
 import { IAdminAnalyticsData, IReflectionAuthor } from "../../data/data.js";
 import { Click } from "../../interactions/click.js";
 import { ITooltipValues, Tooltip } from "../../interactions/tooltip.js";
-import { Transitions } from "../../interactions/transitions.js";
 import { Zoom } from "../../interactions/zoom.js";
 import { ChartTime, ExtendChart, IChart, IChartScales } from "../chartBase.js";
 import { ChartTimeAxis, ChartLinearAxis } from "../scaleBase.js";
@@ -10,7 +9,6 @@ export declare class Timeline<T> extends ChartTime {
     zoomChart: ChartTimeZoom;
     tooltip: Tooltip<this>;
     zoom: Zoom;
-    transitions: Transitions;
     clicking: ClickTimeline<this>;
     dashboard?: T;
     extend?: ExtendChart<T>;

@@ -3,6 +3,7 @@ interface IChartAxis {
     scale: d3.ScaleBand<string> | d3.ScaleLinear<number, number, never> | d3.ScaleTime<number, number, never>;
     axis: d3.Axis<d3.AxisDomain>;
     label: string;
+    transition(data: string[] | number[] | Date[]): void;
 }
 export declare class ChartSeriesAxis implements IChartAxis {
     protected id: string;

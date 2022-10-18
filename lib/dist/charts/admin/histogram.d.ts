@@ -2,7 +2,6 @@
 import { HistogramData, IAdminAnalyticsData, IHistogramData } from "../../data/data.js";
 import { Click } from "../../interactions/click.js";
 import { Tooltip } from "../../interactions/tooltip.js";
-import { Transitions } from "../../interactions/transitions.js";
 import { ChartSeries, ExtendChart } from "../chartBase.js";
 import { ChartElements } from "../render.js";
 export declare class Histogram<T> extends ChartSeries {
@@ -10,7 +9,6 @@ export declare class Histogram<T> extends ChartSeries {
     thresholdAxis: d3.Axis<d3.NumberValue>;
     bandwidth: d3.ScaleLinear<number, number, never>;
     tooltip: Tooltip<this>;
-    transitions: Transitions;
     clicking: ClickHistogram<this>;
     dashboard?: T;
     extend?: ExtendChart<T>;

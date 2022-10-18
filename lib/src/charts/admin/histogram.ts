@@ -2,7 +2,6 @@ import d3 from "d3";
 import { ClickTextData, HistogramData, IAdminAnalyticsData, IHistogramData } from "../../data/data.js";
 import { Click } from "../../interactions/click.js";
 import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
-import { Transitions } from "../../interactions/transitions.js";
 import { groupBy, calculateMean } from "../../utils/utils.js";
 import { ChartSeries, ChartPadding, ExtendChart } from "../chartBase.js";
 import { ChartElements } from "../render.js";
@@ -13,7 +12,6 @@ export class Histogram<T> extends ChartSeries {
     thresholdAxis: d3.Axis<d3.NumberValue>
     bandwidth: d3.ScaleLinear<number, number, never>
     tooltip = new Tooltip(this)
-    transitions = new Transitions()
     clicking: ClickHistogram<this>
     dashboard?: T
     extend?: ExtendChart<T>
@@ -27,7 +25,7 @@ export class Histogram<T> extends ChartSeries {
         this.bandwidth = d3.scaleLinear()
             .range([0, this.x.scale.bandwidth()])
             .domain([-100, 100]);
-        this.transitions.axisSeries(this, this.data);
+        this.x.transition(this.data.map(d => d.group))
         this.render();
         this.extend !== undefined && this.dashboard !== undefined ? this.extend(this.dashboard) : null
     }

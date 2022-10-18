@@ -2,12 +2,10 @@ import d3 from "d3";
 import { ClickTextData, IAdminAnalyticsData, IDataStats } from "../../data/data.js";
 import { Click } from "../../interactions/click.js";
 import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
-import { Transitions } from "../../interactions/transitions.js";
 import { ChartSeries, ExtendChart } from "../chartBase.js";
 
 export class BarChart<T> extends ChartSeries {
     tooltip = new Tooltip(this)
-    transitions = new Transitions()
     clicking: ClickBarChart<this>
     dashboard?: T
     extend?: ExtendChart<T>
@@ -18,9 +16,8 @@ export class BarChart<T> extends ChartSeries {
     set data(entries: IAdminAnalyticsData[]) {
         this._data = entries.filter(d => d.selected)
         if (this.data.length != 0) {
-            this.y.scale.domain([0, d3.max(this.data.map(d => d.getStat("usersTotal").value as number))]);
-            this.transitions.axisSeries(this, this.data);
-            this.transitions.axisLinear(this);
+            this.x.transition(this.data.map(d => d.group))
+            this.y.transition([0, d3.max(this.data.map(d => d.getStat("usersTotal").value as number))])
         }       
         this.render()
         this.extend !== undefined && this.dashboard !== undefined ? this.extend(this.dashboard) : null
