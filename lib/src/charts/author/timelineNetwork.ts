@@ -101,8 +101,8 @@ export class TimelineNetwork<T> extends ChartTime {
                 return yTooltip;
             };
 
-            _this.tooltip.appendLine(0, _this.y.scale(d.point), _this.x.scale(d.timestamp), _this.y.scale(d.point), "#999999");
-            _this.tooltip.appendLine(_this.x.scale(d.timestamp), _this.y.scale(0), _this.x.scale(d.timestamp), _this.y.scale(d.point), "#999999");
+            _this.tooltip.appendLine(0, _this.y.scale(d.point), _this.x.scale(d.timestamp) - 3, _this.y.scale(d.point), "#999999");
+            _this.tooltip.appendLine(_this.x.scale(d.timestamp), _this.y.scale(0), _this.x.scale(d.timestamp), _this.y.scale(d.point) - 3, "#999999");
         }
 
         function onMouseout() {

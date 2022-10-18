@@ -10,7 +10,7 @@ import { Help } from "../../utils/help.js";
 // Basic class for network chart timeline
 export class Network<T> extends ChartNetwork {
     tooltip = new Tooltip(this)
-    zoom = new Zoom()
+    zoom = new Zoom(this)
     help = new Help()
     clicking = new Click(this)
     simulation: d3.Simulation<INodes, undefined>
@@ -151,7 +151,7 @@ export class Network<T> extends ChartNetwork {
         }
 
         //Enable zoom
-        _this.zoom.enableZoom(_this, zoomed);
+        _this.zoom.enableZoom(zoomed);
         function zoomed(e: d3.D3ZoomEvent<SVGRectElement, unknown>) {
             let newChartRange = [0, _this.width - _this.padding.yAxis - _this.padding.right].map(d => e.transform.applyX(d));
             _this.x.scale.rangeRound(newChartRange);

@@ -44,6 +44,8 @@ export class Reflections<T> {
                     .html(d => _this.text(d)),
                 exit => exit.remove()
             )
+        
+        _this.handleSort()
     }
     private text(data: IReflectionAnalytics): string {
         let html = `<i>${data.timestamp.toDateString()} | Point: ${data.point}</i><br>`
@@ -60,4 +62,24 @@ export class Reflections<T> {
         }     
         return html;
     }
+    private handleSort() {
+        const _this = this
+        const id = "sort"
+        d3.select(`#${id} .btn-group-toggle`).on("click", function(e: any) {
+            const selectedOption = e.target.control.value;
+            const chevron = _this.sorted === selectedOption ? "fa-chevron-down" : "fa-chevron-up"
+            _this.sort.setChevronVisibility(id, selectedOption)
+            _this._data = _this.data.sort(function (a, b) {
+                if (selectedOption == "date") {
+                    _this.sort.handleChevronChange(id, selectedOption, chevron)
+                    return _this.sort.sortData(a.timestamp, b.timestamp, _this.sorted == "date" ? true : false);
+                } else if (selectedOption == "point") {
+                    _this.sort.handleChevronChange(id, selectedOption, chevron)
+                    return _this.sort.sortData(a.point, b.point, _this.sorted == "point" ? true : false);
+                }
+            });
+            _this.sorted = _this.sort.setSorted(_this.sorted, selectedOption);
+            _this.render()
+        });
+    };
 }

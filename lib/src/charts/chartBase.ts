@@ -13,7 +13,6 @@ export interface IChartBasic {
     width: number
     height: number
     padding: IChartPadding
-    click: boolean
 }
 
 
@@ -53,7 +52,6 @@ export class ChartSeries implements IChart {
     y: ChartLinearAxis;
     elements: IChartElements;
     padding: IChartPadding;
-    click: boolean;
     constructor(id: string, domain: string[], isGoingOk: boolean = true, yDomain?: number[]) {
         this.id = id;
         let containerDimensions = getDOMRect(`#${id} .chart-container`)
@@ -65,7 +63,6 @@ export class ChartSeries implements IChart {
         }
         this.y = new ChartLinearAxis(this.id, isGoingOk ? "Reflection Point" : "", isGoingOk ? [0, 100] : yDomain, [this.height - this.padding.xAxis - this.padding.top, 0], "left", isGoingOk);
         this.x = new ChartSeriesAxis(this.id, "Group Code", domain, [0, this.width - this.padding.yAxis - this.padding.right]);
-        this.click = false;
         this.elements = new ChartElements(this);
     }
 }
@@ -79,7 +76,6 @@ export class ChartTime implements IChart {
     elements: IChartElements;
     help: IHelp;
     padding: IChartPadding;
-    click: boolean;
     constructor(id: string, domain: Date[], chartPadding?: ChartPadding) {
         this.id = id;
         let containerDimensions = getDOMRect(`#${id} .chart-container`)
@@ -89,7 +85,6 @@ export class ChartTime implements IChart {
         this.help = new Help();
         this.y = new ChartLinearAxis(this.id, "Reflection Point", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left");
         this.x = new ChartTimeAxis(this.id, "Time", domain, [0, this.width - this.padding.yAxis]);
-        this.click = false;
         this.elements = new ChartElements(this);
     }
 }
@@ -101,7 +96,6 @@ export class ChartNetwork implements IChart {
     x: ChartTimeAxis;
     y: ChartLinearAxis;
     padding: IChartPadding
-    click: boolean
     elements: IChartElements
     constructor(id: string, containerClass: string, domain: Date[]) {
         this.id = id
@@ -111,7 +105,6 @@ export class ChartNetwork implements IChart {
         this.padding = new ChartPadding(30, 10, 10, 10)
         this.y = new ChartLinearAxis(this.id, "", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left")       
         this.x = new ChartTimeAxis(this.id, "", domain, [0, this.width - this.padding.yAxis - this.padding.right])
-        this.click = false;
         this.elements = new ChartElements(this, containerClass);
         this.elements.yAxis.remove();
         this.elements.xAxis.remove();

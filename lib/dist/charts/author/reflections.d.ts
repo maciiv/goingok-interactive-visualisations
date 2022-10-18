@@ -13,4 +13,5 @@ export declare class Reflections<T> {
     constructor(data: IReflectionAnalytics[]);
     render(): void;
     private text;
+    private handleSort;
 }

@@ -1,30 +1,34 @@
 import d3 from "d3";
-import { ChartNetwork, ChartTime } from "../charts/chartBase.js";
+import { IChart } from "../charts/chartBase.js";
 
 export interface IZoom {
-    enableZoom(chart: ChartTime, zoomed: any): void;
-    appendZoomBar(chart: ChartTime): d3.Selection<SVGGElement, unknown, HTMLElement, any>;
+    enableZoom(zoomed: any): void;
+    appendZoomBar(): d3.Selection<SVGGElement, unknown, HTMLElement, any>;
 }
 
-export class Zoom implements IZoom {
-    enableZoom(chart: ChartTime | ChartNetwork, zoomed: any): void {
-        chart.elements.svg.selectAll(".zoom-rect")
+export class Zoom<T extends IChart> implements IZoom {
+    protected chart: T
+    constructor(chart: T) {
+        this.chart = chart
+    }
+    enableZoom(zoomed: any): void {
+        this.chart.elements.svg.selectAll(".zoom-rect")
             .attr("class", "zoom-rect active");
 
         let zoom = d3.zoom()
             .scaleExtent([1, 5])
-            .extent([[0, 0], [chart.width - chart.padding.yAxis, chart.height]])
-            .translateExtent([[0, 0], [chart.width - chart.padding.yAxis, chart.height]])
+            .extent([[0, 0], [this.chart.width - this.chart.padding.yAxis, this.chart.height]])
+            .translateExtent([[0, 0], [this.chart.width - this.chart.padding.yAxis, this.chart.height]])
             .on("zoom", zoomed);
 
-        chart.elements.contentContainer.select(".zoom-rect").call(zoom);
+        this.chart.elements.contentContainer.select(".zoom-rect").call(zoom);
     };
-    appendZoomBar(chart: ChartTime): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
-        return chart.elements.svg.append("g")
+    appendZoomBar(): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
+        return this.chart.elements.svg.append("g")
             .attr("id", "zoom-container")
             .attr("class", "zoom-container")
             .attr("height", 30)
-            .attr("width", chart.width - chart.padding.yAxis)
-            .attr("transform", `translate(${chart.padding.yAxis}, ${chart.height - 30})`);
+            .attr("width", this.chart.width - this.chart.padding.yAxis)
+            .attr("transform", `translate(${this.chart.padding.yAxis}, ${this.chart.height - 30})`);
     };
 }

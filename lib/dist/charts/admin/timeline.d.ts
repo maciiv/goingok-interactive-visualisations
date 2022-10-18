@@ -8,7 +8,7 @@ import { ChartTimeAxis, ChartLinearAxis } from "../scaleBase.js";
 export declare class Timeline<T> extends ChartTime {
     zoomChart: ChartTimeZoom;
     tooltip: Tooltip<this>;
-    zoom: Zoom;
+    zoom: Zoom<this>;
     clicking: ClickTimeline<this>;
     dashboard?: T;
     extend?: ExtendChart<T>;

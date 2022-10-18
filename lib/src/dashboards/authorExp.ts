@@ -92,7 +92,7 @@ export class ExperimentalDashboard extends Dashboard {
                 return;
             }
             chart.clicking.removeClick();
-            chart.click = true;
+            chart.clicking.clicked = true;
             d3.select(this).classed("clicked", true);
             let nodes = _this.analytics.nodes.filter(c => {
                 return d.refId === c.refId || c.name === d.timestamp.toDateString()

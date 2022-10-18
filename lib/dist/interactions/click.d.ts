@@ -5,6 +5,7 @@ export interface IClick {
     removeClick(): void;
 }
 export declare class Click<T extends IChart> implements IClick {
+    clicked: boolean;
     protected chart: T;
     constructor(chart: T);
     enableClick(onClick: any): void;

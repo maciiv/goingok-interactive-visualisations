@@ -1,10 +1,12 @@
 ;
-import { ChartNetwork, ChartTime } from "../charts/chartBase.js";
+import { IChart } from "../charts/chartBase.js";
 export interface IZoom {
-    enableZoom(chart: ChartTime, zoomed: any): void;
-    appendZoomBar(chart: ChartTime): d3.Selection<SVGGElement, unknown, HTMLElement, any>;
+    enableZoom(zoomed: any): void;
+    appendZoomBar(): d3.Selection<SVGGElement, unknown, HTMLElement, any>;
 }
-export declare class Zoom implements IZoom {
-    enableZoom(chart: ChartTime | ChartNetwork, zoomed: any): void;
-    appendZoomBar(chart: ChartTime): d3.Selection<SVGGElement, unknown, HTMLElement, any>;
+export declare class Zoom<T extends IChart> implements IZoom {
+    protected chart: T;
+    constructor(chart: T);
+    enableZoom(zoomed: any): void;
+    appendZoomBar(): d3.Selection<SVGGElement, unknown, HTMLElement, any>;
 }

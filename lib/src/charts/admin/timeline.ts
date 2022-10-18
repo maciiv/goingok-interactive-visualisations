@@ -10,7 +10,7 @@ import { ChartTimeAxis, ChartLinearAxis } from "../scaleBase.js";
 export class Timeline<T> extends ChartTime {
     zoomChart: ChartTimeZoom
     tooltip = new Tooltip(this)
-    zoom = new Zoom()
+    zoom = new Zoom(this)
     clicking: ClickTimeline<this>
     dashboard?: T
     extend?: ExtendChart<T>
@@ -22,7 +22,7 @@ export class Timeline<T> extends ChartTime {
         this._data = entries.filter(d => d.selected)
         this.zoomChart.x.scale.domain([this.minTimelineDate(), this.maxTimelineDate()]);
         this.x.transition([minDate(this.data.map(d => minDate(d.value.map(c => c.timestamp)))), maxDate(this.data.map(d => maxDate(d.value.map(c => c.timestamp))))])
-        if (this.click) {
+        if (this.clicking.clicked) {
             this.clicking.removeClick();
         }
         this.render()
@@ -99,7 +99,7 @@ export class Timeline<T> extends ChartTime {
 
         //Append zoom bar
         if (_this.elements.zoomSVG == undefined) {
-            _this.elements.zoomSVG = _this.zoom.appendZoomBar(_this);
+            _this.elements.zoomSVG = _this.zoom.appendZoomBar();
             _this.elements.zoomFocus = _this.elements.zoomSVG.append("g")
                 .attr("class", "zoom-focus");
         }
@@ -124,7 +124,7 @@ export class Timeline<T> extends ChartTime {
                 exit => exit.remove());
            
         //Enable zoom
-        _this.zoom.enableZoom(_this, zoomed);
+        _this.zoom.enableZoom(zoomed);
         function zoomed(e: any) {
             let newChartRange = [0, _this.width - _this.padding.yAxis].map(d => e.transform.applyX(d));
             _this.x.scale.rangeRound(newChartRange);

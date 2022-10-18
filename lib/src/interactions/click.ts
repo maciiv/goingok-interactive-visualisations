@@ -7,15 +7,16 @@ export interface IClick {
 }
 
 export class Click<T extends IChart> implements IClick {
+    clicked: boolean
     protected chart: T
     constructor(chart: T) {
         this.chart = chart
     }
     enableClick(onClick: any): void {
-        this.chart.elements.content.on("click", onClick);
+        this.chart.elements.content.on("click", onClick)
     };
     removeClick(): void {
-        this.chart.click = false;
+        this.clicked = false;
         this.chart.elements.contentContainer.selectAll(".click-text").remove();
         this.chart.elements.contentContainer.selectAll(".click-line").remove();
         this.chart.elements.contentContainer.selectAll(".click-container").remove();

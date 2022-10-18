@@ -10,7 +10,6 @@ export interface IChartBasic {
     width: number;
     height: number;
     padding: IChartPadding;
-    click: boolean;
 }
 export declare type ExtendChart<T> = {
     (dashboard: T): void;
@@ -39,7 +38,6 @@ export declare class ChartSeries implements IChart {
     y: ChartLinearAxis;
     elements: IChartElements;
     padding: IChartPadding;
-    click: boolean;
     constructor(id: string, domain: string[], isGoingOk?: boolean, yDomain?: number[]);
 }
 export declare class ChartTime implements IChart {
@@ -51,7 +49,6 @@ export declare class ChartTime implements IChart {
     elements: IChartElements;
     help: IHelp;
     padding: IChartPadding;
-    click: boolean;
     constructor(id: string, domain: Date[], chartPadding?: ChartPadding);
 }
 export declare class ChartNetwork implements IChart {
@@ -61,7 +58,6 @@ export declare class ChartNetwork implements IChart {
     x: ChartTimeAxis;
     y: ChartLinearAxis;
     padding: IChartPadding;
-    click: boolean;
     elements: IChartElements;
     constructor(id: string, containerClass: string, domain: Date[]);
 }

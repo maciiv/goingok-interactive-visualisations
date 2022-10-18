@@ -7,7 +7,7 @@ import { ChartNetwork, ExtendChart } from "../chartBase.js";
 import { Help } from "../../utils/help.js";
 export declare class Network<T> extends ChartNetwork {
     tooltip: Tooltip<this>;
-    zoom: Zoom;
+    zoom: Zoom<this>;
     help: Help;
     clicking: Click<this>;
     simulation: d3.Simulation<INodes, undefined>;

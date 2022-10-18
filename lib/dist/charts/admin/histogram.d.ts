@@ -27,6 +27,7 @@ declare class HistogramChartElements<T extends Histogram<any>> extends ChartElem
     getThresholdsValues(): number[];
 }
 declare class ClickHistogram<T extends Histogram<any>> extends Click<T> {
+    clickedBin: string;
     appendThresholdPercentages(data: IAdminAnalyticsData[], clickData: IHistogramData): void;
 }
 export {};
