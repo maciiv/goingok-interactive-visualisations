@@ -11,9 +11,6 @@ export interface IChartBasic {
     height: number;
     padding: IChartPadding;
 }
-export declare type ExtendChart<T> = {
-    (dashboard: T): void;
-};
 export interface IChart extends IChartScales, IChartBasic {
     elements: IChartElements;
 }

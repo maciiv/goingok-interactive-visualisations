@@ -3,18 +3,17 @@ import { ClickTextData, HistogramData, IAdminAnalyticsData, IHistogramData } fro
 import { Click } from "../../interactions/click.js";
 import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
 import { groupBy, calculateMean } from "../../utils/utils.js";
-import { ChartSeries, ChartPadding, ExtendChart } from "../chartBase.js";
+import { ChartSeries, ChartPadding } from "../chartBase.js";
 import { ChartElements } from "../render.js";
 import { ChartSeriesAxis } from "../scaleBase.js";
 
-export class Histogram<T> extends ChartSeries {
+export class Histogram extends ChartSeries {
     elements: HistogramChartElements<this>
     thresholdAxis: d3.Axis<d3.NumberValue>
     bandwidth: d3.ScaleLinear<number, number, never>
     tooltip = new Tooltip(this)
     clicking: ClickHistogram<this>
-    dashboard?: T
-    extend?: ExtendChart<T>
+    extend?: Function
     private _data: IAdminAnalyticsData[]
     get data() {
         return this._data
@@ -27,7 +26,7 @@ export class Histogram<T> extends ChartSeries {
             .domain([-100, 100]);
         this.x.transition(this.data.map(d => d.group))
         this.render();
-        this.extend !== undefined && this.dashboard !== undefined ? this.extend(this.dashboard) : null
+        this.extend !== undefined ? this.extend() : null
     }
     constructor(data: IAdminAnalyticsData[]) {
         super("histogram", data.map(d => d.group));
@@ -129,7 +128,7 @@ export class Histogram<T> extends ChartSeries {
     }
 }
 
-class HistogramChartElements<T extends Histogram<any>> extends ChartElements<T> {
+class HistogramChartElements<T extends Histogram> extends ChartElements<T> {
     constructor(chart: T) {
         super(chart);
         let thresholds = this.getThresholdsValues();
@@ -201,7 +200,7 @@ class HistogramChartElements<T extends Histogram<any>> extends ChartElements<T> 
     };
 }
 
-class ClickHistogram<T extends Histogram<any>> extends Click<T> {
+class ClickHistogram<T extends Histogram> extends Click<T> {
     clickedBin: string
     appendThresholdPercentages(data: IAdminAnalyticsData[], clickData: IHistogramData): void {
         let thresholds = this.chart.elements.getThresholdsValues();

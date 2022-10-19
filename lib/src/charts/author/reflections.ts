@@ -1,14 +1,12 @@
 import d3 from "d3"
 import { IReflection, IReflectionAnalytics } from "../../data/data.js"
 import { Sort } from "../../interactions/sort.js"
-import { ExtendChart } from "../chartBase.js"
 
-export class Reflections<T> {
+export class Reflections {
     id: string
     sorted = ""
     sort = new Sort()
-    dashboard?: T
-    extend?: ExtendChart<T>
+    extend?: Function
     private _data: IReflectionAnalytics[]
     get data() {
         return this._data
@@ -16,7 +14,7 @@ export class Reflections<T> {
     set data(entries: IReflectionAnalytics[]) {
         this._data = entries
         this.render()
-        this.extend !== undefined && this.dashboard !== undefined ? this.extend(this.dashboard) : null
+        this.extend !== undefined ? this.extend() : null
     }
     constructor(data: IReflectionAnalytics[]) {
         this.id = "reflections"
@@ -65,8 +63,8 @@ export class Reflections<T> {
     private handleSort() {
         const _this = this
         const id = "sort"
-        d3.select(`#${id} .btn-group-toggle`).on("click", function(e: any) {
-            const selectedOption = e.target.control.value;
+        d3.selectAll(`#${id} .btn-group-toggle label`).on("click", function (this: HTMLLabelElement) {
+            const selectedOption = (this.control as HTMLInputElement).value
             const chevron = _this.sorted === selectedOption ? "fa-chevron-down" : "fa-chevron-up"
             _this.sort.setChevronVisibility(id, selectedOption)
             _this._data = _this.data.sort(function (a, b) {

@@ -16,15 +16,12 @@ export class ExperimentalDashboard extends Dashboard {
     help = new Help()
     constructor(data: IAuthorAnalyticsData) {
         super(data)
-        this.timeline.extend = this.extendTimeline
-        this.timeline.dashboard = this
-        this.extendTimeline(this)
-        this.network.extend = this.extendNetwork
-        this.network.dashboard = this
-        this.extendNetwork(this)
-        this.reflections.extend = this.extendReflections
-        this.reflections.dashboard = this
-        this.extendReflections(this)
+        this.timeline.extend = this.extendTimeline.bind(this)
+        this.extendTimeline()
+        this.network.extend = this.extendNetwork.bind(this)
+        this.extendNetwork()
+        this.reflections.extend = this.extendReflections.bind(this)
+        this.extendReflections()
     }
     preloadTags(entries: IAuthorAnalyticsData): ITags[] {
         this.tags = super.preloadTags(entries, true)
@@ -72,8 +69,8 @@ export class ExperimentalDashboard extends Dashboard {
             _this.network.data = _this.updateAnalyticsData()
         });
     }
-    extendTimeline(dashboard: ExperimentalDashboard) {
-        const _this = dashboard
+    extendTimeline() {
+        const _this = this
         const chart = _this.timeline
 
         chart.clicking.enableClick(onClick)
@@ -104,8 +101,8 @@ export class ExperimentalDashboard extends Dashboard {
             _this.reflections.data = [d]
         }
     }
-    extendNetwork(dashboard: ExperimentalDashboard) {
-        const _this = dashboard
+    extendNetwork() {
+        const _this = this
         const chart = _this.network
 
         d3.select(`#${chart.id} .badge`).on("click", () => _this.handleFilterButton());
@@ -156,9 +153,8 @@ export class ExperimentalDashboard extends Dashboard {
 
         return chart
     }
-    extendReflections(dashboard: ExperimentalDashboard): void {
-        const _this = dashboard
-        d3.select(`#reflections .badge`).on("click", () => _this.handleFilterButton())
+    extendReflections(): void {
+        d3.select(`#reflections .badge`).on("click", () => this.handleFilterButton())
     }
     private handleFilterButton(): void {
         this.timeline.clicking.removeClick()

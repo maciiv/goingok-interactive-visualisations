@@ -10,9 +10,9 @@ import { Reflections } from "../charts/author/reflections.js";
 import { groupBy } from "../utils/utils.js";
 
 export class Dashboard {
-    timeline: TimelineNetwork<this>
-    network: Network<this>
-    reflections: Reflections<this>
+    timeline: TimelineNetwork
+    network: Network
+    reflections: Reflections
     constructor(data: IAuthorAnalyticsData) {
         this.resizeTimeline()
         this.timeline = new TimelineNetwork(data.reflections)

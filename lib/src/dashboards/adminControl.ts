@@ -12,9 +12,9 @@ import { Totals } from "../charts/admin/totals.js";
 
 export class Dashboard {
     totals: Totals
-    barChart: BarChart<this>
-    histogram: Histogram<this>
-    timeline: Timeline<this>
+    barChart: BarChart
+    histogram: Histogram
+    timeline: Timeline
     users: Users
     constructor(data: IAdminAnalyticsData[]) {
         this.totals = new Totals(data)

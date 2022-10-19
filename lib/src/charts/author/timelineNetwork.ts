@@ -3,13 +3,12 @@ import { INodes, IReflectionAnalytics } from "../../data/data.js";
 import { Click } from "../../interactions/click.js";
 import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
 import { addDays, groupBy, maxDate, minDate } from "../../utils/utils.js";
-import { ChartPadding, ChartTime, ExtendChart } from "../chartBase.js";
+import { ChartPadding, ChartTime } from "../chartBase.js";
 
-export class TimelineNetwork<T> extends ChartTime {
+export class TimelineNetwork extends ChartTime {
     tooltip = new Tooltip(this)
     clicking = new Click(this)
-    dashboard?: T
-    extend?: ExtendChart<T>
+    extend?: Function
     private _data: IReflectionAnalytics[]
     get data() {
         return this._data
@@ -20,7 +19,7 @@ export class TimelineNetwork<T> extends ChartTime {
             return c
         })
         this.render()
-        this.extend !== undefined && this.dashboard !== undefined ? this.extend(this.dashboard) : null
+        this.extend !== undefined ? this.extend() : null
     }
     constructor(data: IReflectionAnalytics[]){
         super("timeline", [addDays(minDate(data.map(d => d.timestamp)), -30), addDays(maxDate(data.map(d => d.timestamp)), 30)], new ChartPadding(40, 75, 10, 10))

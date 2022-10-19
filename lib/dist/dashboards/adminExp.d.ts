@@ -14,9 +14,9 @@ export declare class ExperimentalDashboard extends Dashboard {
     handleGroupsColours(): void;
     handleGroupsSort(): void;
     private handleFilterButton;
-    extendBarChart(dashboard: ExperimentalDashboard): void;
-    extendHistogram(dashboard: ExperimentalDashboard): void;
-    extendTimeline(dashboard: ExperimentalDashboard): void;
+    extendBarChart(): void;
+    extendHistogram(): void;
+    extendTimeline(): void;
     private removeAllHelp;
     private getClickData;
 }

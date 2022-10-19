@@ -15,15 +15,12 @@ export class ExperimentalDashboard extends Dashboard {
     help = new Help()
     constructor(data: IAdminAnalyticsData[]) {
         super(data)
-        this.barChart.extend = this.extendBarChart
-        this.barChart.dashboard = this
-        this.extendBarChart(this)
-        this.histogram.extend = this.extendHistogram
-        this.histogram.dashboard = this
-        this.extendHistogram(this)
-        this.timeline.extend = this.extendTimeline
-        this.timeline.dashboard = this
-        this.extendTimeline(this)
+        this.barChart.extend = this.extendBarChart.bind(this)
+        this.extendBarChart()
+        this.histogram.extend = this.extendHistogram.bind(this)
+        this.extendHistogram()
+        this.timeline.extend = this.extendTimeline.bind(this)
+        this.extendTimeline()
     }
     preloadGroups(entries: IAdminAnalyticsData[]): IAdminAnalyticsData[] {
         super.preloadGroups(entries, true)
@@ -107,8 +104,8 @@ export class ExperimentalDashboard extends Dashboard {
     handleGroupsSort(): void {
         const _this = this;
         const id = "sort-groups"
-        d3.select(`#${id} .btn-group-toggle`).on("click", (e: any) => {
-            const selectedOption = e.target.control.value
+        d3.selectAll(`#${id} .btn-group-toggle label`).on("click", function (this: HTMLLabelElement) {
+            const selectedOption = (this.control as HTMLInputElement).value
             const chevron = _this.sorted === selectedOption ? "fa-chevron-down" : "fa-chevron-up"
             _this.sort.setChevronVisibility(id, selectedOption)
             _this.entries = _this.entries.sort(function (a, b) {
@@ -145,8 +142,8 @@ export class ExperimentalDashboard extends Dashboard {
         this.totals.data = data
         this.users.data = data
     }
-    extendBarChart(dashboard: ExperimentalDashboard) {
-        const _this = dashboard
+    extendBarChart() {
+        const _this = this
         const chart = _this.barChart
 
         chart.clicking.enableClick(onClick)
@@ -177,8 +174,8 @@ export class ExperimentalDashboard extends Dashboard {
             _this.removeAllHelp(chart)
         }
     }
-    extendHistogram(dashboard: ExperimentalDashboard) {
-        const _this = dashboard
+    extendHistogram() {
+        const _this = this
         const chart = _this.histogram
 
         d3.select(`#${chart.id} .badge`).on("click", () => _this.handleFilterButton())
@@ -264,8 +261,8 @@ export class ExperimentalDashboard extends Dashboard {
             _this.users.data = [d]
         }
     }
-    extendTimeline(dashboard: ExperimentalDashboard) {
-        const _this = dashboard
+    extendTimeline() {
+        const _this = this
         const chart = _this.timeline
 
         if (chart.data.length == 0) {

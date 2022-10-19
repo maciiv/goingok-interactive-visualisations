@@ -1,4 +1,4 @@
-import { calculateMean, groupBy, IGroupBy } from "../utils/utils.js";
+import { calculateMean, groupBy } from "../utils/utils.js";
 
 export interface IReflection {
     refId: number

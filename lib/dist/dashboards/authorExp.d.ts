@@ -14,9 +14,9 @@ export declare class ExperimentalDashboard extends Dashboard {
     preloadTags(entries: IAuthorAnalyticsData): ITags[];
     handleTags(): void;
     handleTagsColours(): void;
-    extendTimeline(dashboard: ExperimentalDashboard): void;
-    extendNetwork(dashboard: ExperimentalDashboard): import("../charts/author/network.js").Network<ExperimentalDashboard>;
-    extendReflections(dashboard: ExperimentalDashboard): void;
+    extendTimeline(): void;
+    extendNetwork(): import("../charts/author/network.js").Network;
+    extendReflections(): void;
     private handleFilterButton;
     private updateReflectionNodesData;
     private updateAnalyticsData;

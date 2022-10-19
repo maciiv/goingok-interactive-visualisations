@@ -7,9 +7,9 @@ import { Users } from "../charts/admin/users.js";
 import { Totals } from "../charts/admin/totals.js";
 export declare class Dashboard {
     totals: Totals;
-    barChart: BarChart<this>;
-    histogram: Histogram<this>;
-    timeline: Timeline<this>;
+    barChart: BarChart;
+    histogram: Histogram;
+    timeline: Timeline;
     users: Users;
     constructor(data: IAdminAnalyticsData[]);
     sidebarBtn(): void;

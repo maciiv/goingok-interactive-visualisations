@@ -4,9 +4,9 @@ import { TimelineNetwork } from "../charts/author/timelineNetwork.js";
 import { IAuthorAnalyticsDataRaw } from "../data/db.js";
 import { Reflections } from "../charts/author/reflections.js";
 export declare class Dashboard {
-    timeline: TimelineNetwork<this>;
-    network: Network<this>;
-    reflections: Reflections<this>;
+    timeline: TimelineNetwork;
+    network: Network;
+    reflections: Reflections;
     constructor(data: IAuthorAnalyticsData);
     resizeTimeline(): void;
     preloadTags(entries: IAuthorAnalyticsData, enable?: boolean): ITags[];

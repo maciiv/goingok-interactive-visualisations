@@ -1,12 +1,11 @@
 import { IReflectionAnalytics } from "../../data/data.js";
 import { Click } from "../../interactions/click.js";
 import { Tooltip } from "../../interactions/tooltip.js";
-import { ChartTime, ExtendChart } from "../chartBase.js";
-export declare class TimelineNetwork<T> extends ChartTime {
+import { ChartTime } from "../chartBase.js";
+export declare class TimelineNetwork extends ChartTime {
     tooltip: Tooltip<this>;
     clicking: Click<this>;
-    dashboard?: T;
-    extend?: ExtendChart<T>;
+    extend?: Function;
     private _data;
     get data(): IReflectionAnalytics[];
     set data(entries: IReflectionAnalytics[]);

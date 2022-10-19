@@ -3,15 +3,14 @@ import { IAdminAnalyticsData, IReflectionAuthor } from "../../data/data.js";
 import { Click } from "../../interactions/click.js";
 import { ITooltipValues, Tooltip } from "../../interactions/tooltip.js";
 import { Zoom } from "../../interactions/zoom.js";
-import { ChartTime, ExtendChart, IChart, IChartScales } from "../chartBase.js";
+import { ChartTime, IChart, IChartScales } from "../chartBase.js";
 import { ChartTimeAxis, ChartLinearAxis } from "../scaleBase.js";
-export declare class Timeline<T> extends ChartTime {
+export declare class Timeline extends ChartTime {
     zoomChart: ChartTimeZoom;
     tooltip: Tooltip<this>;
     zoom: Zoom<this>;
     clicking: ClickTimeline<this>;
-    dashboard?: T;
-    extend?: ExtendChart<T>;
+    extend?: Function;
     private _data;
     get data(): IAdminAnalyticsData[];
     set data(entries: IAdminAnalyticsData[]);
@@ -26,7 +25,7 @@ declare class ChartTimeZoom implements IChartScales {
     y: ChartLinearAxis;
     constructor(chart: IChart, domain: Date[]);
 }
-declare class ClickTimeline<T extends Timeline<any>> extends Click<T> {
+declare class ClickTimeline<T extends Timeline> extends Click<T> {
     appendScatterText(d: IReflectionAuthor, title: string, values?: ITooltipValues[]): void;
     private positionClickContainer;
 }

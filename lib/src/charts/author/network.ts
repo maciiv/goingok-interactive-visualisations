@@ -4,18 +4,17 @@ import { Click } from "../../interactions/click.js";
 import { Tooltip } from "../../interactions/tooltip.js";
 import { Zoom } from "../../interactions/zoom.js";
 import { addDays, maxDate, minDate } from "../../utils/utils.js";
-import { ChartNetwork, ExtendChart } from "../chartBase.js";
+import { ChartNetwork } from "../chartBase.js";
 import { Help } from "../../utils/help.js";
 
 // Basic class for network chart timeline
-export class Network<T> extends ChartNetwork {
+export class Network extends ChartNetwork {
     tooltip = new Tooltip(this)
     zoom = new Zoom(this)
     help = new Help()
     clicking = new Click(this)
     simulation: d3.Simulation<INodes, undefined>
-    dashboard?: T
-    extend?: ExtendChart<T>
+    extend?: Function
     private _data: IAnalytics
     get data() {
         return this._data
@@ -24,7 +23,7 @@ export class Network<T> extends ChartNetwork {
         this._data = this.filterData(entries)
         this.resetZoomRange()
         this.render()
-        this.extend !== undefined && this.dashboard !== undefined ? this.extend(this.dashboard) : null
+        this.extend !== undefined ? this.extend() : null
     }
     constructor(data: IAnalytics, domain: Date[]) {
         super("network", "chart-container.network", [addDays(minDate(domain), -30), addDays(maxDate(domain), 30)])

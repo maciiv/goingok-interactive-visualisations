@@ -1,12 +1,10 @@
 import { IReflectionAnalytics } from "../../data/data.js";
 import { Sort } from "../../interactions/sort.js";
-import { ExtendChart } from "../chartBase.js";
-export declare class Reflections<T> {
+export declare class Reflections {
     id: string;
     sorted: string;
     sort: Sort;
-    dashboard?: T;
-    extend?: ExtendChart<T>;
+    extend?: Function;
     private _data;
     get data(): IReflectionAnalytics[];
     set data(entries: IReflectionAnalytics[]);

@@ -2,13 +2,12 @@ import d3 from "d3";
 import { ClickTextData, IAdminAnalyticsData, IDataStats } from "../../data/data.js";
 import { Click } from "../../interactions/click.js";
 import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
-import { ChartSeries, ExtendChart } from "../chartBase.js";
+import { ChartSeries } from "../chartBase.js";
 
-export class BarChart<T> extends ChartSeries {
+export class BarChart extends ChartSeries {
     tooltip = new Tooltip(this)
     clicking: ClickBarChart<this>
-    dashboard?: T
-    extend?: ExtendChart<T>
+    extend?: Function
     private _data: IAdminAnalyticsData[]
     get data() {
         return this._data
@@ -20,7 +19,7 @@ export class BarChart<T> extends ChartSeries {
             this.y.transition([0, d3.max(this.data.map(d => d.getStat("usersTotal").value as number))])
         }       
         this.render()
-        this.extend !== undefined && this.dashboard !== undefined ? this.extend(this.dashboard) : null
+        this.extend !== undefined ? this.extend() : null
     }
     constructor(data: IAdminAnalyticsData[]) {
         super("users", data.map(d => d.group), false, data.map(d => d.getStat("usersTotal").value as number))
@@ -117,7 +116,7 @@ export class BarChart<T> extends ChartSeries {
     }
 }
 
-class ClickBarChart<T extends BarChart<any>> extends Click<T> {
+class ClickBarChart<T extends BarChart> extends Click<T> {
     constructor(chart: T) {
         super(chart)
     }

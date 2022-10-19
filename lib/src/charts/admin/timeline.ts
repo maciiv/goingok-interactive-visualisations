@@ -4,16 +4,15 @@ import { Click } from "../../interactions/click.js";
 import { ITooltipValues, Tooltip, TooltipValues } from "../../interactions/tooltip.js";
 import { Zoom } from "../../interactions/zoom.js";
 import { maxDate, minDate } from "../../utils/utils.js";
-import { ChartTime, ExtendChart, IChart, IChartScales } from "../chartBase.js";
+import { ChartTime, IChart, IChartScales } from "../chartBase.js";
 import { ChartTimeAxis, ChartLinearAxis } from "../scaleBase.js";
 
-export class Timeline<T> extends ChartTime {
+export class Timeline extends ChartTime {
     zoomChart: ChartTimeZoom
     tooltip = new Tooltip(this)
     zoom = new Zoom(this)
     clicking: ClickTimeline<this>
-    dashboard?: T
-    extend?: ExtendChart<T>
+    extend?: Function
     private _data: IAdminAnalyticsData[]
     get data() {
         return this._data
@@ -26,7 +25,7 @@ export class Timeline<T> extends ChartTime {
             this.clicking.removeClick();
         }
         this.render()
-        this.extend !== undefined && this.dashboard !== undefined ? this.extend(this.dashboard) : null
+        this.extend !== undefined ? this.extend() : null
     }
     constructor(data: IAdminAnalyticsData[]) {
         super("timeline", [minDate(data.map(d => minDate(d.value.map(c => c.timestamp)))), maxDate(data.map(d => maxDate(d.value.map(c => c.timestamp))))])
@@ -188,7 +187,7 @@ class ChartTimeZoom implements IChartScales {
     }
 }
 
-class ClickTimeline<T extends Timeline<any>> extends Click<T> {
+class ClickTimeline<T extends Timeline> extends Click<T> {
     appendScatterText(d: IReflectionAuthor, title: string, values: ITooltipValues[] = null): void {
         let container = this.chart.elements.contentContainer.append("g")
             .datum(d)

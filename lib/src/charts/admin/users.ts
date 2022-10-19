@@ -132,8 +132,8 @@ export class Users {
         const _this = this
         const id = "sort-users"
         let sortedData = groupBy(data, "pseudonym")
-        d3.select(`#${id} .btn-group-toggle`).on("click", function(e: any) {
-            const selectedOption = e.target.control.value;
+        d3.selectAll(`#${id} .btn-group-toggle label`).on("click", function (this: HTMLLabelElement) {
+            const selectedOption = (this.control as HTMLInputElement).value;
             const chevron = _this.sorted === selectedOption ? "fa-chevron-down" : "fa-chevron-up"
             _this.sort.setChevronVisibility(id, selectedOption)
             sortedData = sortedData.sort(function (a, b) {
