@@ -290,6 +290,12 @@ Admin CSS
     font-size: 0.75rem;
 }
 
+.zoom-buttons {
+    margin-left: auto;
+    margin-bottom: 0;
+    width: 160px !important;
+}
+
 .zoom-bar-content {
     fill-opacity: 0.2;
     fill:  #3399CC;
@@ -300,7 +306,7 @@ Admin CSS
 }
 
 .zoom-rect.active {
-    cursor: zoom-in;
+    cursor: move;
 }
 
 .zoom-bar-content.zoom-line {

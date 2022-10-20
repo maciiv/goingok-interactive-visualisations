@@ -125,6 +125,9 @@ export class Timeline extends ChartTime {
            
         //Enable zoom
         const zoomed = function(e: d3.D3ZoomEvent<SVGRectElement, unknown>) {
+            if (e.sourceEvent !== null) {
+                if (e.sourceEvent.type === "dblclick" || e.sourceEvent.type === "wheel") return
+            }
             let newChartRange = [0, _this.width - _this.padding.yAxis].map(d => e.transform.applyX(d));
             _this.x.scale.rangeRound(newChartRange);
             _this.zoomChart.x.scale.rangeRound([0, _this.width - _this.padding.yAxis - 5].map(d => e.transform.invertX(d)));

@@ -139,7 +139,21 @@
                                         </h5>
                                         <h6 class="card-subtitle mb-2">
                                             <p class="instructions mb-1"></p>
-                                            <p class="text-muted mb-0"></s>
+                                            <p class="text-muted mb-0"></p>
+                                            <div class="input-group input-group-sm zoom-buttons">
+                                                <span class="mr-2 my-auto">zoom:</span>
+                                                <div class="input-group-prepend">
+                                                    <div class="input-group">
+                                                        <input class="btn btn-secondary btn-sm" type="button" value="-" id="zoom-minus" />
+                                                    </div>
+                                                </div>
+                                                <input type="text" value="100%" class="form-control text-center" id="zoom-number" disabled />
+                                                <div class="input-group-append">
+                                                    <div class="input-group">
+                                                        <input class="btn btn-secondary btn-sm" type="button" value="+" id="zoom-plus" />
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </h6>
                                         <div class="chart-container"></div>
                                     </div>

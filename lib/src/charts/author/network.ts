@@ -148,6 +148,9 @@ export class Network extends ChartNetwork {
         _this.tooltip.enableTooltip(onMouseover, onMouseout);
 
         const zoomed = function(e: d3.D3ZoomEvent<SVGRectElement, unknown>) {
+            if (e.sourceEvent !== null) {
+                if (e.sourceEvent.type === "dblclick" || e.sourceEvent.type === "wheel") return
+            }
             let newChartRange = [0, _this.width - _this.padding.yAxis - _this.padding.right].map(d => e.transform.applyX(d));
             _this.x.scale.rangeRound(newChartRange);
 
