@@ -1,5 +1,9 @@
 import { IChart } from "../charts/chartBase.js";
 
+type TooltipFunction = {
+    (this: SVGRectElement | SVGCircleElement | SVGPathElement | d3.BaseType, event: MouseEvent, d: unknown): void
+}
+
 export interface ITooltipValues {
     label: string;
     value: number | string;
@@ -15,7 +19,7 @@ export class TooltipValues implements ITooltipValues {
 }
 
 export interface ITooltip {
-    enableTooltip(onMouseover: any, onMouseout: any): void;
+    enableTooltip(onMouseover: TooltipFunction, onMouseout: TooltipFunction): void;
     removeTooltip(): void
     appendTooltipContainer(): void;
     appendTooltipText(title: string, values: ITooltipValues[]): d3.Selection<SVGRectElement, unknown, HTMLElement, any>;
@@ -28,7 +32,7 @@ export class Tooltip<T extends IChart> implements ITooltip {
     constructor(chart: T) {
         this.chart = chart
     }
-    enableTooltip(onMouseover: any, onMouseout: any): void {
+    enableTooltip(onMouseover: TooltipFunction, onMouseout: TooltipFunction): void {
         this.chart.elements.content.on("mouseover", onMouseover)
         this.chart.elements.content.on("mouseout", onMouseout);
     };

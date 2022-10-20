@@ -1,6 +1,10 @@
 import { IClickTextData } from "../data/data.js";
 import { IChart } from "../charts/chartBase.js";
 
+type ClickFunction = {
+    (this: SVGRectElement | SVGCircleElement | SVGPathElement | d3.BaseType, event: MouseEvent, d: unknown): void
+}
+
 export interface IClick {
     enableClick(onClick: any): void;
     removeClick(): void;
@@ -12,7 +16,7 @@ export class Click<T extends IChart> implements IClick {
     constructor(chart: T) {
         this.chart = chart
     }
-    enableClick(onClick: any): void {
+    enableClick(onClick: ClickFunction): void {
         this.chart.elements.content.on("click", onClick)
     };
     removeClick(): void {

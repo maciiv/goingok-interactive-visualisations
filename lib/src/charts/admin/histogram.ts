@@ -105,7 +105,7 @@ export class Histogram extends ChartSeries {
         
         this.elements.content = this.elements.contentContainer.selectAll(`#${this.id}-data`);
 
-        const onMouseover = (e: Event, d: HistogramData) => {
+        const onMouseover = (e: MouseEvent, d: HistogramData) => {
             this.tooltip.appendTooltipContainer();
             let tooltipBox = this.tooltip.appendTooltipText(d.bin.x0 == 0 ? "Distressed" : d.bin.x1 == 100 ? "Soaring" : "GoingOK" , [new TooltipValues("Total", `${d.bin.length} (${d.percentage}%)`)]);
             this.tooltip.positionTooltipContainer(this.x.scale(d.group) + this.bandwidth(d.bin.length), d.bin.x1 > 25 ? this.y.scale(d.bin.x1) : this.y.scale(d.bin.x0) - tooltipBox.node().getBBox().height);
@@ -117,14 +117,14 @@ export class Histogram extends ChartSeries {
             this.tooltip.removeTooltip();
         }
 
+        //Append tooltip container
+        this.tooltip.enableTooltip(onMouseover, onMouseout);
+
         if (this.clicking.clicked) {
             const clickData = this.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IHistogramData
             this.clicking.removeClick()
             this.clicking.appendThresholdPercentages(this.data, clickData)
         }
-
-        //Append tooltip container
-        this.tooltip.enableTooltip(onMouseover, onMouseout);
     }
 }
 

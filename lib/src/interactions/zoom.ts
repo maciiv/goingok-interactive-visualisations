@@ -1,6 +1,10 @@
 import d3 from "d3";
 import { IChart } from "../charts/chartBase.js";
 
+type ZoomFunction = {
+    (this: Element, event: d3.D3ZoomEvent<SVGRectElement, unknown>, d: unknown): void
+}
+
 export interface IZoom {
     enableZoom(zoomed: any): void;
     appendZoomBar(): d3.Selection<SVGGElement, unknown, HTMLElement, any>;
@@ -11,7 +15,7 @@ export class Zoom<T extends IChart> implements IZoom {
     constructor(chart: T) {
         this.chart = chart
     }
-    enableZoom(zoomed: any): void {
+    enableZoom(zoomed: ZoomFunction): void {
         this.chart.elements.svg.selectAll(".zoom-rect")
             .attr("class", "zoom-rect active");
 

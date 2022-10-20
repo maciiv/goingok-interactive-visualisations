@@ -59,9 +59,8 @@ export class Timeline extends ChartTime {
 
         _this.elements.content = _this.elements.contentContainer.selectAll(".circle");
 
-        //Enable tooltip       
-        _this.tooltip.enableTooltip(onMouseover, onMouseout);
-        function onMouseover(e: Event, d: ITimelineData) {
+        
+        const onMouseover = function(this: SVGCircleElement, e: MouseEvent, d: ITimelineData) {
             if (d3.select(this).attr("class").includes("clicked")) {
                 return;
             }
@@ -90,11 +89,13 @@ export class Timeline extends ChartTime {
             _this.tooltip.appendLine(0, _this.y.scale(d.point), _this.x.scale(d.timestamp), _this.y.scale(d.point), d.colour);
             _this.tooltip.appendLine(_this.x.scale(d.timestamp), _this.y.scale(0), _this.x.scale(d.timestamp), _this.y.scale(d.point), d.colour);
         }
-        function onMouseout() {
+        const onMouseout = function() {
             _this.elements.svg.select(".tooltip-container").transition()
                 .style("opacity", 0);
             _this.tooltip.removeTooltip();
         }
+        //Enable tooltip       
+        _this.tooltip.enableTooltip(onMouseover, onMouseout);
 
         //Append zoom bar
         if (_this.elements.zoomSVG == undefined) {
@@ -123,8 +124,7 @@ export class Timeline extends ChartTime {
                 exit => exit.remove());
            
         //Enable zoom
-        _this.zoom.enableZoom(zoomed);
-        function zoomed(e: any) {
+        const zoomed = function(e: d3.D3ZoomEvent<SVGRectElement, unknown>) {
             let newChartRange = [0, _this.width - _this.padding.yAxis].map(d => e.transform.applyX(d));
             _this.x.scale.rangeRound(newChartRange);
             _this.zoomChart.x.scale.rangeRound([0, _this.width - _this.padding.yAxis - 5].map(d => e.transform.invertX(d)));
@@ -148,6 +148,7 @@ export class Timeline extends ChartTime {
             _this.elements.xAxis.call(_this.x.axis);
             _this.help.removeHelp(_this);
         }
+        _this.zoom.enableZoom(zoomed);
     }
     scatter(update: d3.Selection<SVGGElement, IAdminAnalyticsData, SVGGElement, unknown>, chart: ChartTime | ChartTimeZoom, zoom = false, invisible = false): void {
         update.selectAll("circle")

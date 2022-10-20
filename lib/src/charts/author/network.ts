@@ -92,9 +92,7 @@ export class Network extends ChartNetwork {
         
         _this.elements.content = _this.elements.contentContainer.selectAll(".network-node-group");
 
-        _this.simulation.on("tick", ticked);
-
-        function ticked() {
+        const ticked = function() {
             edges.attr("x1", d => (d.source as INodes).x)
             .attr("y1", d => (d.source as INodes).y)
             .attr("x2", d => (d.target as INodes).x)
@@ -102,10 +100,9 @@ export class Network extends ChartNetwork {
 
             nodes.attr("transform", (d: INodes) => `translate(${d.x}, ${d.y})`)
         }
+        _this.simulation.on("tick", ticked)
 
-        //Enable tooltip       
-        _this.tooltip.enableTooltip(onMouseover, onMouseout);
-        function onMouseover(e: Event, d: INodes) {
+        const onMouseover = function(e: MouseEvent, d: INodes) {
             if (d3.select(this).attr("class").includes("clicked")) {
                 return;
             }
@@ -126,8 +123,7 @@ export class Network extends ChartNetwork {
                     .attr("width", d => enter.select<SVGTextElement>(`#text-${d.idx}`).node().getBoundingClientRect().width + 10)
                     .attr("height", d => enter.select<SVGTextElement>(`#text-${d.idx}`).node().getBoundingClientRect().height + 5))
         }
-
-        function onMouseout() {
+        const onMouseout = function() {
             d3.selectAll<SVGGElement, INodes>(".network-node-group")
                 .call(enter => enter.select("text")
                     .text(null)
@@ -148,10 +144,10 @@ export class Network extends ChartNetwork {
             
             _this.tooltip.removeTooltip();
         }
+        //Enable tooltip       
+        _this.tooltip.enableTooltip(onMouseover, onMouseout);
 
-        //Enable zoom
-        _this.zoom.enableZoom(zoomed);
-        function zoomed(e: d3.D3ZoomEvent<SVGRectElement, unknown>) {
+        const zoomed = function(e: d3.D3ZoomEvent<SVGRectElement, unknown>) {
             let newChartRange = [0, _this.width - _this.padding.yAxis - _this.padding.right].map(d => e.transform.applyX(d));
             _this.x.scale.rangeRound(newChartRange);
 
@@ -166,6 +162,8 @@ export class Network extends ChartNetwork {
             _this.elements.xAxis.call(_this.x.axis);
             _this.help.removeHelp(_this);
         }
+        //Enable zoom
+        _this.zoom.enableZoom(zoomed)
     }
     resetZoomRange(): void {
         this.x.scale.range([0, this.width - this.padding.yAxis - this.padding.right]);

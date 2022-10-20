@@ -1,11 +1,11 @@
 ;
 import { IChart, IChartBasic } from "./chartBase.js";
-export interface IChartElementsContainers {
+interface IChartElementsContainers {
     svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>;
     contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
     content: d3.Selection<SVGRectElement | SVGCircleElement | SVGPathElement | d3.BaseType, unknown, SVGGElement, any>;
 }
-export declare class ChartElementsContainers<T extends IChartBasic> implements IChartElementsContainers {
+declare class ChartElementsContainers<T extends IChartBasic> implements IChartElementsContainers {
     protected chart: T;
     svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>;
     contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
@@ -31,3 +31,4 @@ export declare class ChartElements<T extends IChart> extends ChartElementsContai
     private appendYAxis;
     private appendYAxisLabel;
 }
+export {};

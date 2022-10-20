@@ -69,9 +69,7 @@ export class TimelineNetwork extends ChartTime {
         
         _this.elements.content = _this.elements.contentContainer.selectAll(".circle");
 
-        //Enable tooltip       
-        _this.tooltip.enableTooltip(onMouseover, onMouseout);
-        function onMouseover(e: Event, d: IReflectionAnalytics) {
+        const onMouseover = function(e: Event, d: IReflectionAnalytics) {
             if (d3.select(this).attr("class").includes("clicked")) {
                 return;
             }
@@ -103,12 +101,13 @@ export class TimelineNetwork extends ChartTime {
             _this.tooltip.appendLine(0, _this.y.scale(d.point), _this.x.scale(d.timestamp) - 3, _this.y.scale(d.point), "#999999");
             _this.tooltip.appendLine(_this.x.scale(d.timestamp), _this.y.scale(0), _this.x.scale(d.timestamp), _this.y.scale(d.point) - 3, "#999999");
         }
-
-        function onMouseout() {
+        const onMouseout = function() {
             _this.elements.svg.select(".tooltip-container").transition()
                 .style("opacity", 0);
             _this.tooltip.removeTooltip();
         }
+        //Enable tooltip       
+        _this.tooltip.enableTooltip(onMouseover, onMouseout)
     }
     private renderReflectionNetwork(enter: d3.Selection<SVGGElement | d3.BaseType, IReflectionAnalytics, SVGGElement, unknown>) {
         enter.selectAll(".circle-tag")

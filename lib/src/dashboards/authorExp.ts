@@ -73,15 +73,13 @@ export class ExperimentalDashboard extends Dashboard {
         const _this = this
         const chart = _this.timeline
 
-        chart.clicking.enableClick(onClick)
-
         chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
             chart.clicking.removeClick()
             _this.network.data = _this.updateAnalyticsData()
             _this.reflections.data = _this.updateReflectionNodesData()
         });
 
-        function onClick(e: Event, d: IReflectionAnalytics) {
+        const onClick = function(e: MouseEvent, d: IReflectionAnalytics) {
             if (d3.select(this).attr("class").includes("clicked")) {
                 chart.clicking.removeClick()
                 _this.network.data = _this.updateAnalyticsData()
@@ -100,6 +98,7 @@ export class ExperimentalDashboard extends Dashboard {
             _this.network.data = {"name": _this.analytics.name, "description": _this.analytics.description, "nodes": nodes, "edges": edges}
             _this.reflections.data = [d]
         }
+        chart.clicking.enableClick(onClick)
     }
     extendNetwork() {
         const _this = this
@@ -107,9 +106,7 @@ export class ExperimentalDashboard extends Dashboard {
 
         d3.select(`#${chart.id} .badge`).on("click", () => _this.handleFilterButton());
 
-        chart.clicking.enableClick(onClick)
-
-        function onClick(e: Event, d: INodes) {
+        const onClick = function(e: Event, d: INodes) {
             let nodes = chart.getTooltipNodes(_this.analytics, d);
 
             d3.selectAll<HTMLDivElement, IReflection>("#reflections .reflections-tab div")
@@ -124,34 +121,30 @@ export class ExperimentalDashboard extends Dashboard {
             
                 document.querySelector(`#ref-${d.refId}`).scrollIntoView({ behavior: 'smooth', block: 'start' });                   
         }
+        chart.clicking.enableClick(onClick)
 
-        chart.elements.content
-            .call(d3.drag()
-                .on("start", dragStart)
-                .on("drag", dragging)
-                .on("end", dragEnd));
-
-        function dragStart(e: d3.D3DragEvent<SVGGElement, INodes, INodes>) {
+        const dragStart = function(e: d3.D3DragEvent<SVGGElement, INodes, INodes>) {
             if (!e.active) chart.simulation.alphaTarget(0.3).restart();
             e.subject.fx = e.subject.x;
             e.subject.fy = e.subject.y;
             d3.select(this).attr("transform", `translate(${e.subject.fx}, ${e.subject.fy})`);
-        }
-          
-          function dragging(e: d3.D3DragEvent<SVGGElement, INodes, INodes>) {
+        } 
+        const dragging = function(e: d3.D3DragEvent<SVGGElement, INodes, INodes>) {
             e.subject.fx = e.x;
             e.subject.fy = e.y;
             d3.select(this).attr("transform", `translate(${e.subject.fx}, ${e.subject.fy})`);
         }
-          
-          function dragEnd(e: d3.D3DragEvent<SVGGElement, INodes, INodes>) {
+        const dragEnd = function(e: d3.D3DragEvent<SVGGElement, INodes, INodes>) {
             if (!e.active) chart.simulation.alphaTarget(0);
             e.subject.fx = null;
             e.subject.fy = null;
             d3.select(this).attr("transform", `translate(${e.subject.x}, ${e.subject.y})`);
         }
-
-        return chart
+        chart.elements.content
+        .call(d3.drag()
+            .on("start", dragStart)
+            .on("drag", dragging)
+            .on("end", dragEnd))
     }
     extendReflections(): void {
         d3.select(`#reflections .badge`).on("click", () => this.handleFilterButton())

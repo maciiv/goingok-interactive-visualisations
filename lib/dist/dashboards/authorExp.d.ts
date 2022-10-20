@@ -15,7 +15,7 @@ export declare class ExperimentalDashboard extends Dashboard {
     handleTags(): void;
     handleTagsColours(): void;
     extendTimeline(): void;
-    extendNetwork(): import("../charts/author/network.js").Network;
+    extendNetwork(): void;
     extendReflections(): void;
     private handleFilterButton;
     private updateReflectionNodesData;

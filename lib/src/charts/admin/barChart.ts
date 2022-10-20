@@ -69,9 +69,7 @@ export class BarChart extends ChartSeries {
                                 .remove())
             );      
 
-        //Enable tooltip
-        _this.tooltip.enableTooltip(onMouseover, onMouseout);
-        function onMouseover(e: Event, d: IAdminAnalyticsData): void {
+        const onMouseover = function (this: SVGRectElement, e: MouseEvent, d: IAdminAnalyticsData): void {
             //If box is clicked not append tooltip
             if (d3.select(this).attr("class").includes("clicked")) {
                 return;
@@ -105,7 +103,7 @@ export class BarChart extends ChartSeries {
                 return yTooltip;
             }
         }
-        function onMouseout(): void {
+        const onMouseout = function(): void {
             //Transition tooltip to opacity 0
             _this.elements.svg.select(".tooltip-container").transition()
                 .style("opacity", 0);
@@ -113,6 +111,8 @@ export class BarChart extends ChartSeries {
             //Remove tooltip
             _this.tooltip.removeTooltip();
         }
+        //Enable tooltip
+        _this.tooltip.enableTooltip(onMouseover, onMouseout)
     }
 }
 

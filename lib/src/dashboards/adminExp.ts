@@ -146,7 +146,6 @@ export class ExperimentalDashboard extends Dashboard {
         const _this = this
         const chart = _this.barChart
 
-        chart.clicking.enableClick(onClick)
         chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
             chart.clicking.removeClick()
             _this.histogram.clicking.removeClick()
@@ -155,7 +154,7 @@ export class ExperimentalDashboard extends Dashboard {
             _this.timeline.data = chart.data
             _this.users.data = chart.data
         });
-        function onClick(e: Event, d: IAdminAnalyticsData) {
+        const onClick = function(e: Event, d: IAdminAnalyticsData) {
             if (d3.select(this).attr("class").includes("clicked")) {
                 chart.clicking.removeClick()
                 _this.totals.data = chart.data
@@ -173,6 +172,7 @@ export class ExperimentalDashboard extends Dashboard {
             _this.users.data = [d]
             _this.removeAllHelp(chart)
         }
+        chart.clicking.enableClick(onClick)
     }
     extendHistogram() {
         const _this = this
@@ -187,22 +187,14 @@ export class ExperimentalDashboard extends Dashboard {
             _this.users.data = chart.data
         });
 
-        //Add drag functions to the distressed threshold
-        chart.elements.contentContainer.selectAll(".threshold-line")
-            .classed("grab", true)
-            .call(d3.drag()
-                .on("start", dragStart)
-                .on("drag", dragging)
-                .on("end", dragEnd))
-
         //Start dragging functions           
-        function dragStart() {
+        const dragStart = function() {
             chart.elements.contentContainer.selectAll(`.${chart.id}-histogram-text-container`).remove()
             d3.select(this).classed("grab", false)
             d3.select(this).classed("grabbing", true)
             _this.help.removeHelp(chart)
         }
-        function dragging(e: MouseEvent, d: number) {
+        const dragging = function(e: MouseEvent, d: number) {
             if (d > 50) {
                 if (chart.y.scale.invert(e.y) < 51 || chart.y.scale.invert(e.y) > 99) {
                     return
@@ -231,7 +223,7 @@ export class ExperimentalDashboard extends Dashboard {
                     .select("text")
                     .text(Math.round(line.datum())))
         }
-        function dragEnd() {
+        const dragEnd = function() {
             chart.render()
             d3.select(this).classed("grabbing", false)
             d3.select(this).classed("grab", true)
@@ -243,9 +235,15 @@ export class ExperimentalDashboard extends Dashboard {
             } 
             _this.users.thresholds = chart.elements.getThresholdsValues()
         }
+        //Add drag functions to the distressed threshold
+        chart.elements.contentContainer.selectAll(".threshold-line")
+            .classed("grab", true)
+            .call(d3.drag()
+                .on("start", dragStart)
+                .on("drag", dragging)
+                .on("end", dragEnd))
 
-        chart.clicking.enableClick(onClick)
-        function onClick(e: Event, d: HistogramData) {
+        const onClick = function(e: Event, d: HistogramData) {
             if (d3.select(this).attr("class").includes("clicked")) {
                 chart.clicking.removeClick()
                 _this.totals.data = chart.data
@@ -260,6 +258,7 @@ export class ExperimentalDashboard extends Dashboard {
             _this.timeline.data = [d]
             _this.users.data = [d]
         }
+        chart.clicking.enableClick(onClick)
     }
     extendTimeline() {
         const _this = this
@@ -291,13 +290,12 @@ export class ExperimentalDashboard extends Dashboard {
                 })
         }
 
-        chart.clicking.enableClick(onClick)
         chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
             chart.clicking.removeClick()
             _this.users.data = chart.data
         });
 
-        function onClick(e: Event, d: ITimelineData) {
+        const onClick = function(this: SVGCircleElement, e: MouseEvent, d: ITimelineData) {
             if (d3.select(this).attr("class").includes("clicked")) {
                 if (d3.select(this).attr("class").includes("main")) {
                     chart.clicking.removeClick();
@@ -348,6 +346,7 @@ export class ExperimentalDashboard extends Dashboard {
             //Scroll
             document.querySelector("#timeline").scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+        chart.clicking.enableClick(onClick)
     }
     private removeAllHelp(barChart: ChartSeries) {
         this.help.removeHelp(barChart);
