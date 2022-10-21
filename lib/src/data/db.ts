@@ -43,9 +43,9 @@ export interface IAuthorAnalyticsDataRaw {
 export class AuthorAnalyticsDataRaw implements IAuthorAnalyticsDataRaw {
     reflections: IReflectionAuthorRaw[]
     analytics: IAnalytics
-    constructor(data: AuthorAnalyticsDataRaw) {
-        this.reflections = data.reflections
-        this.analytics = data.analytics
+    constructor(entries: IReflectionAuthorRaw[], analytics: IAnalytics) {
+        this.reflections = entries
+        this.analytics = analytics
     }
     transformData(colourScale?: Function): AuthorAnalyticsData {
         return new AuthorAnalyticsData(this.reflections.map(d => { 

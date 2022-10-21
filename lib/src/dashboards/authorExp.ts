@@ -3,7 +3,7 @@ import { IAnalytics, IReflection, INodes, IAuthorAnalyticsData, ITags, IReflecti
 import { Dashboard } from "./authorControl.js";
 import { Loading } from "../utils/loading.js";
 import { Tutorial, TutorialData } from "../utils/tutorial.js";
-import { AuthorAnalyticsDataRaw, IAuthorAnalyticsDataRaw } from "../data/db.js";
+import { AuthorAnalyticsDataRaw, IReflectionAuthorRaw } from "../data/db.js";
 import { Help } from "../utils/help.js";
 import { Sort } from "../interactions/sort.js";
 
@@ -183,10 +183,10 @@ export class ExperimentalDashboard extends Dashboard {
     }
 }
 
-export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IAuthorAnalyticsDataRaw) {
+export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflectionAuthorRaw[], analyticsRaw: IAnalytics) {
     const loading = new Loading();
     const colourScale = d3.scaleOrdinal(d3.schemeCategory10);
-    const entries = new AuthorAnalyticsDataRaw(entriesRaw).transformData(colourScale)
+    const entries = new AuthorAnalyticsDataRaw(entriesRaw, analyticsRaw).transformData(colourScale)
     await drawCharts(entries);
     new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
     new TutorialData("#timeline .circle", "Hover for information on demand"),

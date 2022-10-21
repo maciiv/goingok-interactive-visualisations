@@ -28,6 +28,6 @@ export interface IAuthorAnalyticsDataRaw {
 export declare class AuthorAnalyticsDataRaw implements IAuthorAnalyticsDataRaw {
     reflections: IReflectionAuthorRaw[];
     analytics: IAnalytics;
-    constructor(data: AuthorAnalyticsDataRaw);
+    constructor(entries: IReflectionAuthorRaw[], analytics: IAnalytics);
     transformData(colourScale?: Function): AuthorAnalyticsData;
 }

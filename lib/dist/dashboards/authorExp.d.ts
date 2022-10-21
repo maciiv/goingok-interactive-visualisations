@@ -1,6 +1,6 @@
 import { IAnalytics, IAuthorAnalyticsData, ITags, IReflectionAnalytics } from "../data/data.js";
 import { Dashboard } from "./authorControl.js";
-import { IAuthorAnalyticsDataRaw } from "../data/db.js";
+import { IReflectionAuthorRaw } from "../data/db.js";
 import { Help } from "../utils/help.js";
 import { Sort } from "../interactions/sort.js";
 export declare class ExperimentalDashboard extends Dashboard {
@@ -21,4 +21,4 @@ export declare class ExperimentalDashboard extends Dashboard {
     private updateReflectionNodesData;
     private updateAnalyticsData;
 }
-export declare function buildExperimentAuthorAnalyticsCharts(entriesRaw: IAuthorAnalyticsDataRaw): Promise<void>;
+export declare function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflectionAuthorRaw[], analyticsRaw: IAnalytics): Promise<void>;
