@@ -38,10 +38,13 @@ export class Timeline extends ChartTime {
 
         if (_this.data.length == 0) {
             d3.selectAll(`#${_this.id} .card-subtitle span`)
-                .html("");
+                .html("")
+            d3.selectAll(`#${_this.id} .card-subtitle .text-muted`)
+                .html("Add group codes from the left sidebar")
+            
         } else {
             d3.select(`#${_this.id} .card-subtitle .instructions`)
-                .html(_this.data.length == 1 ? `Filtering by <span class="badge badge-pill badge-info pointer">${_this.data[0].group} <i class="fas fa-window-close"></i></span>` : null)    
+                .html(_this.data.length === 1 ? `Filtering by <span class="badge badge-pill badge-info pointer">${_this.data[0].group} <i class="fas fa-window-close"></i></span>` : null)    
             d3.select(`#${_this.id} .card-subtitle .text-muted`)
                 .html(`The oldest reflection was on ${_this.minTimelineDate().toDateString()}${_this.data.length != 1 ? ` in the group code ${_this.data[d3.minIndex(_this.data.map(d => d3.min(d.value.map(d => d.timestamp))))].group}` : ""}, while
                     the newest reflection was on ${_this.maxTimelineDate().toDateString()}${_this.data.length != 1 ? ` in the group code ${_this.data[d3.maxIndex(_this.data.map(d => d3.max(d.value.map(d => d.timestamp))))].group}` : ""}`)

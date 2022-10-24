@@ -11,8 +11,6 @@ export class ExperimentalDashboard extends Dashboard {
     tags: ITags[]
     reflectionAnalytics: IReflectionAnalytics[]
     analytics: IAnalytics
-    sorted = ""
-    sort = new Sort()
     help = new Help()
     constructor(data: IAuthorAnalyticsData) {
         super(data)

@@ -1,20 +1,27 @@
 import d3, { BaseType } from "d3";
 import { IAdminAnalyticsData, IReflectionAuthor } from "../../data/data.js";
 import { Sort } from "../../interactions/sort.js";
-import { calculateMean, groupBy, IGroupBy, maxDate, minDate } from "../../utils/utils.js";
+import { calculateMean, groupBy, maxDate, minDate } from "../../utils/utils.js";
+
+type UserData = {
+    pseudonym: string
+    mean: number
+    total: number
+    minDate: Date
+    maxDate: Date
+    reflections: IReflectionAuthor[]
+}
 
 export class Users {
     id: string
-    sorted = ""
-    sort = new Sort()
+    sort: Sort<UserData>
+    group: string
     private _data: IAdminAnalyticsData[]
     get data() {
         return this._data
     }
     set data(entries: IAdminAnalyticsData[]) {
         this._data = entries.filter(d => d.selected)
-        this.sort.setChevronVisibility("sort-users", "name")
-        this.sort.handleChevronChange("sort-users", "name", "fa-chevron-down")
         this.render()
     }
     private _thresholds = [30 , 70]
@@ -29,6 +36,8 @@ export class Users {
     }
     constructor(data: IAdminAnalyticsData[]) {
         this.id = "reflections"
+        this.group = data[0].group
+        this.sort = new Sort(this.id, "pseudonym")
         this.data = data
     }
     render() {
@@ -46,7 +55,8 @@ export class Users {
                         d3.select(`#${_this.id} .nav.nav-tabs`).selectAll("a")
                             .classed("active", false)
                         d3.select(this).classed("active", true)
-                        setTimeout(() => _this.renderTabContent(d.value))
+                        _this.group = d.group
+                        _this.renderTabContent(_this.getUserData(d.value))
                     }),
                 update => update.select("a")
                         .classed("active", (d, i) => i == 0)
@@ -54,41 +64,41 @@ export class Users {
                 exit => exit.remove()
             )
         
-        _this.handleSort(_this.data[0].value)
-        _this.renderTabContent(_this.data[0].value)
+        if(_this.data.length === 0) {
+            _this.renderNoData()
+            return
+        }
+        
+        _this.handleSort()
+        _this.renderTabContent(_this.getUserData(_this.data[0].value))
     }
-    private renderTabContent(data: IReflectionAuthor[], groupByData?: IGroupBy<IReflectionAuthor>[]): void {
+    private renderTabContent(data: UserData[]): void {
         const _this = this
 
-        const usersStats = groupBy(data, "pseudonym").map(d => {
-            return {
-                "pseudonym": d.key,
-                "mean": calculateMean(d.value.map(c => c.point)),
-                "total": d.value.length,
-                "minDate": minDate(d.value.map(c => c.timestamp)),
-                "maxDate": maxDate(d.value.map(c => c.timestamp))
-            }
+        const minUser = data.reduce((a, b) => {
+            return (a.mean < b.mean) ? a : b
         })
-        const minUser = usersStats.sort((a, b) => a.mean - b.mean)[0]
-        const maxUser = usersStats.sort((a, b) => a.mean - b.mean)[usersStats.length - 1]
+        const maxUser = data.reduce((a, b) => {
+            return (a.mean > b.mean) ? a : b
+        })
 
         d3.select(`#${_this.id} .text-muted`)
-            .html(usersStats.length === 1 ? `The user ${usersStats[0].pseudonym} has a total of ${usersStats[0].total} reflections between
-                ${usersStats[0].minDate.toDateString()} and ${usersStats[0].maxDate.toDateString()}` : 
+            .html(data.length === 1 ? `The user ${data[0].pseudonym} has a total of ${data[0].total} reflections between
+                ${data[0].minDate.toDateString()} and ${data[0].maxDate.toDateString()}` : 
                 `The user ${minUser.pseudonym} is the most distressed, while the user ${maxUser.pseudonym} is the most soaring`)
 
         d3.select(`#${_this.id} .tab-content`)
             .selectAll("div .statistics-text")
-            .data(groupByData === undefined ? d3.sort(groupBy(data, "pseudonym"), c => c.key) : groupByData)
+            .data(_this.sort.sortData(data))
             .join(
                 enter => enter.append("div")
                     .attr("class", "row statistics-text")
-                    .attr("id", d => d.key)
+                    .attr("id", d => d.pseudonym)
                     .call(div => div.append("div")
                         .attr("class", "col-md-4")
                         .call(div => div.append("h5")
                             .attr("class", "mb-0 mt-1")
-                            .html(d => `${d.key} <small>average is</small>`))
+                            .html(d => `${d.pseudonym} <small>average is</small>`))
                         .call(div => div.append(d => _this.renderUserMeter(d)))
                         .call(div => div.append("div")
                             .attr("class", "mt-2")
@@ -101,24 +111,24 @@ export class Users {
                         .append("p")
                         .attr("class", "mb-1")
                         .call(p => p.append("span")
-                            .html(d => `User ${d.key} reflections in chronological order:`))
+                            .html(d => `User ${d.pseudonym} reflections in chronological order:`))
                         .call(p => p.append("ul")
                             .attr("class", "pr-3")
                             .call(ul => _this.renderReflections(ul)))),
-                update => update.attr("id", d => d.key)
+                update => update.attr("id", d => d.pseudonym)
                     .call(update => update.select("h5")
-                        .html(d => `${d.key} is`))
+                        .html(d => `${d.pseudonym} <small>average is</small>`))
                     .call(update => update.select("meter")
-                        .attr("value", d => calculateMean(d.value.map(c => c.point))))
+                        .attr("value", d => d.mean))
                     .call(update => update.select("p span")
-                        .html(d => `User ${d.key} reflections in chronological order:`))
+                        .html(d => `User ${d.pseudonym} reflections in chronological order:`))
                     .call(update => _this.renderReflections(update.select("p ul"))),
                 exit => exit.remove()
             )
     }
-    private renderReflections(update: d3.Selection<BaseType, IGroupBy<IReflectionAuthor>, BaseType, unknown>): void {
+    private renderReflections(update: d3.Selection<BaseType, UserData, BaseType, unknown>): void {
         update.selectAll("li")
-            .data(d => d3.sort(d.value, r => r.timestamp))
+            .data(d => d3.sort(d.reflections, r => r.timestamp))
             .join(
                 enter => enter.append("li")
                     .classed("reflection-selected", d => d.selected)
@@ -128,28 +138,17 @@ export class Users {
                 exit => exit.remove()
             )
     }
-    private handleSort(data: IReflectionAuthor[]) {
+    private handleSort() {
         const _this = this
         const id = "sort-users"
-        let sortedData = groupBy(data, "pseudonym")
         d3.selectAll(`#${id} .btn-group-toggle label`).on("click", function (this: HTMLLabelElement) {
             const selectedOption = (this.control as HTMLInputElement).value;
-            const chevron = _this.sorted === selectedOption ? "fa-chevron-down" : "fa-chevron-up"
-            _this.sort.setChevronVisibility(id, selectedOption)
-            sortedData = sortedData.sort(function (a, b) {
-                if (selectedOption == "name") {
-                    _this.sort.handleChevronChange(id, selectedOption, chevron)
-                    return _this.sort.sortData(a.key, b.key, _this.sorted == "name" ? true : false);
-                } else if (selectedOption == "point") {
-                    _this.sort.handleChevronChange(id, selectedOption, chevron)
-                    return _this.sort.sortData(calculateMean(a.value.map(d => d.point)), calculateMean(b.value.map(d => d.point)), _this.sorted == "point" ? true : false);
-                }
-            });
-            _this.sorted = _this.sort.setSorted(_this.sorted, selectedOption);
-            _this.renderTabContent(data, sortedData)
+            _this.sort.sortBy = selectedOption
+            let sortedData = _this.getUserData(_this.data.find(d => d.group === _this.group).value)
+            _this.renderTabContent(sortedData)
         });
     };
-    private renderUserMeter(data: IGroupBy<IReflectionAuthor>): HTMLDivElement {
+    private renderUserMeter(data: UserData): HTMLDivElement {
         const row = document.createElement("div")
         row.classList.add("row", "mt-1")
         const scale = meterScale()
@@ -161,7 +160,7 @@ export class Users {
         const meter = document.createElement("meter")
         meter.classList.add("w-100", "user-meter")
         meter.setAttribute("max", "100")
-        meter.setAttribute("value", calculateMean(data.value.map(d => d.point)).toString())
+        meter.setAttribute("value", data.mean.toString())
         meter.setAttribute("low", this.thresholds[0].toString())
         meter.setAttribute("optimum", "99.99")
         meter.setAttribute("high", this.thresholds[1].toString())
@@ -187,5 +186,25 @@ export class Users {
             col.innerHTML = name
             return col
         }
+    }
+    private renderNoData(): void {
+        d3.select(`#${this.id} .text-muted`)
+            .html("Add group codes from the left sidebar")
+        
+        d3.select(`#${this.id} .tab-content`)
+            .selectAll("div .statistics-text")
+            .remove()
+    }
+    private getUserData(data: IReflectionAuthor[]): UserData[] {
+        return groupBy(data, "pseudonym").map(d => {
+            return {
+                "pseudonym": d.key,
+                "mean": calculateMean(d.value.map(c => c.point)),
+                "total": d.value.length,
+                "minDate": minDate(d.value.map(c => c.timestamp)),
+                "maxDate": maxDate(d.value.map(c => c.timestamp)),
+                "reflections": d.value
+            } as UserData
+        })
     }
 }

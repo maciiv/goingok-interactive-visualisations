@@ -4,8 +4,7 @@ import { Sort } from "../../interactions/sort.js"
 
 export class Reflections {
     id: string
-    sorted = ""
-    sort = new Sort()
+    sort: Sort<IReflectionAnalytics>
     extend?: Function
     private _data: IReflectionAnalytics[]
     get data() {
@@ -18,6 +17,7 @@ export class Reflections {
     }
     constructor(data: IReflectionAnalytics[]) {
         this.id = "reflections"
+        this.sort = new Sort("sort", "timestamp")
         this.data = data
     }
     render() {
@@ -65,18 +65,8 @@ export class Reflections {
         const id = "sort"
         d3.selectAll(`#${id} .btn-group-toggle label`).on("click", function (this: HTMLLabelElement) {
             const selectedOption = (this.control as HTMLInputElement).value
-            const chevron = _this.sorted === selectedOption ? "fa-chevron-down" : "fa-chevron-up"
-            _this.sort.setChevronVisibility(id, selectedOption)
-            _this._data = _this.data.sort(function (a, b) {
-                if (selectedOption == "date") {
-                    _this.sort.handleChevronChange(id, selectedOption, chevron)
-                    return _this.sort.sortData(a.timestamp, b.timestamp, _this.sorted == "date" ? true : false);
-                } else if (selectedOption == "point") {
-                    _this.sort.handleChevronChange(id, selectedOption, chevron)
-                    return _this.sort.sortData(a.point, b.point, _this.sorted == "point" ? true : false);
-                }
-            });
-            _this.sorted = _this.sort.setSorted(_this.sorted, selectedOption);
+            _this.sort.sortBy = selectedOption
+            _this._data = _this.sort.sortData(_this.data)
             _this.render()
         });
     };

@@ -11,7 +11,7 @@ import { Help } from "../utils/help.js";
 export class ExperimentalDashboard extends Dashboard {
     entries: IAdminAnalyticsData[]
     sorted = ""
-    sort = new Sort()
+    //sort = new Sort()
     help = new Help()
     constructor(data: IAdminAnalyticsData[]) {
         super(data)
@@ -66,17 +66,19 @@ export class ExperimentalDashboard extends Dashboard {
             _this.barChart.data = data
             if (_this.barChart.clicking.clicked) {
                 if (!target.checked && target.value == clickData.group) {
-                    _this.barChart.clicking.removeClick();
-                    _this.totals.data = data;
-                    _this.timeline.data = data;
-                    _this.histogram.data = data;
+                    _this.barChart.clicking.removeClick()
+                    _this.totals.data = data
+                    _this.timeline.data = data
+                    _this.histogram.data = data
+                    _this.users.data = data
                 } else {
                     _this.barChart.clicking.appendGroupsText(data, clickData);
                 }
             } else {
-                _this.totals.data = data;
-                _this.timeline.data = data;
+                _this.totals.data = data
+                _this.timeline.data = data
                 _this.histogram.data = data
+                _this.users.data = data
             }
             _this.removeAllHelp(_this.barChart);
         });
@@ -101,38 +103,38 @@ export class ExperimentalDashboard extends Dashboard {
             }
         });
     }
-    handleGroupsSort(): void {
-        const _this = this;
-        const id = "sort-groups"
-        d3.selectAll(`#${id} .btn-group-toggle label`).on("click", function (this: HTMLLabelElement) {
-            const selectedOption = (this.control as HTMLInputElement).value
-            const chevron = _this.sorted === selectedOption ? "fa-chevron-down" : "fa-chevron-up"
-            _this.sort.setChevronVisibility(id, selectedOption)
-            _this.entries = _this.entries.sort(function (a, b) {
-                if (selectedOption == "date") {
-                    _this.sort.handleChevronChange(id, selectedOption, chevron)
-                    return _this.sort.sortData(a.createDate, b.createDate, _this.sorted == "date" ? true : false);
-                } else if (selectedOption == "name") {
-                    _this.sort.handleChevronChange(id, selectedOption, chevron)
-                    return _this.sort.sortData(a.group, b.group, _this.sorted == "name" ? true : false);
-                } else if (selectedOption == "mean") {
-                    _this.sort.handleChevronChange(id, selectedOption, chevron)
-                    return _this.sort.sortData(d3.mean(a.value.map(d => d.point)), d3.mean(b.value.map(d => d.point)), _this.sorted == "mean" ? true : false);
-                }
-            });
-            _this.sorted = _this.sort.setSorted(_this.sorted, selectedOption);
-            let data = _this.entries.filter(d => d.selected)
-            _this.barChart.data = data
-            let groupClickData = _this.getClickData(_this.barChart.elements.contentContainer) as IAdminAnalyticsData;
-            if (_this.barChart.clicking.clicked) {              
-                _this.barChart.clicking.appendGroupsText(data, groupClickData);               
-            } else {
-                _this.histogram.data = data
-                _this.users.data = data
-            }
-            _this.removeAllHelp(_this.barChart);
-        });
-    }
+    // handleGroupsSort(): void {
+    //     const _this = this;
+    //     const id = "sort-groups"
+    //     d3.selectAll(`#${id} .btn-group-toggle label`).on("click", function (this: HTMLLabelElement) {
+    //         const selectedOption = (this.control as HTMLInputElement).value
+    //         const chevron = _this.sorted === selectedOption ? "fa-chevron-down" : "fa-chevron-up"
+    //         _this.sort.setChevronVisibility(id, selectedOption)
+    //         _this.entries = _this.entries.sort(function (a, b) {
+    //             if (selectedOption == "date") {
+    //                 _this.sort.handleChevronChange(id, selectedOption, chevron)
+    //                 return _this.sort.sortData(a.createDate, b.createDate, _this.sorted == "date" ? true : false);
+    //             } else if (selectedOption == "name") {
+    //                 _this.sort.handleChevronChange(id, selectedOption, chevron)
+    //                 return _this.sort.sortData(a.group, b.group, _this.sorted == "name" ? true : false);
+    //             } else if (selectedOption == "mean") {
+    //                 _this.sort.handleChevronChange(id, selectedOption, chevron)
+    //                 return _this.sort.sortData(d3.mean(a.value.map(d => d.point)), d3.mean(b.value.map(d => d.point)), _this.sorted == "mean" ? true : false);
+    //             }
+    //         });
+    //         _this.sorted = _this.sort.setSorted(_this.sorted, selectedOption);
+    //         let data = _this.entries.filter(d => d.selected)
+    //         _this.barChart.data = data
+    //         let groupClickData = _this.getClickData(_this.barChart.elements.contentContainer) as IAdminAnalyticsData;
+    //         if (_this.barChart.clicking.clicked) {              
+    //             _this.barChart.clicking.appendGroupsText(data, groupClickData);               
+    //         } else {
+    //             _this.histogram.data = data
+    //             _this.users.data = data
+    //         }
+    //         _this.removeAllHelp(_this.barChart);
+    //     });
+    // }
     private handleFilterButton(): void {
         const data = this.entries.filter(d => d.selected)
         this.barChart.clicking.removeClick()
@@ -414,6 +416,6 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAdminAnal
         //Update charts depending on group
         dashboard.handleGroups();
         dashboard.handleGroupsColours();
-        dashboard.handleGroupsSort();
+        //dashboard.handleGroupsSort();
     }
 }

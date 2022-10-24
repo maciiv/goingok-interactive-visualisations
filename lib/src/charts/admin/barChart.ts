@@ -33,7 +33,7 @@ export class BarChart extends ChartSeries {
             .html()
 
         d3.select(`#${_this.id} .card-subtitle`)
-            .html(_this.data.length <= 1 ? "Add more group codes from the left bar" : "Click a group code to filter");
+            .html(_this.data.length <= 1 ? "Add group codes from the left sidebar" : "Click a group code to filter");
 
         //Boxes processing
         _this.elements.content = _this.elements.contentContainer.selectAll<SVGRectElement, IAdminAnalyticsData>(`#${_this.id}-data`)
