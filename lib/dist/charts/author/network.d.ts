@@ -17,7 +17,6 @@ export declare class Network extends ChartNetwork {
     set data(entries: IAnalytics);
     constructor(data: IAnalytics, domain: Date[]);
     render(): void;
-    resetZoomRange(): void;
     getTooltipNodes(data: IAnalytics, nodeData: INodes): INodes[];
     private processSimulation;
     private filterData;

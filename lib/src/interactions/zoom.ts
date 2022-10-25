@@ -46,6 +46,10 @@ export class Zoom<T extends IChart> implements IZoom {
             .attr("width", this.chart.width - this.chart.padding.yAxis)
             .attr("transform", `translate(${this.chart.padding.yAxis}, ${this.chart.height - 30})`);
     };
+    resetZoom() {
+        this.k = 1
+        this.updateZoomNumber()
+    }
     protected handleZoom() {
         d3.select(`#${this.chart.id} #zoom-minus`).on("click", () => { 
             this.k = this.k - 1

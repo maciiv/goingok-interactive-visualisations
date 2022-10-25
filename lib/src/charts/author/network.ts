@@ -21,7 +21,7 @@ export class Network extends ChartNetwork {
     }
     set data(entries: IAnalytics) {
         this._data = this.filterData(entries)
-        this.resetZoomRange()
+        this.zoom.resetZoom()
         this.render()
         this.extend !== undefined ? this.extend() : null
     }
@@ -62,7 +62,7 @@ export class Network extends ChartNetwork {
             .data(_this.data.nodes)
             .join(
                 enter => enter.append("g")
-                    .attr("class", "network-node-group")
+                    .attr("class", "network-node-group pointer")
                     .attr("transform", `translate(${_this.width / 2}, ${_this.height / 2})`)
                     .call(enter => enter.append("rect")
                         .attr("class", "network-node")
@@ -167,12 +167,6 @@ export class Network extends ChartNetwork {
         }
         //Enable zoom
         _this.zoom.enableZoom(zoomed)
-    }
-    resetZoomRange(): void {
-        this.x.scale.range([0, this.width - this.padding.yAxis - this.padding.right]);
-        d3.zoom().transform(this.elements.contentContainer.select(".zoom-rect"), d3.zoomIdentity);
-        this.x.axis.ticks((this.width - this.padding.yAxis - this.padding.right) / 75);
-        this.elements.xAxis.transition().duration(750).call(this.x.axis);
     }
     getTooltipNodes(data: IAnalytics, nodeData: INodes): INodes[] {
         let edges = data.edges.filter(d => d.source === nodeData).map(d => d.target as INodes);
