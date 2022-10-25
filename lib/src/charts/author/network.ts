@@ -12,7 +12,7 @@ export class Network extends ChartNetwork {
     tooltip = new Tooltip(this)
     zoom = new Zoom(this)
     help = new Help()
-    clicking = new Click(this)
+    clicking: ClickNetwork<this>
     simulation: d3.Simulation<INodes, undefined>
     extend?: Function
     private _data: IAnalytics
@@ -29,6 +29,7 @@ export class Network extends ChartNetwork {
         super("network", "chart-container.network", [addDays(minDate(domain), -30), addDays(maxDate(domain), 30)])
         this.simulation = this.processSimulation(data)
         this.data = data
+        this.clicking = new ClickNetwork(this)
     }
     render() {
         const _this = this
@@ -104,44 +105,15 @@ export class Network extends ChartNetwork {
 
         const onMouseover = function(e: MouseEvent, d: INodes) {
             if (d3.select(this).attr("class").includes("clicked")) {
-                return;
+                return
             }
-
-            d3.selectAll<SVGGElement, INodes>(".network-node-group")
-                .filter(c => _this.getTooltipNodes(_this.data, d).includes(c))
-                .call(enter => enter.select("text")
-                    .text(d => d.expression)
-                    .style("opacity", 0)
-                    .transition()
-                    .duration(500)
-                    .style("opacity", "1"))
-                .call(enter => enter.select(".network-node")
-                    .transition()
-                    .duration(500)
-                    .attr("x", d => -(enter.select<SVGTextElement>(`#text-${d.idx}`).node().getBoundingClientRect().width + 10) / 2)
-                    .attr("y", d => -(enter.select<SVGTextElement>(`#text-${d.idx}`).node().getBoundingClientRect().height + 5) / 2)
-                    .attr("width", d => enter.select<SVGTextElement>(`#text-${d.idx}`).node().getBoundingClientRect().width + 10)
-                    .attr("height", d => enter.select<SVGTextElement>(`#text-${d.idx}`).node().getBoundingClientRect().height + 5))
+            _this.openNodes(d)
         }
         const onMouseout = function() {
-            d3.selectAll<SVGGElement, INodes>(".network-node-group")
-                .call(enter => enter.select("text")
-                    .text(null)
-                    .style("opacity", 0)
-                    .transition()
-                    .duration(500)
-                    .style("opacity", "1"))
-                .call(enter => enter.select(".network-node")
-                    .transition()
-                    .duration(500)
-                    .attr("x", -5)
-                    .attr("y", -5)
-                    .attr("width", 10)
-                    .attr("height", 10))
-            
-            d3.selectAll<HTMLSpanElement, unknown>("#reflections .reflections-tab span")
-                .style("background-color", null)
-            
+            if (d3.select(this).attr("class").includes("clicked")) {
+                return
+            }
+            _this.closeNodes()
             _this.tooltip.removeTooltip();
         }
         //Enable tooltip       
@@ -174,6 +146,39 @@ export class Network extends ChartNetwork {
         edges.push(nodeData);
         return edges;
     }
+    openNodes(d: INodes): void {
+        d3.selectAll<SVGGElement, INodes>(".network-node-group:not(.clicked)")
+            .filter(c => this.getTooltipNodes(this.data, d).includes(c))
+            .call(enter => enter.select("text")
+                .text(d => d.expression)
+                .style("opacity", 0)
+                .transition()
+                .duration(500)
+                .style("opacity", "1"))
+            .call(enter => enter.select(".network-node")
+                .transition()
+                .duration(500)
+                .attr("x", d => -(enter.select<SVGTextElement>(`#text-${d.idx}`).node().getBoundingClientRect().width + 10) / 2)
+                .attr("y", d => -(enter.select<SVGTextElement>(`#text-${d.idx}`).node().getBoundingClientRect().height + 5) / 2)
+                .attr("width", d => enter.select<SVGTextElement>(`#text-${d.idx}`).node().getBoundingClientRect().width + 10)
+                .attr("height", d => enter.select<SVGTextElement>(`#text-${d.idx}`).node().getBoundingClientRect().height + 5))
+    }
+    closeNodes(): void {
+        d3.selectAll<SVGGElement, INodes>(".network-node-group")
+            .call(enter => enter.select("text")
+                .text(null)
+                .style("opacity", 0)
+                .transition()
+                .duration(500)
+                .style("opacity", "1"))
+            .call(enter => enter.select(".network-node")
+                .transition()
+                .duration(500)
+                .attr("x", -5)
+                .attr("y", -5)
+                .attr("width", 10)
+                .attr("height", 10))
+    }
     private processSimulation(data: IAnalytics): d3.Simulation<INodes, undefined> {
         return d3.forceSimulation<INodes, undefined>(data.nodes)
             .force("link", d3.forceLink<INodes, IEdges<INodes>>()
@@ -188,5 +193,15 @@ export class Network extends ChartNetwork {
         let nodes = data.nodes.filter(d => d.selected)
         let edges = data.edges.filter(d => (d.source as INodes).selected && (d.target as INodes).selected)
         return { "name": data.name, "description": data.description, "nodes": nodes, "edges": edges }
+    }
+}
+
+class ClickNetwork<T extends Network> extends Click<T> {
+    removeClick(): void {
+        super.removeClick()
+        this.chart.closeNodes()
+        d3.selectAll<HTMLSpanElement, unknown>("#reflections .reflections-tab span")
+            .style("background-color", null)
+        
     }
 }

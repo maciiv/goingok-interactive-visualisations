@@ -102,8 +102,22 @@ export class ExperimentalDashboard extends Dashboard {
 
         d3.select(`#${chart.id} .badge`).on("click", () => _this.handleFilterButton());
 
+        chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
+            chart.clicking.removeClick()
+        });
+
         const onClick = function(e: Event, d: INodes) {
-            let nodes = chart.getTooltipNodes(_this.analytics, d);
+            if (d3.select(this).attr("class").includes("clicked")) {
+                chart.clicking.removeClick()
+            }
+
+            chart.clicking.removeClick()
+            chart.clicking.clicked = true
+            let nodes = chart.getTooltipNodes(_this.analytics, d)
+            chart.openNodes(d)
+
+            d3.selectAll<SVGGElement, INodes>(".network-node-group")
+                .classed("clicked", d => nodes.map(c => c.idx).includes(d.idx))
 
             d3.selectAll<HTMLDivElement, IReflection>("#reflections .reflections-tab div")
                 .filter(c => c.refId === d.refId)
