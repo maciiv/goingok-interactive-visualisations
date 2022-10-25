@@ -1,17 +1,29 @@
 import d3 from "d3"
-import { IReflection, IReflectionAnalytics } from "../../data/data.js"
+import { INodes, IReflection, IReflectionAnalytics } from "../../data/data.js"
 import { Sort } from "../../interactions/sort.js"
 
 export class Reflections {
     id: string
     sort: Sort<IReflectionAnalytics>
     extend?: Function
+    private _nodes: INodes[]
+    get nodes() {
+        return this._nodes
+    }
+    set nodes(nodes: INodes[]) {
+        this._nodes = nodes
+        this.fillNodesText()
+
+    }
     private _data: IReflectionAnalytics[]
     get data() {
         return this._data
     }
     set data(entries: IReflectionAnalytics[]) {
-        this._data = entries
+        this._data = entries.map(c => {
+            c.nodes = c.nodes.filter(d => d.selected)
+            return c
+        })
         this.render()
         this.extend !== undefined ? this.extend() : null
     }
@@ -23,11 +35,11 @@ export class Reflections {
     render() {
         const _this = this
 
-        d3.select("#reflections .card-subtitle")
+        d3.select(`#${_this.id} .card-subtitle`)
         .html(_this.data.length == 1 ? `Filtering by <span class="badge badge-pill badge-info">${_this.data[0].timestamp.toDateString()} <i class="fas fa-window-close"></i></span>`:
             "");
 
-        d3.select<HTMLDivElement, IReflection>("#reflections .reflections-tab")
+        d3.select<HTMLDivElement, IReflection>(`#${_this.id} .reflections-tab`)
             .selectAll(".reflection")
             .data(_this.data)
             .join(
@@ -59,6 +71,17 @@ export class Reflections {
             }
         }     
         return html;
+    }
+    private fillNodesText() {
+        d3.selectAll<HTMLDivElement, IReflection>(`#${this.id} .reflections-tab div`)
+        .filter(c => this.nodes.map(d => d.refId).includes(c.refId))
+        .selectAll("span")
+            .each((c, i, g) => {
+                let node = this.nodes.find(r => r.idx === parseInt(d3.select(g[i]).attr("id").replace("node-", "")))
+                if (node !== undefined) {
+                    d3.select(g[i]).style("background-color", node.properties["color"])
+                }
+            })
     }
     private handleSort() {
         const _this = this

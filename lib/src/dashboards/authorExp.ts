@@ -47,9 +47,23 @@ export class ExperimentalDashboard extends Dashboard {
             }
 
             const reflectionsData = _this.updateReflectionNodesData()
+            const clickData = _this.getClickTimelineNetworkData()
+            const nodes = _this.network.clicking.clicked ? _this.reflections.nodes : null
             _this.timeline.data = reflectionsData
-            _this.reflections.data = reflectionsData
-            _this.network.data = _this.updateAnalyticsData()
+            if(_this.timeline.clicking.clicked) {
+                _this.reflections.data = _this.updateReflectionNodesData(clickData)
+                _this.network.data = _this.getClickTimelineNetworkNodes(clickData)
+            } else {
+                _this.reflections.data = reflectionsData
+                _this.network.data = _this.updateAnalyticsData()
+            }
+            if(nodes !== null) {
+                _this.network.clicking.removeClick()
+                _this.reflections.nodes = nodes
+                _this.network.clicking.clicked = true
+                _this.network.elements.content.classed("clicked", (d: INodes) => nodes.map(c => c.idx).includes(d.idx))
+                _this.network.openNodes(nodes)
+            }
         })
     }
     handleTagsColours(): void {
@@ -58,11 +72,14 @@ export class ExperimentalDashboard extends Dashboard {
             const target = e.target as HTMLInputElement
             const name = target.id.replace("colour-", "")
             _this.tags.find(c => c.name === name).properties["color"] = target.value
-
             const reflectionsData = _this.updateReflectionNodesData()
+            const nodes = _this.network.clicking.clicked ? _this.reflections.nodes : null
             _this.timeline.data = reflectionsData
             _this.reflections.data = reflectionsData
             _this.network.data = _this.updateAnalyticsData()
+            if(nodes !== null) {
+                _this.reflections.nodes = nodes
+            }
         });
     }
     extendTimeline() {
@@ -85,13 +102,7 @@ export class ExperimentalDashboard extends Dashboard {
             chart.clicking.removeClick();
             chart.clicking.clicked = true;
             d3.select(this).classed("clicked", true);
-            let nodes = _this.analytics.nodes.filter(c => {
-                return d.refId === c.refId || c.name === d.timestamp.toDateString()
-            });
-            let edges = _this.analytics.edges.filter(c => {
-                return nodes.includes(c.source as INodes) || nodes.includes(c.target as INodes)
-            })
-            _this.network.data = {"name": _this.analytics.name, "description": _this.analytics.description, "nodes": nodes, "edges": edges}
+            _this.network.data = _this.getClickTimelineNetworkNodes(d)
             _this.reflections.data = [d]
         }
         chart.clicking.enableClick(onClick)
@@ -114,22 +125,13 @@ export class ExperimentalDashboard extends Dashboard {
             chart.clicking.removeClick()
             chart.clicking.clicked = true
             let nodes = chart.getTooltipNodes(_this.analytics, d)
-            chart.openNodes(d)
+            chart.openNodes(nodes)
 
-            d3.selectAll<SVGGElement, INodes>(".network-node-group")
-                .classed("clicked", d => nodes.map(c => c.idx).includes(d.idx))
+            chart.elements.content.classed("clicked", (d: INodes) => nodes.map(c => c.idx).includes(d.idx))
 
-            d3.selectAll<HTMLDivElement, IReflection>("#reflections .reflections-tab div")
-                .filter(c => c.refId === d.refId)
-                .selectAll("span")
-                .each((c, i, g) => {
-                    let node = nodes.find(r => r.idx === parseInt(d3.select(g[i]).attr("id").replace("node-", "")))
-                    if (node !== undefined) {
-                        d3.select(g[i]).style("background-color", node.properties["color"])
-                    }
-                })
+            _this.reflections.nodes = nodes
             
-                document.querySelector(`#ref-${d.refId}`).scrollIntoView({ behavior: 'smooth', block: 'start' });                   
+            document.querySelector(`#ref-${d.refId}`).scrollIntoView({ behavior: 'smooth', block: 'start' })
         }
         chart.clicking.enableClick(onClick)
 
@@ -166,8 +168,11 @@ export class ExperimentalDashboard extends Dashboard {
         this.reflections.data = reflectionsData
         this.network.data = this.updateAnalyticsData()
     };
-    private updateReflectionNodesData(): IReflectionAnalytics[] {
-        return this.reflectionAnalytics.map(c => {
+    private updateReflectionNodesData(analytics?: IReflectionAnalytics): IReflectionAnalytics[] {
+        const reflectionAnalytics = analytics === undefined ? 
+            this.reflectionAnalytics : 
+            this.reflectionAnalytics.filter(d => d.refId === analytics.refId)
+        return reflectionAnalytics.map(c => {
             c.nodes = c.nodes.map(r => {
                 let tag = this.tags.find(d => d.name === r.name)
                 r.selected = tag.selected
@@ -190,6 +195,21 @@ export class ExperimentalDashboard extends Dashboard {
             return c
         })
         return { "name": this.analytics.name, "description": this.analytics.description, "nodes": nodes, "edges": edges }
+    }
+    private getClickTimelineNetworkData(): IReflectionAnalytics {
+        const el = document.querySelector(`#${this.timeline.id} .clicked`)
+        if(el === null) return
+        return d3.select(el.parentElement).datum() as IReflectionAnalytics
+    }
+    private getClickTimelineNetworkNodes(d: IReflectionAnalytics) {
+        const analytics = this.updateAnalyticsData()
+        let nodes = analytics.nodes.filter(c => {
+            return (d.refId === c.refId || c.name === d.timestamp.toDateString()) && c.selected
+        });
+        let edges = analytics.edges.filter(c => {
+            return nodes.includes(c.source as INodes) || nodes.includes(c.target as INodes)
+        })
+        return {"name": this.analytics.name, "description": this.analytics.description, "nodes": nodes, "edges": edges}
     }
 }
 

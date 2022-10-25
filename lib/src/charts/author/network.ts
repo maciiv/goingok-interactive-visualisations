@@ -107,7 +107,8 @@ export class Network extends ChartNetwork {
             if (d3.select(this).attr("class").includes("clicked")) {
                 return
             }
-            _this.openNodes(d)
+            const nodes = _this.getTooltipNodes(_this.data, d)
+            _this.openNodes(nodes)
         }
         const onMouseout = function() {
             if (d3.select(this).attr("class").includes("clicked")) {
@@ -146,9 +147,9 @@ export class Network extends ChartNetwork {
         edges.push(nodeData);
         return edges;
     }
-    openNodes(d: INodes): void {
-        d3.selectAll<SVGGElement, INodes>(".network-node-group:not(.clicked)")
-            .filter(c => this.getTooltipNodes(this.data, d).includes(c))
+    openNodes(data: INodes[]): void {
+        d3.selectAll<SVGGElement, INodes>(".network-node-group")
+            .filter(c => data.includes(c))
             .call(enter => enter.select("text")
                 .text(d => d.expression)
                 .style("opacity", 0)
@@ -164,7 +165,7 @@ export class Network extends ChartNetwork {
                 .attr("height", d => enter.select<SVGTextElement>(`#text-${d.idx}`).node().getBoundingClientRect().height + 5))
     }
     closeNodes(): void {
-        d3.selectAll<SVGGElement, INodes>(".network-node-group")
+        d3.selectAll<SVGGElement, INodes>(".network-node-group:not(.clicked)")
             .call(enter => enter.select("text")
                 .text(null)
                 .style("opacity", 0)

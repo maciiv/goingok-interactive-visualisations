@@ -15,5 +15,7 @@ export declare class ExperimentalDashboard extends Dashboard {
     private handleFilterButton;
     private updateReflectionNodesData;
     private updateAnalyticsData;
+    private getClickTimelineNetworkData;
+    private getClickTimelineNetworkNodes;
 }
 export declare function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflectionAuthorRaw[], analyticsRaw: IAnalytics): Promise<void>;
