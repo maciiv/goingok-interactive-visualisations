@@ -1,12 +1,10 @@
 import { IAnalytics, IAuthorAnalyticsData, ITags, IReflectionAnalytics } from "../data/data.js";
 import { Dashboard } from "./authorControl.js";
 import { IReflectionAuthorRaw } from "../data/db.js";
-import { Help } from "../utils/help.js";
 export declare class ExperimentalDashboard extends Dashboard {
     tags: ITags[];
     reflectionAnalytics: IReflectionAnalytics[];
     analytics: IAnalytics;
-    help: Help;
     constructor(data: IAuthorAnalyticsData);
     preloadTags(entries: IAuthorAnalyticsData): ITags[];
     handleTags(): void;

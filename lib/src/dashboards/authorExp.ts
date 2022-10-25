@@ -5,13 +5,11 @@ import { Loading } from "../utils/loading.js";
 import { Tutorial, TutorialData } from "../utils/tutorial.js";
 import { AuthorAnalyticsDataRaw, IReflectionAuthorRaw } from "../data/db.js";
 import { Help } from "../utils/help.js";
-import { Sort } from "../interactions/sort.js";
 
 export class ExperimentalDashboard extends Dashboard {
     tags: ITags[]
     reflectionAnalytics: IReflectionAnalytics[]
     analytics: IAnalytics
-    help = new Help()
     constructor(data: IAuthorAnalyticsData) {
         super(data)
         this.timeline.extend = this.extendTimeline.bind(this)
@@ -187,8 +185,10 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflecti
     const entries = new AuthorAnalyticsDataRaw(entriesRaw, analyticsRaw).transformData(colourScale)
     await drawCharts(entries);
     new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
-    new TutorialData("#timeline .circle", "Hover for information on demand"),
-    new TutorialData("#network .network-node-group", "Hover for information on demand, zoom is also available")]);
+    new TutorialData("#timeline .circle", "Hover for information on demand. Click to drill-down updating the reflections text and network"),
+    new TutorialData("#reflections .reflection-text span", "Phrases outlined with a colour that matches the tags"),
+    new TutorialData("#network .network-node-group", "Hover for information on demand. Click to fill the background colour of the nodes in the reflection text"),
+    new TutorialData("#network .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area")]);
     loading.isLoading = false;
     loading.removeDiv();
 
@@ -200,20 +200,20 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflecti
         //Handle timeline chart help
         help.helpPopover(dashboard.network.id, `<b>Network diagram</b><br>
             A network diagram that shows the phrases and tags associated to your reflections<br>The data represented are your <i>reflections over time</i><br>
-            Use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move<br>
             <u><i>Hover</i></u> over the network nodes for information on demand<br>
             <u><i>Drag</i></u> the network nodes to rearrange the network<br>
-            <u><i>Click</i></u> to highlight the nodes in the reflection text`) 
+            <u><i>Click</i></u> to fill the background colour the nodes in the reflection text`) 
     
         //Handle timeline chart help
         help.helpPopover(dashboard.timeline.id, `<b>Timeline</b><br>
             Your reflections and the tags associated to them are shown over time<br>
             <u><i>Hover</i></u> over a reflection point for information on demand<br>
-            <u><i>Click</i></u> a reflection point to filter the network diagram`)
+            <u><i>Click</i></u> a reflection point to filter the network diagram and reflection text`)
 
         //Handle reflections chart help
         help.helpPopover(dashboard.reflections.id, `<b>Reflections</b><br>
-            Your reflections are shown sorted by time. The words with associated tags have a different background colour`)
+            Your reflections are shown sorted by time. The words with associated tags have a different outline colour<br>
+            The reflections can be sorted by time or reflection point`)
  
         dashboard.handleTags()  
         dashboard.handleTagsColours()

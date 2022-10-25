@@ -108,7 +108,7 @@ export class Histogram extends ChartSeries {
         const onMouseover = (e: MouseEvent, d: HistogramData) => {
             this.tooltip.appendTooltipContainer();
             let tooltipBox = this.tooltip.appendTooltipText(d.bin.x0 == 0 ? "Distressed" : d.bin.x1 == 100 ? "Soaring" : "GoingOK" , [new TooltipValues("Total", `${d.bin.length} (${d.percentage}%)`)]);
-            this.tooltip.positionTooltipContainer(this.x.scale(d.group) + this.bandwidth(d.bin.length), d.bin.x1 > 25 ? this.y.scale(d.bin.x1) : this.y.scale(d.bin.x0) - tooltipBox.node().getBBox().height);
+            this.tooltip.positionTooltipContainer(this.x.scale(d.group) + this.bandwidth(d.percentage), d.bin.x1 > 25 ? this.y.scale(d.bin.x1) : this.y.scale(d.bin.x0) - tooltipBox.node().getBBox().height);
         }
         
         const onMouseout = () => {

@@ -85,12 +85,12 @@
                                     <div class="card-body">
                                         <h6 class="card-subtitle">
                                             <span>Sort groups by:</span>
-                                            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                            <div class="btn-group btn-group-toggle sort-by" data-toggle="buttons">
                                                 <label class="btn btn-light active">
-                                                    <input type="radio" name="sort" value="date" checked>Create date <i class="fa fa-chevron-down" aria-hidden="true"></i>
+                                                    <input type="radio" name="sort" value="createDate" checked>Create date <i class="fa fa-chevron-down" aria-hidden="true"></i>
                                                 </label>
                                                 <label class="btn btn-light">
-                                                    <input type="radio" name="sort" value="name">Name <i class="fa fa-chevron-down d-none" aria-hidden="true"></i>
+                                                    <input type="radio" name="sort" value="group">Name <i class="fa fa-chevron-down d-none" aria-hidden="true"></i>
                                                 </label>
                                                 <label class="btn btn-light">
                                                     <input type="radio" name="sort" value="mean">Mean <i class="fa fa-chevron-down d-none" aria-hidden="true"></i>
@@ -212,9 +212,9 @@
                             text: r.text
                         };
                     });
-                    var groupData = Array.from(d3.group(data, function (d) { return d.groupCode; }), function (_a) {
+                    var groupData = Array.from(d3.group(data, function (d) { return d.groupCode; }), function (_a, b) {
                         var group = _a[0], value = _a[1];
-                        return ({ group: group, value: value, createDate: "2021-02-01" });
+                        return ({ group: group, value: value, createDate: `2021-0${b + 1}-01` });
                     });
                 chart.buildExperimentAdminAnalyticsCharts(groupData);
             });

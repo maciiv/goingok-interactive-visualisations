@@ -18,8 +18,10 @@ export interface IAdminAnalyticsData {
     createDate: Date
     colour: string
     selected: boolean
-    stats: IDataStats[]
-    getStat(stat: string): IDataStats
+    usersTotal: number
+    refTotal: number
+    ruRate: number
+    mean: number
 }
 
 export class AdminAnalyticsData implements IAdminAnalyticsData {
@@ -28,7 +30,10 @@ export class AdminAnalyticsData implements IAdminAnalyticsData {
     createDate: Date
     colour: string
     selected: boolean
-    stats = [] as IDataStats[]
+    usersTotal: number
+    refTotal: number
+    ruRate: number
+    mean: number
     constructor(group: string, value: IReflectionAuthor[], createDate: Date = undefined, colour: string = undefined, selected: boolean = true) {
         this.group = group
         this.value = value
@@ -36,20 +41,10 @@ export class AdminAnalyticsData implements IAdminAnalyticsData {
         this.colour = colour
         this.selected = selected
         let uniqueUsers = groupBy(value, "pseudonym")
-        this.stats.push(new DataStats("usersTotal", "Users", uniqueUsers.length))
-        this.stats.push(new DataStats("refTotal", "Reflections", value.length))
-        this.stats.push(new DataStats("mean", "Mean", Math.round(calculateMean(value.map(r => r.point)))));
-        this.stats.push(new DataStats("oldRef", "Oldest reflection", new Date(Math.min.apply(null, value.map(r => new Date(r.timestamp))))))
-        this.stats.push(new DataStats("newRef", "Newest reflection", new Date(Math.max.apply(null, value.map(r => new Date(r.timestamp))))))
-        this.stats.push(new DataStats("ruRate", "Reflections per user", Math.round(value.length / uniqueUsers.length * 100) / 100))
-    }
-    getStat(stat: string): IDataStats {
-        var exists = this.stats.find(d => d.stat == stat);
-        if (exists != undefined) {
-            return exists;
-        } else {
-            return new DataStats("na", "Not found", 0);
-        }
+        this.usersTotal = uniqueUsers.length
+        this.refTotal = value.length
+        this.mean = Math.round(calculateMean(value.map(r => r.point)))
+        this.ruRate = Math.round(value.length / uniqueUsers.length * 100) / 100
     }
 }
 

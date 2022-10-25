@@ -89,8 +89,8 @@ export class Timeline extends ChartTime {
                 return yTooltip;
             };
 
-            _this.tooltip.appendLine(0, _this.y.scale(d.point), _this.x.scale(d.timestamp), _this.y.scale(d.point), d.colour);
-            _this.tooltip.appendLine(_this.x.scale(d.timestamp), _this.y.scale(0), _this.x.scale(d.timestamp), _this.y.scale(d.point), d.colour);
+            _this.tooltip.appendLine(0, _this.y.scale(d.point), _this.x.scale(d.timestamp) - 10, _this.y.scale(d.point), d.colour);
+            _this.tooltip.appendLine(_this.x.scale(d.timestamp), _this.y.scale(0), _this.x.scale(d.timestamp), _this.y.scale(d.point) + 10, d.colour);
         }
         const onMouseout = function() {
             _this.elements.svg.select(".tooltip-container").transition()

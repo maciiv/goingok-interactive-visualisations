@@ -58,7 +58,9 @@ export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionA
     await drawCharts(entries)
     new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
     new TutorialData("#timeline .circle", "Hover for information on demand"),
-    new TutorialData("#network .network-node-group", "Hover for information on demand, zoom is also available")]);
+    new TutorialData("#reflections .reflection-text span", "Phrases outlined with a colour that matches the tags"),
+    new TutorialData("#network .network-node-group", "Hover for information on demand"),
+    new TutorialData("#network .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area")]);
     loading.isLoading = false;
     loading.removeDiv();
 
@@ -69,8 +71,8 @@ export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionA
 
         //Handle timeline chart help
         help.helpPopover(dashboard.network.id, `<b>Network diagram</b><br>
-            A network diagram that shows the phrases and tags associated to your reflections<br>The data represented are your <i>reflections over time</i><br>
-            Use the mouse <u><i>wheel</i></u> to zoom me<br><u><i>click and hold</i></u> while zoomed to move<br>
+            A network diagram that shows the phrases and tags associated to your reflections<br>
+            The data represented are your <i>reflections over time</i><br>
             <u><i>Hover</i></u> over the network nodes for information on demand`) 
 
         //Handle timeline chart help
@@ -80,6 +82,6 @@ export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionA
 
         //Handle users histogram chart help
         help.helpPopover(dashboard.reflections.id, `<b>Reflections</b><br>
-            Your reflections are shown sorted by time. The words with associated tags have a different background colour`)
+            Your reflections are shown sorted by time. The words with associated tags have a different outline colour`)
     }
 }

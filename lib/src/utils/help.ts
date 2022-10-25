@@ -9,7 +9,7 @@ export class Help implements IHelp {
     helpPopover(id: string, content: string): void {
         const helpId = `${id}-help`
         const button = document.querySelector<HTMLElement>(`#${id} .card-title button`);
-        button.addEventListener("click", (e) => {    
+        button.addEventListener("click", () => {    
             if (document.querySelector(`#${helpId}`) === null) {
                 let popover = document.createElement("div")
                 popover.setAttribute("id", helpId)
