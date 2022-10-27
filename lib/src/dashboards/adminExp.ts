@@ -298,7 +298,8 @@ export class ExperimentalDashboard extends Dashboard {
             
             _this.users.data = chart.data;
             chart.clicking.clicked = true;
-            chart.elements.content.classed("clicked", (data: IReflectionAuthor) => data.pseudonym == d.pseudonym);
+            chart.elements.content.classed("clicked", (data: IReflectionAuthor) => data.pseudonym == d.pseudonym)
+            chart.elements.content.classed("not-clicked", (data: IReflectionAuthor) => data.pseudonym != d.pseudonym)
             d3.select(this)
                 .classed("main", true);
             
@@ -332,7 +333,7 @@ export class ExperimentalDashboard extends Dashboard {
 
             _this.help.removeHelp(chart);
             //Scroll
-            document.querySelector("#timeline").scrollIntoView({ behavior: 'smooth', block: 'start' });
+            document.querySelector(".reflection-selected").scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
         chart.clicking.enableClick(onClick)
     }

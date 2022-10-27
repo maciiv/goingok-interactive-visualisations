@@ -174,7 +174,14 @@ Admin CSS
 .clicked.main {
     r: 15;
     stroke: #ffff80;
+    fill-opacity: 0.80 !important;
+    stroke-width: 5px !important;
+}
 
+.not-clicked {
+    stroke-width: 0.1 !important;
+    stroke-opacity: 0.1 !important;
+    fill-opacity: 0.1 !important;
 }
 
 .author-line, .line {
@@ -252,7 +259,12 @@ Admin CSS
 }
 
 .threshold-line.grab {
-    cursor: grab;
+    cursor: row-resize;
+}
+
+.threshold-line.grab:hover {
+    stroke-width: 10;
+    stroke :hsl(60, 80%, 60%);
 }
 
 .threshold-line.grabbing {

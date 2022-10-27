@@ -20,12 +20,13 @@ export class Click<T extends IChart> implements IClick {
         this.chart.elements.content.on("click", onClick)
     };
     removeClick(): void {
-        this.clicked = false;
-        this.chart.elements.contentContainer.selectAll(".click-text").remove();
-        this.chart.elements.contentContainer.selectAll(".click-line").remove();
-        this.chart.elements.contentContainer.selectAll(".click-container").remove();
-        this.chart.elements.content.classed("clicked", false);
-        this.chart.elements.content.classed("main", false);
+        this.clicked = false
+        this.chart.elements.contentContainer.selectAll(".click-text").remove()
+        this.chart.elements.contentContainer.selectAll(".click-line").remove()
+        this.chart.elements.contentContainer.selectAll(".click-container").remove()
+        this.chart.elements.content.classed("clicked", false)
+        this.chart.elements.content.classed("not-clicked", false)
+        this.chart.elements.content.classed("main", false)
     };
     protected comparativeText(textData: IClickTextData): string[] {
         let textClass = "click-text";
