@@ -84,7 +84,22 @@
                                                         <i class="fas fa-question-circle"></i>
                                                     </button>
                                                 </h5>
-                                                <h6 class="card-subtitle mb-2 instructions"></h6>
+                                                <h6 class="card-subtitle mb-2">
+                                                    <div class="input-group input-group-sm zoom-buttons">
+                                                        <span class="mr-2 my-auto">zoom:</span>
+                                                        <div class="input-group-prepend">
+                                                            <div class="input-group">
+                                                                <input class="btn btn-secondary btn-sm" type="button" value="-" id="zoom-minus" />
+                                                            </div>
+                                                        </div>
+                                                        <input type="text" value="100%" class="form-control text-center" id="zoom-number" disabled />
+                                                        <div class="input-group-append">
+                                                            <div class="input-group">
+                                                                <input class="btn btn-secondary btn-sm" type="button" value="+" id="zoom-plus" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </h6>
                                                 <div class="chart-container network"></div>
                                             </div>
                                         </div>
@@ -104,7 +119,7 @@
         <script type="module">
             import * as chart from "../lib/dist/index.js"
             d3.json("analytics.json").then(function (c) {  
-                chart.buildControlAuthorAnalyticsCharts(c["data"]["reflections"], c["data"]["analytics"]);
+                chart.buildControlAuthorAnalyticsCharts(c["data"]["reflections"], c["data"]["analytics"])
             });
         </script>
     </body>

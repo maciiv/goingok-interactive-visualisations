@@ -26,7 +26,7 @@
                                             <div class="card-body" style="min-height:40vh">
                                                 <h5 class="card-title">
                                                     <span>Enter a reflection</span>
-                                                    <button type="button" class="btn btn-light btn-sm float-right">
+                                                    <button type="button" class="btn btn-light btn-sm float-right" title="help">
                                                         <i class="fas fa-question-circle"></i>
                                                     </button>
                                                 </h5>
@@ -36,14 +36,14 @@
                                     <div class="col-md-12 mt-3" id="sort">
                                         <div class="card">
                                             <div class="card-body">
-                                                <h6 class="card-subtitle d-flex">
+                                                <h6 class="card-subtitle">
                                                     <span class="my-auto">Sort reflections by:</span>
-                                                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                                    <div class="btn-group btn-group-toggle sort-by" data-toggle="buttons">
                                                         <label class="btn btn-light active">
-                                                            <input type="radio" name="sort" value="date" checked>Date
+                                                            <input type="radio" name="sort" value="timestamp" checked>Date <i class="fa fa-chevron-down" aria-hidden="true"></i>
                                                         </label>
                                                         <label class="btn btn-light">
-                                                            <input type="radio" name="sort" value="point">Point
+                                                            <input type="radio" name="sort" value="point">Point <i class="fa fa-chevron-down d-none" aria-hidden="true"></i>
                                                         </label>
                                                     </div>
                                                 </h6>
@@ -55,7 +55,7 @@
                                             <div class="card-body">
                                                 <h5 class="card-title">
                                                     <span>Your reflections</span>
-                                                    <button type="button" class="btn btn-light btn-sm float-right">
+                                                    <button type="button" class="btn btn-light btn-sm float-right" title="help">
                                                         <i class="fas fa-question-circle"></i>
                                                     </button>
                                                 </h5>
@@ -73,7 +73,7 @@
                                             <div class="card-body">
                                                 <h5 class="card-title">
                                                     <span>Your reflections timeline</span>
-                                                    <button type="button" class="btn btn-light btn-sm float-right">
+                                                    <button type="button" class="btn btn-light btn-sm float-right" title="help">
                                                         <i class="fas fa-question-circle"></i>
                                                     </button>
                                                 </h5>
@@ -97,11 +97,26 @@
                                             <div class="card-body">
                                                 <h5 class="card-title">
                                                     <span>Your reflections network</span>
-                                                    <button type="button" class="btn btn-light btn-sm float-right">
+                                                    <button type="button" class="btn btn-light btn-sm float-right" title="help">
                                                         <i class="fas fa-question-circle"></i>
                                                     </button>
                                                 </h5>
-                                                <h6 class="card-subtitle mb-2 instructions"></h6>
+                                                <h6 class="card-subtitle mb-2">
+                                                    <div class="input-group input-group-sm zoom-buttons">
+                                                        <span class="mr-2 my-auto">zoom:</span>
+                                                        <div class="input-group-prepend">
+                                                            <div class="input-group">
+                                                                <input class="btn btn-secondary btn-sm" type="button" value="-" id="zoom-minus" />
+                                                            </div>
+                                                        </div>
+                                                        <input type="text" value="100%" class="form-control text-center" id="zoom-number" title="zoom-text" disabled />
+                                                        <div class="input-group-append">
+                                                            <div class="input-group">
+                                                                <input class="btn btn-secondary btn-sm" type="button" value="+" id="zoom-plus" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </h6>
                                                 <div class="chart-container network"></div>
                                             </div>
                                         </div>
