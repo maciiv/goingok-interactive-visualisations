@@ -122,7 +122,11 @@ export class Network extends ChartNetwork {
 
         const zoomed = function(e: d3.D3ZoomEvent<SVGRectElement, unknown>) {
             if (e.sourceEvent !== null) {
-                if (e.sourceEvent.type === "dblclick" || e.sourceEvent.type === "wheel") return
+                if (e.sourceEvent.type === "dblclick") return
+                if (e.sourceEvent.type === "wheel") {
+                    window.scrollBy({ top: e.sourceEvent.deltaY, behavior: 'smooth' })
+                    return
+                }
             }
             let newChartRange = [0, _this.width - _this.padding.yAxis - _this.padding.right].map(d => e.transform.applyX(d));
             _this.x.scale.rangeRound(newChartRange);
