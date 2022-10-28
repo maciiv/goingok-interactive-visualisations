@@ -16,18 +16,17 @@
         </nav>
         <div class="wrapper">            
             <nav id="sidebar" class="active sticky-top">
-                <div class="row mr-0">
-                    <div class="col-md-10 pr-0">
-                        <div class="sidebar-header p-4">
-                            <h3>GoingOK</h3>
-                            <hr>
-                        </div>
+                <div class="row">
+                    <div class="col-md-12 d-flex my-3">
+                        <h3 class="m-auto">GoingOK</h3>
+                        <button type="button" id="sidebar-btn" class="btn btn-dark mr-2" title="Open sidebar"><i class="fa fa-align-justify"></i></button>
+                    </div>
+                    <div id="all-groups" class="col-md-12">
                         <ul id="groups" class="list-unstyled components"></ul>
                     </div>
-                    <div class="col-md-2 p-0" id="analytics-navbar">
-                        <button type="button" id="sidebar-btn" class="btn btn-dark my-4"> <i class="fa fa-align-justify"></i></button>
+                    <div id="switch-dashboard" class="col-md-12 d-flex">
+                        <a class="btn btn-warning btn-block mx-3" href="/admincontrol">Switch dashboard</a>
                     </div>
-                </div>
             </nav>
             <div class="content">
                 <div class="content-wrapper">
@@ -106,17 +105,24 @@
                                                 <i class="fas fa-question-circle"></i>
                                             </button>
                                         </h5>
-                                        <h6 class="card-subtitle mb-2 instructions"></h6>
-                                        <div class="row mt-3">
-                                            <div id="timeline-plot" class="btn-group btn-group-toggle mx-auto" data-toggle="buttons">
-                                                <label class="btn btn-light active">
-                                                    <input type="radio" name="plot" value="scatter" checked>Scatter Plot
-                                                </label>
-                                                <label class="btn btn-light">
-                                                    <input type="radio" name="plot" value="density">Density Plot
-                                                </label>
+                                        <h6 class="card-subtitle mb-2">
+                                            <p class="instructions mb-1"></p>
+                                            <p class="text-muted mb-0"></p>
+                                            <div class="input-group input-group-sm zoom-buttons">
+                                                <span class="mr-2 my-auto">zoom:</span>
+                                                <div class="input-group-prepend">
+                                                    <div class="input-group">
+                                                        <input class="btn btn-secondary btn-sm" type="button" value="-" id="zoom-minus" />
+                                                    </div>
+                                                </div>
+                                                <input type="text" value="100%" class="form-control text-center" id="zoom-number" disabled />
+                                                <div class="input-group-append">
+                                                    <div class="input-group">
+                                                        <input class="btn btn-secondary btn-sm" type="button" value="+" id="zoom-plus" />
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
+                                        </h6>
                                         <div class="chart-container"></div>
                                     </div>
                                 </div>
@@ -130,7 +136,9 @@
                                                 <i class="fas fa-question-circle"></i>
                                             </button>
                                         </h5>
-                                        <h6 class="card-subtitle mb-2 instructions"></h6>
+                                        <h6 class="card-subtitle mb-2 text-muted"></h6>
+                                        <ul class="nav nav-tabs"></ul>
+                                        <div class="tab-content users-tab-pane"></div>
                                     </div>
                                 </div>
                             </div>
