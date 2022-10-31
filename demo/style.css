@@ -130,6 +130,10 @@ Admin CSS
     stroke-width: 1;
 }
 
+.circle {
+    r: 5;
+}
+
 .circle-user {
     fill-opacity: 0.75;
 }
@@ -154,9 +158,6 @@ Admin CSS
 
 .circle.no-hover {
     cursor: auto;
-}
-
-.circle.no-hover:hover {
     r: 2
 }
 
