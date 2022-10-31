@@ -7,7 +7,7 @@ import { ChartPadding, ChartTime } from "../chartBase.js";
 
 export class TimelineNetwork extends ChartTime {
     tooltip = new Tooltip(this)
-    clicking = new Click(this)
+    clicking: ClickTimelineNetwork<this>
     extend?: Function
     private _data: IReflectionAnalytics[]
     get data() {
@@ -23,6 +23,7 @@ export class TimelineNetwork extends ChartTime {
     }
     constructor(data: IReflectionAnalytics[]){
         super("timeline", [addDays(minDate(data.map(d => d.timestamp)), -30), addDays(maxDate(data.map(d => d.timestamp)), 30)], new ChartPadding(40, 75, 10, 10))
+        this.clicking = new ClickTimelineNetwork(this)
         this.data = data.map(c => {
             this.simulation(c)
             return c
@@ -70,9 +71,7 @@ export class TimelineNetwork extends ChartTime {
         _this.elements.content = _this.elements.contentContainer.selectAll(".circle");
 
         const onMouseover = function(e: Event, d: IReflectionAnalytics) {
-            if (d3.select(this).attr("class").includes("clicked")) {
-                return;
-            }
+            if (d3.select(this).attr("class").includes("clicked")) return
             _this.tooltip.appendTooltipContainer();
             let tooltipValues = [new TooltipValues("Point", d.point)]
             let tags = groupBy(_this.data.find(c => c.refId === d.refId).nodes, "name").map(c => { return {"name": c.key, "total": c.value.length}})
@@ -96,15 +95,18 @@ export class TimelineNetwork extends ChartTime {
                     return yTooltip + tooltipBox.node().getBBox().height + 20;
                 }
                 return yTooltip;
-            };
+            }
 
-            _this.tooltip.appendLine(0, _this.y.scale(d.point), _this.x.scale(d.timestamp) - 10, _this.y.scale(d.point), "#999999");
-            _this.tooltip.appendLine(_this.x.scale(d.timestamp), _this.y.scale(0), _this.x.scale(d.timestamp), _this.y.scale(d.point) + 10, "#999999");
+            d3.select(this).attr("r", 10)
+            _this.tooltip.appendLine(0, _this.y.scale(d.point), _this.x.scale(d.timestamp) - 10, _this.y.scale(d.point), "#999999")
+            _this.tooltip.appendLine(_this.x.scale(d.timestamp), _this.y.scale(0), _this.x.scale(d.timestamp), _this.y.scale(d.point) + 10, "#999999")
         }
         const onMouseout = function() {
             _this.elements.svg.select(".tooltip-container").transition()
-                .style("opacity", 0);
-            _this.tooltip.removeTooltip();
+                .style("opacity", 0)
+            _this.tooltip.removeTooltip()
+            if (d3.select(this).attr("class").includes("clicked")) return
+            d3.select(this).attr("r", 5)
         }
         //Enable tooltip       
         _this.tooltip.enableTooltip(onMouseover, onMouseout)
@@ -148,5 +150,13 @@ export class TimelineNetwork extends ChartTime {
             simulation.force("forceX", d3.forceX(-20).strength(0.25))
         }
         simulation.tick(300)
+    }
+}
+
+class ClickTimelineNetwork<T extends TimelineNetwork> extends Click<T> {
+    removeClick(): void {
+        super.removeClick()
+        this.chart.elements.content
+            .attr("r", 5)
     }
 }

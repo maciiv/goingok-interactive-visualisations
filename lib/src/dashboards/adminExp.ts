@@ -286,11 +286,11 @@ export class ExperimentalDashboard extends Dashboard {
         const onClick = function(this: SVGCircleElement, e: MouseEvent, d: ITimelineData) {
             if (d3.select(this).attr("class").includes("clicked")) {
                 if (d3.select(this).attr("class").includes("main")) {
-                    chart.clicking.removeClick();
-                    _this.users.data = chart.data;
-                    return;
+                    chart.clicking.removeClick()
+                    _this.users.data = chart.data
+                    return
                 } else {
-                    chart.elements.content.classed("main", false);
+                    chart.elements.content.classed("main", false)
                 }
             }
 
@@ -298,10 +298,13 @@ export class ExperimentalDashboard extends Dashboard {
             
             _this.users.data = chart.data;
             chart.clicking.clicked = true;
-            chart.elements.content.classed("clicked", (data: IReflectionAuthor) => data.pseudonym == d.pseudonym)
+            chart.elements.content.filter((data: IReflectionAuthor) => data.pseudonym == d.pseudonym)
+                .classed("clicked", true)
+                .attr("r", 10)
             chart.elements.content.classed("not-clicked", (data: IReflectionAuthor) => data.pseudonym != d.pseudonym)
             d3.select(this)
-                .classed("main", true);
+                .classed("main", true)
+                .attr("r", 15)
             
             let groupData = chart.data.find(c => c.group == d.group)
             let usersData = groupData.value.filter(c => c.pseudonym == d.pseudonym).map(c => { 

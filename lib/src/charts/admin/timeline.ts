@@ -64,9 +64,7 @@ export class Timeline extends ChartTime {
 
         
         const onMouseover = function(this: SVGCircleElement, e: MouseEvent, d: ITimelineData) {
-            if (d3.select(this).attr("class").includes("clicked")) {
-                return;
-            }
+            if (d3.select(this).attr("class").includes("clicked")) return
             _this.tooltip.appendTooltipContainer();
             let tooltipBox = _this.tooltip.appendTooltipText(d.timestamp.toDateString(), 
                 [new TooltipValues("User", d.pseudonym), 
@@ -89,13 +87,16 @@ export class Timeline extends ChartTime {
                 return yTooltip;
             };
 
+            d3.select(this).attr("r", 10)
             _this.tooltip.appendLine(0, _this.y.scale(d.point), _this.x.scale(d.timestamp) - 10, _this.y.scale(d.point), d.colour);
             _this.tooltip.appendLine(_this.x.scale(d.timestamp), _this.y.scale(0), _this.x.scale(d.timestamp), _this.y.scale(d.point) + 10, d.colour);
         }
-        const onMouseout = function() {
+        const onMouseout = function(this: SVGCircleElement) {
             _this.elements.svg.select(".tooltip-container").transition()
-                .style("opacity", 0);
-            _this.tooltip.removeTooltip();
+                .style("opacity", 0)
+            _this.tooltip.removeTooltip()
+            if (d3.select(this).attr("class").includes("clicked")) return
+            d3.select(this).attr("r", 5)
         }
         //Enable tooltip       
         _this.tooltip.enableTooltip(onMouseover, onMouseout);
@@ -199,12 +200,19 @@ class ChartTimeZoom implements IChartScales {
 }
 
 class ClickTimeline<T extends Timeline> extends Click<T> {
+    removeClick(): void {
+        super.removeClick()
+        this.chart.elements.content
+            .attr("r", 5)
+    }
     appendScatterText(d: IReflectionAuthor, title: string, values: ITooltipValues[] = null): void {
         let container = this.chart.elements.contentContainer.append("g")
             .datum(d)
             .attr("class", "click-container");
         let box = container.append("rect")
-            .attr("class", "click-box");
+            .attr("class", "click-box")
+            .attr("rx", 5)
+            .attr("ry", 5)
         let text = container.append("text")
             .attr("class", "click-text title")
             .attr("x", 10)
