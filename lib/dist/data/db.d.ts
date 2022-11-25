@@ -20,6 +20,14 @@ export declare class AdminAnalyticsDataRaw implements IAdminAnalyticsDataRaw {
     constructor(group: string, value: IReflectionAuthorRaw[], createDate: string);
     transformData(): AdminAnalyticsData;
 }
+export interface IAuthorEntriesRaw {
+    pseudonym: string;
+    reflections: IReflectionAuthorRaw[];
+}
+export interface IAuthorAnalyticsEntriesRaw {
+    pseudonym: string;
+    analytics: IAnalytics;
+}
 export interface IAuthorAnalyticsDataRaw {
     reflections: IReflectionAuthorRaw[];
     analytics: IAnalytics;

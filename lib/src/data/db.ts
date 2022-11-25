@@ -34,6 +34,16 @@ export class AdminAnalyticsDataRaw implements IAdminAnalyticsDataRaw {
     }
 }
 
+export interface IAuthorEntriesRaw {
+    pseudonym: string
+    reflections: IReflectionAuthorRaw[]
+}
+
+export interface IAuthorAnalyticsEntriesRaw {
+    pseudonym: string
+    analytics: IAnalytics
+}
+
 export interface IAuthorAnalyticsDataRaw {
     reflections: IReflectionAuthorRaw[]
     analytics: IAnalytics

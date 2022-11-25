@@ -136,7 +136,7 @@
         <script type="module">
             import * as chart from "../lib/dist/index.js"
             d3.json("analytics.json").then(function (c) {  
-                chart.buildExperimentAuthorAnalyticsCharts(c["data"]["reflections"], c["data"]["analytics"]);
+                chart.buildExperimentAuthorAnalyticsCharts(c["data"]["entriesRaw"], c["data"]["analyticsRaw"]);
             });
         </script>
     </body>

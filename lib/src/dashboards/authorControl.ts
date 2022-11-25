@@ -1,11 +1,11 @@
 import d3 from "d3";
 import { Help } from "../utils/help.js";
-import { IAnalytics, IAuthorAnalyticsData, ITags } from "../data/data.js";
+import { IAuthorAnalyticsData, ITags } from "../data/data.js";
 import { Loading } from "../utils/loading.js";
 import { Tutorial, TutorialData } from "../utils/tutorial.js";
 import { Network } from "../charts/author/network.js";
 import { TimelineNetwork } from "../charts/author/timelineNetwork.js";
-import { AuthorAnalyticsDataRaw, IReflectionAuthorRaw } from "../data/db.js";
+import { AuthorAnalyticsDataRaw, IAuthorAnalyticsEntriesRaw, IAuthorEntriesRaw } from "../data/db.js";
 import { Reflections } from "../charts/author/reflections.js";
 import { groupBy } from "../utils/utils.js";
 
@@ -51,11 +51,11 @@ export class Dashboard {
     }
 }
 
-export async function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionAuthorRaw[], analyticsRaw: IAnalytics) {
+export async function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[], analyticsRaw: IAuthorAnalyticsEntriesRaw[]) {
     const loading = new Loading()
     const colourScale = d3.scaleOrdinal(d3.schemeCategory10)
-    const entries = new AuthorAnalyticsDataRaw(entriesRaw, analyticsRaw).transformData(colourScale)
-    await drawCharts(entries)
+    const entries = entriesRaw.map(d => new AuthorAnalyticsDataRaw(d.reflections, analyticsRaw.find(c => c.pseudonym == d.pseudonym).analytics).transformData(colourScale))
+    await drawCharts(entries[0])
     new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
     new TutorialData("#timeline .circle", "Hover for information on demand"),
     new TutorialData("#reflections .reflection-text span", "Phrases outlined with a colour that matches the tags"),
