@@ -9,7 +9,7 @@ export declare class Dashboard {
     reflections: Reflections;
     constructor(data: IAuthorAnalyticsData[]);
     resizeTimeline(): void;
-    handleMultiUser(entries: IAuthorAnalyticsData[]): void;
+    handleMultiUser(entries: IAuthorAnalyticsData[], extend?: Function): void;
     preloadTags(entries: IAuthorAnalyticsData, enable?: boolean): ITags[];
 }
 export declare function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[], analyticsRaw: IAuthorAnalyticsEntriesRaw[]): Promise<void>;

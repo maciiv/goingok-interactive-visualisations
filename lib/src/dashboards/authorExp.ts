@@ -18,9 +18,24 @@ export class ExperimentalDashboard extends Dashboard {
         this.extendNetwork()
         this.reflections.extend = this.extendReflections.bind(this)
         this.extendReflections()
+        this.handleTags()
+        this.handleTagsColours()
+    }
+    handleMultiUser(entries: IAuthorAnalyticsData[]): void {
+        const extendFunction = (e: any, d: IAuthorAnalyticsData) => {
+            this.timeline.clicking.removeClick()
+            this.reflectionAnalytics = d.reflections
+            this.analytics = d.analytics
+            const reflectionsData = this.updateReflectionNodesData()
+            this.timeline.data = reflectionsData
+            this.reflections.data = reflectionsData
+            if (d.analytics.nodes.some(d => d.index === undefined)) this.network.processSimulation(d.analytics)
+            this.network.data = this.updateAnalyticsData()
+        }
+        super.handleMultiUser(entries, extendFunction)
     }
     preloadTags(entries: IAuthorAnalyticsData): ITags[] {
-        this.tags = super.preloadTags(entries, true)
+        this.tags = super.preloadTags(entries, true).filter(d => d.selected)
         this.reflectionAnalytics = entries.reflections
         this.analytics = entries.analytics
 
@@ -33,8 +48,8 @@ export class ExperimentalDashboard extends Dashboard {
             .attr("type", "checkbox")
             .attr("value", d => d.name)
             .property("checked", true)
-
-        return this.tags.filter(c => c.selected)
+        
+        return this.tags
     }
     handleTags(): void {
         const _this = this;
@@ -92,7 +107,7 @@ export class ExperimentalDashboard extends Dashboard {
             _this.reflections.data = _this.updateReflectionNodesData()
         });
 
-        const onClick = function(e: MouseEvent, d: IReflectionAnalytics) {
+        const onClick = function() {
             if (d3.select(this).attr("class").includes("clicked")) {
                 chart.clicking.removeClick()
                 _this.network.data = _this.updateAnalyticsData()
@@ -103,8 +118,9 @@ export class ExperimentalDashboard extends Dashboard {
             chart.clicking.clicked = true;
             d3.select(this).classed("clicked", true)
                 .attr("r", 10)
-            _this.network.data = _this.getClickTimelineNetworkNodes(d)
-            _this.reflections.data = [d]
+            const parentData = d3.select<SVGGElement, IReflectionAnalytics>(d3.select(this).node().parentElement).datum()
+            _this.network.data = _this.getClickTimelineNetworkNodes(parentData)
+            _this.reflections.data = [parentData]
         }
         chart.clicking.enableClick(onClick)
     }
@@ -250,8 +266,5 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IAuthorEn
         help.helpPopover(dashboard.reflections.id, `<b>Reflections</b><br>
             Your reflections are shown sorted by time. The words with associated tags have a different outline colour<br>
             The reflections can be sorted by time or reflection point`)
- 
-        dashboard.handleTags()  
-        dashboard.handleTagsColours()
     }
 }

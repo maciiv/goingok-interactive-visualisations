@@ -25,7 +25,7 @@ export class Dashboard {
         let height = document.querySelector("#reflection-entry").getBoundingClientRect().height
         document.querySelector("#timeline .chart-container").setAttribute("style", `min-height:${height - 80}px`)
     }
-    handleMultiUser(entries: IAuthorAnalyticsData[]): void {
+    handleMultiUser(entries: IAuthorAnalyticsData[], extend?: Function): void {
         if (entries.length > 1) {
             d3.select(".multi-user button")
                 .classed("dropdown-toggle", true)
@@ -37,9 +37,15 @@ export class Dashboard {
                 .attr("class", "dropdown-item")
                 .text(d => d.pseudonym)
                 .on("click", (e, d) => {
-                    this.timeline.data = d.reflections
-                    this.network.data = d.analytics
-                    this.reflections.data = d.reflections
+                    if (extend === undefined) {
+                        this.timeline.data = d.reflections
+                        this.reflections.data = d.reflections
+                        if (d.analytics.nodes.some(d => d.index === undefined)) this.network.processSimulation(d.analytics)
+                        this.network.data = d.analytics
+                    } else {
+                        extend(e, d)
+                    }
+                    
                     d3.select(".multi-user button")
                         .text(d.pseudonym)
                 })
@@ -49,26 +55,28 @@ export class Dashboard {
         let tags = groupBy(entries.analytics.nodes, "name").map(r => { return {"name": r.key, "properties": r.value[0].properties, "selected": r.value[0].selected}})
         d3.select("#tags").selectAll("li")
             .data(tags)
-            .enter()
-            .append("li")
-            .attr("class", "mx-3")
-            .append("div")
-            .attr("class", "input-group")
-            .call(div => div.append("input")
-                .attr("type", "text")
-                .attr("class", "form-control tag-row")
-                .attr("value", d => d.name)
-                .property("disabled", true))
-            .call(div => div.append("div")
-                .attr("class", "input-group-append")
-                .append("div")
-                .attr("class", "input-group-text tag-row")
-                .append("input")
-                .attr("id", d => `colour-${d.name}`)
-                .attr("type", "color")
-                .attr("value", d => d.properties["color"])
-                .property("disabled", !enable));
-        
+            .join(
+                enter => enter.append("li")
+                    .attr("class", "mx-3")
+                    .append("div")
+                    .attr("class", "input-group")
+                    .call(div => div.append("input")
+                        .attr("type", "text")
+                        .attr("class", "form-control tag-row")
+                        .attr("value", d => d.name)
+                        .property("disabled", true))
+                    .call(div => div.append("div")
+                        .attr("class", "input-group-append")
+                        .append("div")
+                        .attr("class", "input-group-text tag-row")
+                        .append("input")
+                        .attr("id", d => `colour-${d.name}`)
+                        .attr("type", "color")
+                        .attr("value", d => d.properties["color"])
+                        .property("disabled", !enable)),
+                update => update,
+                exit => exit.remove()
+            )
         return tags
     }
 }

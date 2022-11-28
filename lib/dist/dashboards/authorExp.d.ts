@@ -6,6 +6,7 @@ export declare class ExperimentalDashboard extends Dashboard {
     reflectionAnalytics: IReflectionAnalytics[];
     analytics: IAnalytics;
     constructor(data: IAuthorAnalyticsData[]);
+    handleMultiUser(entries: IAuthorAnalyticsData[]): void;
     preloadTags(entries: IAuthorAnalyticsData): ITags[];
     handleTags(): void;
     handleTagsColours(): void;

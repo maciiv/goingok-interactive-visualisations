@@ -27,7 +27,7 @@ export class Network extends ChartNetwork {
     }
     constructor(data: IAnalytics, domain: Date[]) {
         super("network", "chart-container.network", [addDays(minDate(domain), -30), addDays(maxDate(domain), 30)])
-        this.simulation = this.processSimulation(data)
+        this.processSimulation(data)
         this.data = data
         this.clicking = new ClickNetwork(this)
     }
@@ -187,8 +187,8 @@ export class Network extends ChartNetwork {
                 .attr("width", 10)
                 .attr("height", 10))
     }
-    private processSimulation(data: IAnalytics): d3.Simulation<INodes, undefined> {
-        return d3.forceSimulation<INodes, undefined>(data.nodes)
+    processSimulation(data: IAnalytics) {
+        this.simulation = d3.forceSimulation<INodes, undefined>(data.nodes)
             .force("link", d3.forceLink<INodes, IEdges<INodes>>()
                 .id(d => d.idx)
                 .distance(100)
@@ -198,7 +198,6 @@ export class Network extends ChartNetwork {
             .force("center", d3.forceCenter((this.width -this.padding.yAxis - this.padding.right - 10) / 2, (this.height - this.padding.top - this.padding.xAxis + 5) / 2));
     }
     private filterData(data: IAnalytics): IAnalytics {
-        if (data.nodes[0].index === undefined) this.simulation = this.processSimulation(data)
         let nodes = data.nodes.filter(d => d.selected)
         let edges = data.edges.filter(d => (d.source as INodes).selected && (d.target as INodes).selected)
         return { "name": data.name, "description": data.description, "nodes": nodes, "edges": edges }
