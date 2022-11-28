@@ -5,12 +5,6 @@ import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
 import { addDays, calculateMean, groupBy, maxDate, minDate } from "../../utils/utils.js";
 import { ChartPadding, ChartTime } from "../chartBase.js";
 
-type lines = {
-    name: string
-    line: d3.Line<IReflectionAnalytics>
-    datum: IReflectionAnalytics[]
-}
-
 export class TimelineNetwork extends ChartTime {
     tooltip = new Tooltip(this)
     clicking: ClickTimelineNetwork<this>
@@ -22,6 +16,7 @@ export class TimelineNetwork extends ChartTime {
     set data(entries: IReflectionAnalytics[]) {
         this._data = entries.map(c => {
             c.nodes = c.nodes.filter(d => d.selected)
+            c.nodes.forEach(d => d.index === undefined ? this.simulation(c) : d)
             return c
         })
         this.render()
@@ -47,7 +42,10 @@ export class TimelineNetwork extends ChartTime {
                         .datum(d => d)
                         .attr("class", d => d.name)
                         .attr("d", d => d.line(d.datum))),
-                update => update,
+                update => update.select("path")
+                    .call(update => update.transition()
+                        .duration(750)
+                        .attr("d", d => d.line(d.datum))),
                 exit => exit.remove()
             )
         
@@ -67,8 +65,7 @@ export class TimelineNetwork extends ChartTime {
                         .attr("transform", d => `translate (${_this.x.scale(d.timestamp)}, ${_this.y.scale(d.point)})`)),
                 update => update.call(update => update.transition()
                     .duration(750)
-                    .attr("cx", d => _this.x.scale(d.timestamp))
-                    .attr("cy", d => _this.y.scale(d.point))
+                    .attr("transform", d => `translate (${_this.x.scale(d.timestamp)}, ${_this.y.scale(d.point)})`)
                     .style("fill", "#999999")
                     .style("stroke", "#999999"))
                     .call(update => _this.renderReflectionNetwork(update)),
@@ -77,16 +74,17 @@ export class TimelineNetwork extends ChartTime {
         
         _this.elements.content = _this.elements.contentContainer.selectAll(".circle");
 
-        const onMouseover = function(e: Event, d: IReflectionAnalytics) {
+        const onMouseover = function() {
             if (d3.select(this).attr("class").includes("clicked")) return
             _this.tooltip.appendTooltipContainer();
-            let tooltipValues = [new TooltipValues("Point", d.point)]
-            let tags = groupBy(_this.data.find(c => c.refId === d.refId).nodes, "name").map(c => { return {"name": c.key, "total": c.value.length}})
+            const parentData = d3.select<SVGGElement, IReflectionAnalytics>(d3.select(this).node().parentElement).datum()
+            let tooltipValues = [new TooltipValues("Point", parentData.point)]
+            let tags = groupBy(_this.data.find(c => c.refId === parentData.refId).nodes, "name").map(c => { return {"name": c.key, "total": c.value.length}})
             tags.forEach(c => {
                 tooltipValues.push(new TooltipValues(c.name, c.total));
             })
-            let tooltipBox = _this.tooltip.appendTooltipText(d.timestamp.toDateString(), tooltipValues);
-            _this.tooltip.positionTooltipContainer(xTooltip(d.timestamp, tooltipBox), yTooltip(d.point, tooltipBox));
+            let tooltipBox = _this.tooltip.appendTooltipText(parentData.timestamp.toDateString(), tooltipValues);
+            _this.tooltip.positionTooltipContainer(xTooltip(parentData.timestamp, tooltipBox), yTooltip(parentData.point, tooltipBox));
 
             function xTooltip(x: Date, tooltipBox: d3.Selection<SVGRectElement, unknown, HTMLElement, any>) {
                 let xTooltip = _this.x.scale(x);
@@ -105,8 +103,8 @@ export class TimelineNetwork extends ChartTime {
             }
 
             d3.select(this).attr("r", 10)
-            _this.tooltip.appendLine(0, _this.y.scale(d.point), _this.x.scale(d.timestamp) - 10, _this.y.scale(d.point), "#999999")
-            _this.tooltip.appendLine(_this.x.scale(d.timestamp), _this.y.scale(0), _this.x.scale(d.timestamp), _this.y.scale(d.point) + 10, "#999999")
+            _this.tooltip.appendLine(0, _this.y.scale(parentData.point), _this.x.scale(parentData.timestamp) - 10, _this.y.scale(parentData.point), "#999999")
+            _this.tooltip.appendLine(_this.x.scale(parentData.timestamp), _this.y.scale(0), _this.x.scale(parentData.timestamp), _this.y.scale(parentData.point) + 10, "#999999")
         }
         const onMouseout = function() {
             _this.elements.svg.select(".tooltip-container").transition()

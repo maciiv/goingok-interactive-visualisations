@@ -10,7 +10,7 @@ export class ExperimentalDashboard extends Dashboard {
     tags: ITags[]
     reflectionAnalytics: IReflectionAnalytics[]
     analytics: IAnalytics
-    constructor(data: IAuthorAnalyticsData) {
+    constructor(data: IAuthorAnalyticsData[]) {
         super(data)
         this.timeline.extend = this.extendTimeline.bind(this)
         this.extendTimeline()
@@ -217,8 +217,8 @@ export class ExperimentalDashboard extends Dashboard {
 export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[], analyticsRaw: IAuthorAnalyticsEntriesRaw[]) {
     const loading = new Loading();
     const colourScale = d3.scaleOrdinal(d3.schemeCategory10);
-    const entries = entriesRaw.map(d => new AuthorAnalyticsDataRaw(d.reflections, analyticsRaw.find(c => c.pseudonym == d.pseudonym).analytics).transformData(colourScale))
-    await drawCharts(entries[0]);
+    const entries = entriesRaw.map(d => new AuthorAnalyticsDataRaw(d.reflections, analyticsRaw.find(c => c.pseudonym == d.pseudonym)).transformData(colourScale))
+    await drawCharts(entries);
     new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
     new TutorialData("#timeline .circle", "Hover for information on demand. Click to drill-down updating the reflections text and network"),
     new TutorialData("#sort .sort-by", "Sort reflections by date or reflection state point"),
@@ -229,10 +229,9 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IAuthorEn
     loading.isLoading = false;
     loading.removeDiv();
 
-    async function drawCharts(data: IAuthorAnalyticsData) {
+    async function drawCharts(data: IAuthorAnalyticsData[]) {
         const dashboard = new ExperimentalDashboard(data)
         const help = new Help()
-        dashboard.preloadTags(data)
 
         //Handle timeline chart help
         help.helpPopover(dashboard.network.id, `<b>Network diagram</b><br>

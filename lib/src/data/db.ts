@@ -45,21 +45,24 @@ export interface IAuthorAnalyticsEntriesRaw {
 }
 
 export interface IAuthorAnalyticsDataRaw {
+    pseudonym: string
     reflections: IReflectionAuthorRaw[]
     analytics: IAnalytics
     transformData(): AuthorAnalyticsData
 }
 
 export class AuthorAnalyticsDataRaw implements IAuthorAnalyticsDataRaw {
+    pseudonym: string
     reflections: IReflectionAuthorRaw[]
     analytics: IAnalytics
-    constructor(entries: IReflectionAuthorRaw[], analytics: IAnalytics) {
+    constructor(entries: IReflectionAuthorRaw[], analytics: IAuthorAnalyticsEntriesRaw) {
+        this.pseudonym = analytics.pseudonym
         this.reflections = entries
-        this.analytics = analytics
+        this.analytics = analytics.analytics
     }
     transformData(colourScale?: Function): AuthorAnalyticsData {
         return new AuthorAnalyticsData(this.reflections.map(d => { 
             return { "refId": parseInt(d.refId), "timestamp": new Date(d.timestamp), "point": parseInt(d.point), "text": d.text } 
-        }) as IReflection[], this.analytics, colourScale)
+        }) as IReflection[], this.analytics, this.pseudonym, colourScale)
     }
 }

@@ -7,8 +7,9 @@ export declare class Dashboard {
     timeline: TimelineNetwork;
     network: Network;
     reflections: Reflections;
-    constructor(data: IAuthorAnalyticsData);
+    constructor(data: IAuthorAnalyticsData[]);
     resizeTimeline(): void;
+    handleMultiUser(entries: IAuthorAnalyticsData[]): void;
     preloadTags(entries: IAuthorAnalyticsData, enable?: boolean): ITags[];
 }
 export declare function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[], analyticsRaw: IAuthorAnalyticsEntriesRaw[]): Promise<void>;

@@ -198,6 +198,7 @@ export class Network extends ChartNetwork {
             .force("center", d3.forceCenter((this.width -this.padding.yAxis - this.padding.right - 10) / 2, (this.height - this.padding.top - this.padding.xAxis + 5) / 2));
     }
     private filterData(data: IAnalytics): IAnalytics {
+        if (data.nodes[0].index === undefined) this.simulation = this.processSimulation(data)
         let nodes = data.nodes.filter(d => d.selected)
         let edges = data.edges.filter(d => (d.source as INodes).selected && (d.target as INodes).selected)
         return { "name": data.name, "description": data.description, "nodes": nodes, "edges": edges }

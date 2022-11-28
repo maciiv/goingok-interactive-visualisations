@@ -189,14 +189,16 @@ export interface ITags {
 }
 
 export interface IAuthorAnalyticsData {
+    pseudonym: string
     reflections: IReflectionAnalytics[]
     analytics: IAnalytics
 }
 
 export class AuthorAnalyticsData implements IAuthorAnalyticsData {
+    pseudonym: string
     reflections: IReflectionAnalytics[]
     analytics: IAnalytics
-    constructor(reflections: IReflection[], analytics: IAnalytics, colourScale: Function) {
+    constructor(reflections: IReflection[], analytics: IAnalytics, pseudonym: string, colourScale: Function) {
         this.reflections = reflections.map(c => { 
             let nodes = JSON.parse(JSON.stringify(analytics.nodes.filter(r => r.refId === c.refId))) as INodes[]
             nodes.forEach(r => this.processColour(r, colourScale))
@@ -204,6 +206,7 @@ export class AuthorAnalyticsData implements IAuthorAnalyticsData {
         })
         analytics.nodes.forEach(r => this.processColour(r, colourScale))
         this.analytics = analytics
+        this.pseudonym = pseudonym
     }
     private processColour(node: INodes, colourScale: Function): INodes {
         if (node.properties["color"] === undefined) {
