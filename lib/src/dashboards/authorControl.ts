@@ -91,8 +91,7 @@ export async function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorEntri
     new TutorialData("#reflections .reflection-text span", "Phrases outlined with a colour that matches the tags"),
     new TutorialData("#network .network-node-group", "Hover for information on demand"),
     new TutorialData("#network .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area")]);
-    loading.isLoading = false;
-    loading.removeDiv();
+    loading.isLoading = false
 
     async function drawCharts(data: IAuthorAnalyticsData[]) {
         const dashboard = new Dashboard(data)

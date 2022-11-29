@@ -65,19 +65,18 @@ export class Dashboard {
 }
 
 export async function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyticsDataRaw[]) {
-    const loading = new Loading();
-    const rawData = entriesRaw.map(d => new AdminAnalyticsDataRaw(d.group, d.value, d.createDate));
-    let entries = rawData.map(d => d.transformData());
-    const colourScale = d3.scaleOrdinal(d3.schemeCategory10);
-    entries = entries.map(d => new AdminAnalyticsData(d.group, d.value, d.createDate, colourScale(d.group), true));
-    await drawCharts(entries);
+    const loading = new Loading()
+    const rawData = entriesRaw.map(d => new AdminAnalyticsDataRaw(d.group, d.value, d.createDate))
+    let entries = rawData.map(d => d.transformData())
+    const colourScale = d3.scaleOrdinal(d3.schemeCategory10)
+    entries = entries.map(d => new AdminAnalyticsData(d.group, d.value, d.createDate, colourScale(d.group), true))
+    await drawCharts(entries)
     new Tutorial([ new TutorialData("#groups", "All your groups are selected to visualise and colours assigned. You cannot change this section"),
     new TutorialData(".card-title button", "Click the help symbol in any chart to get additional information"),
     new TutorialData("#users .bar", "Hover for information on demand"), 
     new TutorialData("#histogram .histogram-rect", "Hover for information on demand"),
-    new TutorialData("#timeline .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area")]);
-    loading.isLoading = false;
-    loading.removeDiv();
+    new TutorialData("#timeline .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area")])
+    loading.isLoading = false
     async function drawCharts(allEntries: IAdminAnalyticsData[]) {
         const help = new Help()
         const dashboard = new Dashboard(allEntries);
