@@ -354,7 +354,6 @@ export class ExperimentalDashboard extends Dashboard {
 }
 
 export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAdminAnalyticsDataRaw[]) {
-    const loading = new Loading()
     const rawData = entriesRaw.map(d => new AdminAnalyticsDataRaw(d.group, d.value, d.createDate))
     let entries = rawData.map(d => d.transformData())
     const colourScale = d3.scaleOrdinal(d3.schemeCategory10)
@@ -369,7 +368,6 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAdminAnal
     new TutorialData("#timeline .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area"),
     new TutorialData("#timeline .circle", "Hover for information on demand or click to connect the user's reflections"),
     new TutorialData("#reflections .sort-by", "Sort users alphabetically or by their average reflection state point")])
-    loading.isLoading = false
     async function drawCharts(allEntries: IAdminAnalyticsData[]) {
         const dashboard = new ExperimentalDashboard(allEntries)
         //Handle sidebar button

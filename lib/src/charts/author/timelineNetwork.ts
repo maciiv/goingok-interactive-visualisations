@@ -14,13 +14,23 @@ export class TimelineNetwork extends ChartTime {
         return this._data
     }
     set data(entries: IReflectionAnalytics[]) {
-        this._data = entries.map(c => {
-            c.nodes = c.nodes.filter(d => d.selected)
-            c.nodes.forEach(d => d.index === undefined ? this.simulation(c) : d)
-            return c
-        })
-        this.render()
-        this.extend !== undefined ? this.extend() : null
+        (async() => {
+            this.loading.isLoading = true
+            this._data = entries.map(c => {
+                c.nodes = c.nodes.filter(d => d.selected)
+                c.nodes.forEach(d => d.index === undefined ? this.simulation(c) : d)
+                return c
+            })
+            this.x.scale.domain([addDays(minDate(entries.map(d => d.timestamp)), -30), addDays(maxDate(entries.map(d => d.timestamp)), 30)])
+            this.x.transition([addDays(minDate(entries.map(d => d.timestamp)), -30), addDays(maxDate(entries.map(d => d.timestamp)), 30)])
+            try {
+                await this.render()
+            } catch (e) {
+                this.renderError(e)
+            }
+            this.extend !== undefined ? this.extend() : null
+            this.loading.isLoading = false  
+        })()     
     }
     constructor(data: IReflectionAnalytics[]){
         super("timeline", [addDays(minDate(data.map(d => d.timestamp)), -30), addDays(maxDate(data.map(d => d.timestamp)), 30)], new ChartPadding(40, 75, 10, 10))
@@ -30,7 +40,7 @@ export class TimelineNetwork extends ChartTime {
             return c
         })
     }
-    render() {
+    async render() {
         const _this = this
         
         _this.elements.contentContainer.selectAll(".timeline-line-container")
@@ -116,7 +126,6 @@ export class TimelineNetwork extends ChartTime {
         //Enable tooltip       
         _this.tooltip.enableTooltip(onMouseover, onMouseout)
     }
-
     private getLines() {
         const hardLine = d3.line<IReflectionAnalytics>()
         .x(d => this.x.scale(d.timestamp))

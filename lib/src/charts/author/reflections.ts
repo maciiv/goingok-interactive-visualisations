@@ -20,6 +20,7 @@ export class Reflections {
         return this._data
     }
     set data(entries: IReflectionAnalytics[]) {
+        
         this._data = entries.map(c => {
             c.nodes = c.nodes.filter(d => d.selected)
             return c

@@ -20,10 +20,19 @@ export class Network extends ChartNetwork {
         return this._data
     }
     set data(entries: IAnalytics) {
-        this._data = this.filterData(entries)
-        this.zoom.resetZoom()
-        this.render()
-        this.extend !== undefined ? this.extend() : null
+        (async () => {
+            this.loading.isLoading = true
+            this._data = this.filterData(entries)
+            this.zoom.resetZoom()
+            try {
+                await this.render()
+            } catch (e) {
+                this.renderError(e)
+            }
+            this.extend !== undefined ? this.extend() : null
+            this.loading.isLoading = false
+        })()
+        
     }
     constructor(data: IAnalytics, domain: Date[]) {
         super("network", "chart-container.network", [addDays(minDate(domain), -30), addDays(maxDate(domain), 30)])
@@ -31,7 +40,7 @@ export class Network extends ChartNetwork {
         this.data = data
         this.clicking = new ClickNetwork(this)
     }
-    render() {
+    async render() {
         const _this = this
 
         let edges = _this.elements.contentContainer.selectAll(".network-link")

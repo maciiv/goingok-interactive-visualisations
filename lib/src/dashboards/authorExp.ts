@@ -1,7 +1,6 @@
 import d3 from "d3";
 import { IAnalytics, INodes, IAuthorAnalyticsData, ITags, IReflectionAnalytics } from "../data/data.js";
 import { Dashboard } from "./authorControl.js";
-import { Loading } from "../utils/loading.js";
 import { Tutorial, TutorialData } from "../utils/tutorial.js";
 import { AuthorAnalyticsDataRaw, IAuthorAnalyticsEntriesRaw, IAuthorEntriesRaw } from "../data/db.js";
 import { Help } from "../utils/help.js";
@@ -230,11 +229,10 @@ export class ExperimentalDashboard extends Dashboard {
     }
 }
 
-export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[], analyticsRaw: IAuthorAnalyticsEntriesRaw[]) {
-    const loading = new Loading()
+export function buildExperimentAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[], analyticsRaw: IAuthorAnalyticsEntriesRaw[]) {
     const colourScale = d3.scaleOrdinal(d3.schemeCategory10);
     const entries = entriesRaw.map(d => new AuthorAnalyticsDataRaw(d.reflections, analyticsRaw.find(c => c.pseudonym == d.pseudonym)).transformData(colourScale))
-    await drawCharts(entries)
+    drawCharts(entries)
     new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
     new TutorialData("#timeline .circle", "Hover for information on demand. Click to drill-down updating the reflections text and network"),
     new TutorialData("#sort .sort-by", "Sort reflections by date or reflection state point"),
@@ -242,9 +240,8 @@ export async function buildExperimentAuthorAnalyticsCharts(entriesRaw: IAuthorEn
     new TutorialData("#tags li", "Select which tags to see and change the colours if you like"),
     new TutorialData("#network .network-node-group", "Hover for information on demand. Click to fill the background colour of the nodes in the reflection text"),
     new TutorialData("#network .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area")])
-    loading.isLoading = false
 
-    async function drawCharts(data: IAuthorAnalyticsData[]) {
+    function drawCharts(data: IAuthorAnalyticsData[]) {
         const dashboard = new ExperimentalDashboard(data)
         const help = new Help()
 

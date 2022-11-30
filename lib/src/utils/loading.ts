@@ -1,3 +1,5 @@
+import { IChart } from "../charts/chartBase";
+
 export interface ILoading {
     isLoading: boolean;
     spinner: HTMLElement;
@@ -5,8 +7,9 @@ export interface ILoading {
     removeDiv(): void;
 }
 
-export class Loading implements ILoading {
-    private _isLoading: boolean;
+export class Loading<T extends IChart> implements ILoading {
+    private _isLoading: boolean
+    chart: T
     get isLoading() {
         return this._isLoading
     }
@@ -18,15 +21,21 @@ export class Loading implements ILoading {
             this.removeDiv()
         }
     }
-    spinner: HTMLElement;
-    constructor() {
-        this.isLoading = true;
+    constructor(chart: T) {
+        this.chart = chart
     }
+    spinner: HTMLElement
     appendDiv():  HTMLElement {
-        let wrapper = document.querySelector(".wrapper")
+        if (document.querySelector(`#${this.chart.id} .loader`) !== null) return
+        
+        let wrapper = document.querySelector(`#${this.chart.id} .chart-container`)
 
         let loader = document.createElement("div")
         loader.setAttribute("class", "loader")
+        loader.style.height = `${this.chart.elements.contentContainer.node().getBoundingClientRect().height}px`
+        loader.style.width = `${this.chart.elements.contentContainer.node().getBoundingClientRect().width}px`
+        loader.style.top = `${this.chart.padding.top}px`
+        loader.style.left = `${this.chart.padding.yAxis}px`
         
         let inner = document.createElement("div")
         inner.setAttribute("class", "loader-inner")
@@ -43,8 +52,8 @@ export class Loading implements ILoading {
         loader.appendChild(inner)
 
         let cancel = document.createElement("button")
-        cancel.setAttribute("class", "btn btn-danger cancel-loading")
-        cancel.innerText = "Cancel"
+        cancel.setAttribute("class", "btn btn-sm btn-danger cancel-loading")
+        cancel.innerHTML = `<i class="fas fa-window-close"></i>`
         cancel.addEventListener("click", () => this.isLoading = false)
         loader.appendChild(cancel)
 

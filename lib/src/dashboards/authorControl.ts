@@ -1,7 +1,6 @@
 import d3 from "d3";
 import { Help } from "../utils/help.js";
 import { IAuthorAnalyticsData, ITags } from "../data/data.js";
-import { Loading } from "../utils/loading.js";
 import { Tutorial, TutorialData } from "../utils/tutorial.js";
 import { Network } from "../charts/author/network.js";
 import { TimelineNetwork } from "../charts/author/timelineNetwork.js";
@@ -15,11 +14,27 @@ export class Dashboard {
     reflections: Reflections
     constructor(data: IAuthorAnalyticsData[]) {
         this.resizeTimeline()
-        this.timeline = new TimelineNetwork(data[0].reflections)
-        this.network = new Network(data[0].analytics, data[0].reflections.map(d => d.timestamp))
-        this.reflections = new Reflections(data[0].reflections)
+        try {
+            this.timeline = new TimelineNetwork(data[0].reflections)
+        } catch (e) {
+            this.renderError(e, "timeline")
+        }
+        try {
+            this.network = new Network(data[0].analytics, data[0].reflections.map(d => d.timestamp))
+        } catch (e) {
+            this.renderError(e, "network")
+        }
+        try {
+            this.reflections = new Reflections(data[0].reflections)
+        } catch (e) {
+            this.renderError(e, "reflections")
+        }
         this.preloadTags(data[0])
         this.handleMultiUser(data)
+    }
+    renderError(e: any, chartId: string) {
+        d3.select(`#${chartId} .chart-container`)
+            .text(`There was an error rendering the chart. Error: ${e}`)
     }
     resizeTimeline(): void {
         let height = document.querySelector("#reflection-entry").getBoundingClientRect().height
@@ -81,19 +96,17 @@ export class Dashboard {
     }
 }
 
-export async function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[], analyticsRaw: IAuthorAnalyticsEntriesRaw[]) {
-    const loading = new Loading()
+export function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[], analyticsRaw: IAuthorAnalyticsEntriesRaw[]) {
     const colourScale = d3.scaleOrdinal(d3.schemeCategory10)
     const entries = entriesRaw.map(d => new AuthorAnalyticsDataRaw(d.reflections, analyticsRaw.find(c => c.pseudonym == d.pseudonym)).transformData(colourScale))
-    await drawCharts(entries)
+    drawCharts(entries)
     new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
     new TutorialData("#timeline .circle", "Hover for information on demand"),
     new TutorialData("#reflections .reflection-text span", "Phrases outlined with a colour that matches the tags"),
     new TutorialData("#network .network-node-group", "Hover for information on demand"),
-    new TutorialData("#network .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area")]);
-    loading.isLoading = false
+    new TutorialData("#network .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area")])
 
-    async function drawCharts(data: IAuthorAnalyticsData[]) {
+    function drawCharts(data: IAuthorAnalyticsData[]) {
         const dashboard = new Dashboard(data)
         const help = new Help()
 

@@ -65,7 +65,6 @@ export class Dashboard {
 }
 
 export async function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyticsDataRaw[]) {
-    const loading = new Loading()
     const rawData = entriesRaw.map(d => new AdminAnalyticsDataRaw(d.group, d.value, d.createDate))
     let entries = rawData.map(d => d.transformData())
     const colourScale = d3.scaleOrdinal(d3.schemeCategory10)
@@ -76,7 +75,6 @@ export async function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyti
     new TutorialData("#users .bar", "Hover for information on demand"), 
     new TutorialData("#histogram .histogram-rect", "Hover for information on demand"),
     new TutorialData("#timeline .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area")])
-    loading.isLoading = false
     async function drawCharts(allEntries: IAdminAnalyticsData[]) {
         const help = new Help()
         const dashboard = new Dashboard(allEntries);
