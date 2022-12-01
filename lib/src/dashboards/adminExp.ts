@@ -2,8 +2,7 @@ import d3 from "d3";
 import { ChartSeries } from "../charts/chartBase.js";
 import { IAdminAnalyticsData, IHistogramData, IReflectionAuthor, HistogramData, ITimelineData, AdminAnalyticsData } from "../data/data.js";
 import { Dashboard } from "./adminControl.js";
-import { IAdminAnalyticsDataRaw, AdminAnalyticsDataRaw } from "../data/db.js";
-import { Loading } from "../utils/loading.js";
+import { IAdminAnalyticsDataRaw } from "../data/db.js";
 import { Tutorial, TutorialData } from "../utils/tutorial.js";
 import { Sort } from "../interactions/sort.js";
 import { Help } from "../utils/help.js";
@@ -12,8 +11,8 @@ export class ExperimentalDashboard extends Dashboard {
     entries: IAdminAnalyticsData[]
     sort: Sort<IAdminAnalyticsData>
     help = new Help()
-    constructor(data: IAdminAnalyticsData[]) {
-        super(data)
+    constructor(entriesRaw: IAdminAnalyticsDataRaw[]) {
+        super(entriesRaw)
         this.sort = new Sort("sort-groups", "createDate")
         this.barChart.extend = this.extendBarChart.bind(this)
         this.extendBarChart()
@@ -21,6 +20,9 @@ export class ExperimentalDashboard extends Dashboard {
         this.extendHistogram()
         this.timeline.extend = this.extendTimeline.bind(this)
         this.extendTimeline()
+        this.handleGroups()
+        this.handleGroupsColours()
+        this.handleGroupsSort()
     }
     preloadGroups(entries: IAdminAnalyticsData[]): IAdminAnalyticsData[] {
         super.preloadGroups(entries, true)
@@ -354,11 +356,34 @@ export class ExperimentalDashboard extends Dashboard {
 }
 
 export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAdminAnalyticsDataRaw[]) {
-    const rawData = entriesRaw.map(d => new AdminAnalyticsDataRaw(d.group, d.value, d.createDate))
-    let entries = rawData.map(d => d.transformData())
-    const colourScale = d3.scaleOrdinal(d3.schemeCategory10)
-    entries = entries.map(d => new AdminAnalyticsData(d.group, d.value, d.createDate, colourScale(d.group), true))
-    await drawCharts(entries)
+    const dashboard = new ExperimentalDashboard(entriesRaw)
+    //Handle sidebar button
+    dashboard.sidebarBtn()
+
+    //Handle groups chart help
+    dashboard.help.helpPopover(dashboard.barChart.id, `<b>Bar chart</b><br>
+        A bar chart of the users in each group code<br>
+        <u><i>Hover</i></u> over the bars for information on demand<br>
+        <u><i>Click</i></u> a bar to compare and drill-down`)
+
+    //Handle users histogram chart help
+    dashboard.help.helpPopover(dashboard.histogram.id, `<b>Histogram</b><br>
+        A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i><br>
+        <u><i>Hover</i></u> over the boxes for information on demand<br>
+        <u><i>Click</i></u> a box to compare and drill-down<br>
+        <u><i>Drag</i></u> the lines to change the thresholds`)
+
+    //Handle timeline chart help
+    dashboard.help.helpPopover(dashboard.timeline.id, `<b>Scatter plot</b><br>
+        The data is showed as a collection of points<br>The data represented are <i>reflections over time</i><br>
+        <u><i>Hover</i></u> over the circles for information on demand<br>
+        <u><i>Click</i></u> a circle to connect the user's reflections and drill-down`)
+    
+    //Handle users histogram chart help
+    dashboard.help.helpPopover("reflections", `<b>Reflections</b><br>
+        Each user's reflections are shown by group. The chart depicts the user's average reflection point<br>
+        <u><i>Sort</i></u> by user's name or average reflection state point`)
+    
     new Tutorial([new TutorialData("#groups", "Add groups to the charts and change their colours"),
     new TutorialData("#sort-groups .sort-by", "Sort groups by creation date, name or users' reflection point average"),
     new TutorialData(".card-title button", "Click the help symbol in any chart to get additional information"),
@@ -368,41 +393,4 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAdminAnal
     new TutorialData("#timeline .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area"),
     new TutorialData("#timeline .circle", "Hover for information on demand or click to connect the user's reflections"),
     new TutorialData("#reflections .sort-by", "Sort users alphabetically or by their average reflection state point")])
-    async function drawCharts(allEntries: IAdminAnalyticsData[]) {
-        const dashboard = new ExperimentalDashboard(allEntries)
-        //Handle sidebar button
-        dashboard.sidebarBtn()
-
-        //Preloaded groups
-        dashboard.preloadGroups(allEntries)
-
-        //Handle groups chart help
-        dashboard.help.helpPopover(dashboard.barChart.id, `<b>Bar chart</b><br>
-            A bar chart of the users in each group code<br>
-            <u><i>Hover</i></u> over the bars for information on demand<br>
-            <u><i>Click</i></u> a bar to compare and drill-down`)
-
-        //Handle users histogram chart help
-        dashboard.help.helpPopover(dashboard.histogram.id, `<b>Histogram</b><br>
-            A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i><br>
-            <u><i>Hover</i></u> over the boxes for information on demand<br>
-            <u><i>Click</i></u> a box to compare and drill-down<br>
-            <u><i>Drag</i></u> the lines to change the thresholds`)
-
-        //Handle timeline chart help
-        dashboard.help.helpPopover(dashboard.timeline.id, `<b>Scatter plot</b><br>
-            The data is showed as a collection of points<br>The data represented are <i>reflections over time</i><br>
-            <u><i>Hover</i></u> over the circles for information on demand<br>
-            <u><i>Click</i></u> a circle to connect the user's reflections and drill-down`)
-        
-        //Handle users histogram chart help
-        dashboard.help.helpPopover("reflections", `<b>Reflections</b><br>
-            Each user's reflections are shown by group. The chart depicts the user's average reflection point<br>
-            <u><i>Sort</i></u> by user's name or average reflection state point`)
-
-        //Update charts depending on group
-        dashboard.handleGroups()
-        dashboard.handleGroupsColours()
-        dashboard.handleGroupsSort()
-    }
 }
