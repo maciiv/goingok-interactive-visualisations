@@ -1,8 +1,8 @@
-import { ChartSeriesAxis, ChartTimeAxis, ChartLinearAxis } from "./scaleBase.js";
-import { IHelp, Help } from "../utils/help.js";
-import { IChartElements, ChartElements } from "./render.js";
-import { getDOMRect } from "../utils/utils.js";
-import { ILoading, Loading } from "../utils/loading.js";
+import { ChartSeriesAxis, ChartTimeAxis, ChartLinearAxis } from "./scaleBase";
+import { IHelp, Help } from "../utils/help";
+import { IChartElements, ChartElements } from "./render";
+import { getDOMRect } from "../utils/utils";
+import { ILoading, Loading } from "../utils/loading";
 
 export interface IChartScales {
     x: ChartSeriesAxis | ChartTimeAxis | ChartLinearAxis

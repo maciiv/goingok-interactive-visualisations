@@ -1,6 +1,6 @@
-import { IAdminAnalyticsData, IReflectionAuthor } from "../../data/data.js";
-import { Sort } from "../../interactions/sort.js";
-declare type UserData = {
+import { IAdminAnalyticsData, IReflectionAuthor } from "../../data/data";
+import { Sort } from "../../interactions/sort";
+type UserData = {
     pseudonym: string;
     mean: number;
     total: number;

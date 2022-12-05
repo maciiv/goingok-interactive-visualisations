@@ -1,5 +1,5 @@
-import { INodes, IReflectionAnalytics } from "../../data/data.js";
-import { Sort } from "../../interactions/sort.js";
+import { INodes, IReflectionAnalytics } from "../../data/data";
+import { Sort } from "../../interactions/sort";
 export declare class Reflections {
     id: string;
     sort: Sort<IReflectionAnalytics>;

@@ -1,6 +1,6 @@
-import { IAnalytics, IAuthorAnalyticsData, ITags, IReflectionAnalytics } from "../data/data.js";
-import { Dashboard } from "./authorControl.js";
-import { IAuthorAnalyticsEntriesRaw, IAuthorEntriesRaw } from "../data/db.js";
+import { IAnalytics, IAuthorAnalyticsData, ITags, IReflectionAnalytics } from "../data/data";
+import { Dashboard } from "./authorControl";
+import { IAuthorAnalyticsEntriesRaw, IAuthorEntriesRaw } from "../data/db";
 export declare class ExperimentalDashboard extends Dashboard {
     tags: ITags[];
     reflectionAnalytics: IReflectionAnalytics[];

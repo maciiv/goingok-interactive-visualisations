@@ -1,9 +1,9 @@
-import d3 from "d3";
-import { INodes, IReflectionAnalytics } from "../../data/data.js";
-import { Click } from "../../interactions/click.js";
-import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
-import { addDays, calculateMean, groupBy, maxDate, minDate } from "../../utils/utils.js";
-import { ChartPadding, ChartTime } from "../chartBase.js";
+import { select, line, curveMonotoneX, curveBasis, sort, forceSimulation, forceCollide, forceX, forceY, forceRadial } from "d3";
+import { INodes, IReflectionAnalytics } from "../../data/data";
+import { Click } from "../../interactions/click";
+import { Tooltip, TooltipValues } from "../../interactions/tooltip";
+import { addDays, calculateMean, groupBy, maxDate, minDate } from "../../utils/utils";
+import { ChartPadding, ChartTime } from "../chartBase";
 
 export class TimelineNetwork extends ChartTime {
     tooltip = new Tooltip(this)
@@ -85,9 +85,9 @@ export class TimelineNetwork extends ChartTime {
         _this.elements.content = _this.elements.contentContainer.selectAll(".circle");
 
         const onMouseover = function() {
-            if (d3.select(this).attr("class").includes("clicked")) return
+            if (select(this).attr("class").includes("clicked")) return
             _this.tooltip.appendTooltipContainer();
-            const parentData = d3.select<SVGGElement, IReflectionAnalytics>(d3.select(this).node().parentElement).datum()
+            const parentData = select<SVGGElement, IReflectionAnalytics>(select(this).node().parentElement).datum()
             let tooltipValues = [new TooltipValues("Point", parentData.point)]
             let tags = groupBy(_this.data.find(c => c.refId === parentData.refId).nodes, "name").map(c => { return {"name": c.key, "total": c.value.length}})
             tags.forEach(c => {
@@ -112,7 +112,7 @@ export class TimelineNetwork extends ChartTime {
                 return yTooltip;
             }
 
-            d3.select(this).attr("r", 10)
+            select(this).attr("r", 10)
             _this.tooltip.appendLine(0, _this.y.scale(parentData.point), _this.x.scale(parentData.timestamp) - 10, _this.y.scale(parentData.point), "#999999")
             _this.tooltip.appendLine(_this.x.scale(parentData.timestamp), _this.y.scale(0), _this.x.scale(parentData.timestamp), _this.y.scale(parentData.point) + 10, "#999999")
         }
@@ -120,32 +120,32 @@ export class TimelineNetwork extends ChartTime {
             _this.elements.svg.select(".tooltip-container").transition()
                 .style("opacity", 0)
             _this.tooltip.removeTooltip()
-            if (d3.select(this).attr("class").includes("clicked")) return
-            d3.select(this).attr("r", 5)
+            if (select(this).attr("class").includes("clicked")) return
+            select(this).attr("r", 5)
         }
         //Enable tooltip       
         _this.tooltip.enableTooltip(onMouseover, onMouseout)
     }
     private getLines() {
-        const hardLine = d3.line<IReflectionAnalytics>()
+        const hardLine = line<IReflectionAnalytics>()
         .x(d => this.x.scale(d.timestamp))
         .y(d => this.y.scale(d.point))
-        .curve(d3.curveMonotoneX)
+        .curve(curveMonotoneX)
 
-        const softLine = d3.line<IReflectionAnalytics>()
+        const softLine = line<IReflectionAnalytics>()
             .x(d => this.x.scale(d.timestamp))
             .y(d => this.y.scale(d.point))
-            .curve(d3.curveBasis)
+            .curve(curveBasis)
         
         const mean = calculateMean(this.data.map(d => d.point))
-        const meanLine = d3.line<IReflectionAnalytics>()
+        const meanLine = line<IReflectionAnalytics>()
             .x(d => this.x.scale(d.timestamp))
             .y(this.y.scale(mean))
         
         return [
-            {"name": "hardline", "line": hardLine, "datum": d3.sort(this.data, d => d.timestamp)},
-            {"name": "softline", "line": softLine, "datum": d3.sort(this.data, d => d.timestamp)},
-            {"name": "meanline", "line": meanLine, "datum": d3.sort(this.data, d => d.timestamp)}
+            {"name": "hardline", "line": hardLine, "datum": sort(this.data, d => d.timestamp)},
+            {"name": "softline", "line": softLine, "datum": sort(this.data, d => d.timestamp)},
+            {"name": "meanline", "line": meanLine, "datum": sort(this.data, d => d.timestamp)}
         ]
     }
     private renderReflectionNetwork(enter: d3.Selection<SVGGElement | d3.BaseType, IReflectionAnalytics, SVGGElement, unknown>) {
@@ -169,22 +169,22 @@ export class TimelineNetwork extends ChartTime {
             )
     }
     private simulation(reflection: IReflectionAnalytics): void {
-        let simulation = d3.forceSimulation<INodes, undefined>(reflection.nodes)
-            .force("collide", d3.forceCollide().radius(5))
-            .force("forceRadial", d3.forceRadial(0, 0).radius(15))
+        let simulation = forceSimulation<INodes, undefined>(reflection.nodes)
+            .force("collide", forceCollide().radius(5))
+            .force("forceRadial", forceRadial(0, 0).radius(15))
         const centerY = this.y.scale(reflection.point)
         const centerX = this.x.scale(reflection.timestamp)
         if (centerY < 20) {
-            simulation.force("forceY", d3.forceY(20).strength(0.25))
+            simulation.force("forceY", forceY(20).strength(0.25))
         }
         if (this.height - this.padding.top - this.padding.xAxis - 20 < centerY) {
-            simulation.force("forceY", d3.forceY(-20).strength(0.25))
+            simulation.force("forceY", forceY(-20).strength(0.25))
         }
         if (centerX < 20) {
-            simulation.force("forceX", d3.forceX(20).strength(0.25))
+            simulation.force("forceX", forceX(20).strength(0.25))
         }
         if (this.width - this.padding.yAxis - this.padding.right - 20 < centerX) {
-            simulation.force("forceX", d3.forceX(-20).strength(0.25))
+            simulation.force("forceX", forceX(-20).strength(0.25))
         }
         simulation.tick(300)
     }

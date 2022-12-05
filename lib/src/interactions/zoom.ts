@@ -1,5 +1,5 @@
-import d3 from "d3";
-import { IChart } from "../charts/chartBase.js";
+import { zoom, select } from "d3";
+import { IChart } from "../charts/chartBase";
 
 type ZoomFunction = {
     (this: Element, event: d3.D3ZoomEvent<SVGRectElement, unknown>, d: unknown): void
@@ -27,7 +27,7 @@ export class Zoom<T extends IChart> implements IZoom {
     }
     constructor(chart: T) {
         this.chart = chart
-        this.zoom = d3.zoom()
+        this.zoom = zoom()
             .scaleExtent([1, 5])
             .extent([[0, 0], [this.chart.width - this.chart.padding.yAxis, this.chart.height]])
             .translateExtent([[0, 0], [this.chart.width - this.chart.padding.yAxis, this.chart.height]])
@@ -51,16 +51,16 @@ export class Zoom<T extends IChart> implements IZoom {
         this.updateZoomNumber()
     }
     protected handleZoom() {
-        d3.select(`#${this.chart.id} #zoom-minus`).on("click", () => { 
+        select(`#${this.chart.id} #zoom-minus`).on("click", () => { 
             this.k = this.k - 1
             this.updateZoomNumber()
         })
-        d3.select(`#${this.chart.id} #zoom-plus`).on("click", () => { 
+        select(`#${this.chart.id} #zoom-plus`).on("click", () => { 
             this.k = this.k + 1
             this.updateZoomNumber()
         })
     }
     private updateZoomNumber() {
-        d3.select(`#${this.chart.id} #zoom-number`).attr("value", `${100 + ((this.k - 1) * 25)}%`)
+        select(`#${this.chart.id} #zoom-number`).attr("value", `${100 + ((this.k - 1) * 25)}%`)
     }
 }

@@ -1,9 +1,9 @@
-import d3 from "d3";
-import { IAnalytics, INodes, IAuthorAnalyticsData, ITags, IReflectionAnalytics } from "../data/data.js";
-import { Dashboard } from "./authorControl.js";
-import { Tutorial, TutorialData } from "../utils/tutorial.js";
-import { IAuthorAnalyticsEntriesRaw, IAuthorEntriesRaw } from "../data/db.js";
-import { Help } from "../utils/help.js";
+import { select, selectAll, drag } from "d3";
+import { IAnalytics, INodes, IAuthorAnalyticsData, ITags, IReflectionAnalytics } from "../data/data";
+import { Dashboard } from "./authorControl";
+import { Tutorial, TutorialData } from "../utils/tutorial";
+import { IAuthorAnalyticsEntriesRaw, IAuthorEntriesRaw } from "../data/db";
+import { Help } from "../utils/help";
 
 export class ExperimentalDashboard extends Dashboard {
     tags: ITags[]
@@ -38,7 +38,7 @@ export class ExperimentalDashboard extends Dashboard {
         this.reflectionAnalytics = entries.reflections
         this.analytics = entries.analytics
 
-        d3.select("#tags").selectAll<HTMLLIElement, INodes>("li").select("div")
+        select("#tags").selectAll<HTMLLIElement, INodes>("li").select("div")
             .insert("div", "input")
             .attr("class", "input-group-prepend")
             .append("div")
@@ -52,7 +52,7 @@ export class ExperimentalDashboard extends Dashboard {
     }
     handleTags(): void {
         const _this = this;
-        d3.selectAll("#tags input[type=checkbox]").on("change", (e: Event) => {
+        selectAll("#tags input[type=checkbox]").on("change", (e: Event) => {
             const target = e.target as HTMLInputElement;
             if (target.checked) {
                 _this.tags.find(c => c.name === target.value).selected = true
@@ -82,7 +82,7 @@ export class ExperimentalDashboard extends Dashboard {
     }
     handleTagsColours(): void {
         const _this = this;
-        d3.selectAll("#tags input[type=color]").on("change", (e: Event) => {
+        selectAll("#tags input[type=color]").on("change", (e: Event) => {
             const target = e.target as HTMLInputElement
             const name = target.id.replace("colour-", "")
             _this.tags.find(c => c.name === name).properties["color"] = target.value
@@ -107,7 +107,7 @@ export class ExperimentalDashboard extends Dashboard {
         });
 
         const onClick = function() {
-            if (d3.select(this).attr("class").includes("clicked")) {
+            if (select(this).attr("class").includes("clicked")) {
                 chart.clicking.removeClick()
                 _this.network.data = _this.updateAnalyticsData()
                 _this.reflections.data = _this.updateReflectionNodesData()
@@ -115,9 +115,9 @@ export class ExperimentalDashboard extends Dashboard {
             }
             chart.clicking.removeClick();
             chart.clicking.clicked = true;
-            d3.select(this).classed("clicked", true)
+            select(this).classed("clicked", true)
                 .attr("r", 10)
-            const parentData = d3.select<SVGGElement, IReflectionAnalytics>(d3.select(this).node().parentElement).datum()
+            const parentData = select<SVGGElement, IReflectionAnalytics>(select(this).node().parentElement).datum()
             _this.network.data = _this.getClickTimelineNetworkNodes(parentData)
             _this.reflections.data = [parentData]
         }
@@ -127,14 +127,14 @@ export class ExperimentalDashboard extends Dashboard {
         const _this = this
         const chart = _this.network
 
-        d3.select(`#${chart.id} .badge`).on("click", () => _this.handleFilterButton());
+        select(`#${chart.id} .badge`).on("click", () => _this.handleFilterButton());
 
         chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
             chart.clicking.removeClick()
         });
 
         const onClick = function(e: Event, d: INodes) {
-            if (d3.select(this).attr("class").includes("clicked")) {
+            if (select(this).attr("class").includes("clicked")) {
                 chart.clicking.removeClick()
             }
 
@@ -155,27 +155,27 @@ export class ExperimentalDashboard extends Dashboard {
             if (!e.active) chart.simulation.alphaTarget(0.3).restart();
             e.subject.fx = e.subject.x;
             e.subject.fy = e.subject.y;
-            d3.select(this).attr("transform", `translate(${e.subject.fx}, ${e.subject.fy})`);
+            select(this).attr("transform", `translate(${e.subject.fx}, ${e.subject.fy})`);
         } 
         const dragging = function(e: d3.D3DragEvent<SVGGElement, INodes, INodes>) {
             e.subject.fx = e.x;
             e.subject.fy = e.y;
-            d3.select(this).attr("transform", `translate(${e.subject.fx}, ${e.subject.fy})`);
+            select(this).attr("transform", `translate(${e.subject.fx}, ${e.subject.fy})`);
         }
         const dragEnd = function(e: d3.D3DragEvent<SVGGElement, INodes, INodes>) {
             if (!e.active) chart.simulation.alphaTarget(0);
             e.subject.fx = null;
             e.subject.fy = null;
-            d3.select(this).attr("transform", `translate(${e.subject.x}, ${e.subject.y})`);
+            select(this).attr("transform", `translate(${e.subject.x}, ${e.subject.y})`);
         }
         chart.elements.content
-        .call(d3.drag()
+        .call(drag()
             .on("start", dragStart)
             .on("drag", dragging)
             .on("end", dragEnd))
     }
     extendReflections(): void {
-        d3.select(`#reflections .badge`).on("click", () => this.handleFilterButton())
+        select(`#reflections .badge`).on("click", () => this.handleFilterButton())
     }
     private handleFilterButton(): void {
         this.timeline.clicking.removeClick()
@@ -215,7 +215,7 @@ export class ExperimentalDashboard extends Dashboard {
     private getClickTimelineNetworkData(): IReflectionAnalytics {
         const el = document.querySelector(`#${this.timeline.id} .clicked`)
         if(el === null) return
-        return d3.select(el.parentElement).datum() as IReflectionAnalytics
+        return select(el.parentElement).datum() as IReflectionAnalytics
     }
     private getClickTimelineNetworkNodes(d: IReflectionAnalytics) {
         const analytics = this.updateAnalyticsData()

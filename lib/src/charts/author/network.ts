@@ -1,11 +1,11 @@
-import d3 from "d3";
-import { IAnalytics, IEdges, INodes } from "../../data/data.js";
-import { Click } from "../../interactions/click.js";
-import { Tooltip } from "../../interactions/tooltip.js";
-import { Zoom } from "../../interactions/zoom.js";
-import { addDays, maxDate, minDate } from "../../utils/utils.js";
-import { ChartNetwork } from "../chartBase.js";
-import { Help } from "../../utils/help.js";
+import { select, selectAll, forceSimulation, forceLink, forceManyBody, forceCollide, forceCenter } from "d3";
+import { IAnalytics, IEdges, INodes } from "../../data/data";
+import { Click } from "../../interactions/click";
+import { Tooltip } from "../../interactions/tooltip";
+import { Zoom } from "../../interactions/zoom";
+import { addDays, maxDate, minDate } from "../../utils/utils";
+import { ChartNetwork } from "../chartBase";
+import { Help } from "../../utils/help";
 
 // Basic class for network chart timeline
 export class Network extends ChartNetwork {
@@ -116,14 +116,14 @@ export class Network extends ChartNetwork {
         _this.simulation.on("tick", ticked)
 
         const onMouseover = function(e: MouseEvent, d: INodes) {
-            if (d3.select(this).attr("class").includes("clicked")) {
+            if (select(this).attr("class").includes("clicked")) {
                 return
             }
             const nodes = _this.getTooltipNodes(_this.data, d)
             _this.openNodes(nodes)
         }
         const onMouseout = function() {
-            if (d3.select(this).attr("class").includes("clicked")) {
+            if (select(this).attr("class").includes("clicked")) {
                 return
             }
             _this.closeNodes()
@@ -164,7 +164,7 @@ export class Network extends ChartNetwork {
         return edges;
     }
     openNodes(data: INodes[]): void {
-        d3.selectAll<SVGGElement, INodes>(".network-node-group")
+        selectAll<SVGGElement, INodes>(".network-node-group")
             .filter(c => data.includes(c))
             .call(enter => enter.select("text")
                 .text(d => d.expression)
@@ -181,7 +181,7 @@ export class Network extends ChartNetwork {
                 .attr("height", d => enter.select<SVGTextElement>(`#text-${d.idx}`).node().getBoundingClientRect().height + 5))
     }
     closeNodes(): void {
-        d3.selectAll<SVGGElement, INodes>(".network-node-group:not(.clicked)")
+        selectAll<SVGGElement, INodes>(".network-node-group:not(.clicked)")
             .call(enter => enter.select("text")
                 .text(null)
                 .style("opacity", 0)
@@ -197,14 +197,14 @@ export class Network extends ChartNetwork {
                 .attr("height", 10))
     }
     processSimulation(data: IAnalytics) {
-        this.simulation = d3.forceSimulation<INodes, undefined>(data.nodes)
-            .force("link", d3.forceLink<INodes, IEdges<INodes>>()
+        this.simulation = forceSimulation<INodes, undefined>(data.nodes)
+            .force("link", forceLink<INodes, IEdges<INodes>>()
                 .id(d => d.idx)
                 .distance(100)
                 .links(data.edges))
-            .force("charge", d3.forceManyBody().strength(-25))
-            .force("collide", d3.forceCollide().radius(30).iterations(5))
-            .force("center", d3.forceCenter((this.width -this.padding.yAxis - this.padding.right - 10) / 2, (this.height - this.padding.top - this.padding.xAxis + 5) / 2));
+            .force("charge", forceManyBody().strength(-25))
+            .force("collide", forceCollide().radius(30).iterations(5))
+            .force("center", forceCenter((this.width -this.padding.yAxis - this.padding.right - 10) / 2, (this.height - this.padding.top - this.padding.xAxis + 5) / 2));
     }
     private filterData(data: IAnalytics): IAnalytics {
         let nodes = data.nodes.filter(d => d.selected)
@@ -217,7 +217,7 @@ class ClickNetwork<T extends Network> extends Click<T> {
     removeClick(): void {
         super.removeClick()
         this.chart.closeNodes()
-        d3.selectAll<HTMLSpanElement, unknown>("#reflections .reflections-tab span")
+        selectAll<HTMLSpanElement, unknown>("#reflections .reflections-tab span")
             .style("background-color", null)
         
     }

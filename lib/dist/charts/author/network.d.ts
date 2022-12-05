@@ -1,10 +1,9 @@
-;
-import { IAnalytics, INodes } from "../../data/data.js";
-import { Click } from "../../interactions/click.js";
-import { Tooltip } from "../../interactions/tooltip.js";
-import { Zoom } from "../../interactions/zoom.js";
-import { ChartNetwork } from "../chartBase.js";
-import { Help } from "../../utils/help.js";
+import { IAnalytics, INodes } from "../../data/data";
+import { Click } from "../../interactions/click";
+import { Tooltip } from "../../interactions/tooltip";
+import { Zoom } from "../../interactions/zoom";
+import { ChartNetwork } from "../chartBase";
+import { Help } from "../../utils/help";
 export declare class Network extends ChartNetwork {
     tooltip: Tooltip<this>;
     zoom: Zoom<this>;

@@ -1,7 +1,7 @@
-import { ChartSeriesAxis, ChartTimeAxis, ChartLinearAxis } from "./scaleBase.js";
-import { IHelp } from "../utils/help.js";
-import { IChartElements } from "./render.js";
-import { ILoading } from "../utils/loading.js";
+import { ChartSeriesAxis, ChartTimeAxis, ChartLinearAxis } from "./scaleBase";
+import { IHelp } from "../utils/help";
+import { IChartElements } from "./render";
+import { ILoading } from "../utils/loading";
 export interface IChartScales {
     x: ChartSeriesAxis | ChartTimeAxis | ChartLinearAxis;
     y: ChartLinearAxis | ChartSeriesAxis;

@@ -1,4 +1,4 @@
-import d3 from "d3";
+import { select, scaleLinear, line, curveCatmullRom } from "d3";
 
 export interface ITutorialData {
     id: string;
@@ -33,9 +33,9 @@ export class Tutorial implements ITutorial {
         this.appendTutorialBackdrop();
     }
     appendTutorial(): d3.Selection<HTMLDivElement, unknown, HTMLElement, any> {
-        d3.select("body")
+        select("body")
             .classed("no-overflow", true);
-        let div = d3.select(".wrapper")
+        let div = select(".wrapper")
             .append("div")
             .attr("class", "tutorial");
         return div;
@@ -47,7 +47,7 @@ export class Tutorial implements ITutorial {
         }
         window.scroll(0, 0);
         let tutorialData = this.tutorialData[this.slide];
-        let tutorialFocus = d3.select<HTMLDivElement, unknown>(tutorialData.id).node().getBoundingClientRect();
+        let tutorialFocus = select<HTMLDivElement, unknown>(tutorialData.id).node().getBoundingClientRect();
         class TutorialContentData {
             top: string;
             left: string;
@@ -154,16 +154,16 @@ export class Tutorial implements ITutorial {
             .append("path")
             .attr("d", "M0,0 L0,4 L4,2 L0,0")
             .attr("class", "arrow-head");
-        let xScale = d3.scaleLinear()
+        let xScale = scaleLinear()
             .domain([0, 100])
             .range([0, tutorialArrow.node().getBoundingClientRect().width]);
-        let yScale = d3.scaleLinear()
+        let yScale = scaleLinear()
             .domain([100, 0])
             .range([0, tutorialArrow.node().getBoundingClientRect().height]);
-        let pathGenerator = d3.line<{x: number, y: number}>()
+        let pathGenerator = line<{x: number, y: number}>()
             .x(d => xScale(d.x))
             .y(d => yScale(d.y))
-            .curve(d3.curveCatmullRom);
+            .curve(curveCatmullRom);
         svg.append("path")
             .attr("d", isLeft ? pathGenerator([{x: 95, y: 80}, {x: 25, y: 70}, {x: 25, y:25}]) : pathGenerator([{x: 0, y: 80}, {x: 75, y: 70}, {x: 75, y: 25}]))
             .attr("class", "arrow")
@@ -171,7 +171,7 @@ export class Tutorial implements ITutorial {
         
     };
     removeTutorial(): void {
-        d3.select("body")
+        select("body")
             .classed("no-overflow", false);
         window.scroll(0, 0)
         this.tutorial.remove();

@@ -1,5 +1,5 @@
-import d3 from "d3";
-import { IAdminAnalyticsData } from "../../data/data.js";
+import { select, sum, mean } from "d3";
+import { IAdminAnalyticsData } from "../../data/data";
 
 export class Totals {
     private _data: IAdminAnalyticsData[]
@@ -15,14 +15,14 @@ export class Totals {
     }
     render() : void {
         let _this = this
-        let users =  d3.select<HTMLSpanElement, number>("#users-total .card-title span").datum();
-        d3.select<HTMLSpanElement, number>("#users-total .card-title span")
-            .datum(d3.sum(_this.data.map(d => d.usersTotal)))
+        let users =  select<HTMLSpanElement, number>("#users-total .card-title span").datum();
+        select<HTMLSpanElement, number>("#users-total .card-title span")
+            .datum(sum(_this.data.map(d => d.usersTotal)))
             .transition()
             .duration(1000)
             .tween("html", function() {
                 let oldUsers = users == undefined ? 0 : users;
-                let newUsers = d3.sum(_this.data.map(d => d.usersTotal))
+                let newUsers = sum(_this.data.map(d => d.usersTotal))
                 return function(t: number) {
                     if(oldUsers < newUsers) {
                         this.innerHTML = (oldUsers + Math.round(t * (newUsers - oldUsers))).toString();
@@ -32,14 +32,14 @@ export class Totals {
                     
                 }
             });
-        let refs = d3.select<HTMLSpanElement, number>("#ref-total .card-title span").datum();
-        d3.select<HTMLSpanElement, number>("#ref-total .card-title span")
-            .datum(d3.sum(_this.data.map(d => d.refTotal)))
+        let refs = select<HTMLSpanElement, number>("#ref-total .card-title span").datum();
+        select<HTMLSpanElement, number>("#ref-total .card-title span")
+            .datum(sum(_this.data.map(d => d.refTotal)))
             .transition()
             .duration(1000)
             .tween("html", function() {
                 let oldRefs = refs == undefined ? 0 : refs;
-                let newRefs = d3.sum(_this.data.map(d => d.refTotal))
+                let newRefs = sum(_this.data.map(d => d.refTotal))
                 return function(t: number) {
                     if(oldRefs < newRefs) {
                         this.innerHTML = (oldRefs + Math.round(t * (newRefs - oldRefs))).toString();
@@ -49,14 +49,14 @@ export class Totals {
                     
                 }
             });
-        let ruRate = d3.select<HTMLSpanElement, number>("#ru-rate .card-title span").datum();
-        d3.select<HTMLSpanElement, number>("#ru-rate .card-title span")
-            .datum(_this.data.length != 0 ? Math.round(d3.mean(_this.data.map(d => (d.ruRate) * 100))) / 100 : 0)
+        let ruRate = select<HTMLSpanElement, number>("#ru-rate .card-title span").datum();
+        select<HTMLSpanElement, number>("#ru-rate .card-title span")
+            .datum(_this.data.length != 0 ? Math.round(mean(_this.data.map(d => (d.ruRate) * 100))) / 100 : 0)
             .transition()
             .duration(1000)
             .tween("html", function() {
                 let oldRURate = ruRate == undefined ? 0 : ruRate;
-                let newRURate = _this.data.length != 0 ? Math.round(d3.mean(_this.data.map(d => (d.ruRate) * 100))) / 100 : 0;
+                let newRURate = _this.data.length != 0 ? Math.round(mean(_this.data.map(d => (d.ruRate) * 100))) / 100 : 0;
                 return function(t: number) {
                     if(oldRURate < newRURate) {
                         this.innerHTML = (oldRURate + (t * (newRURate - oldRURate))).toFixed(2);

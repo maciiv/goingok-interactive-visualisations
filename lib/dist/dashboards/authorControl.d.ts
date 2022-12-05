@@ -1,8 +1,8 @@
-import { IAuthorAnalyticsData, ITags } from "../data/data.js";
-import { Network } from "../charts/author/network.js";
-import { TimelineNetwork } from "../charts/author/timelineNetwork.js";
-import { IAuthorAnalyticsEntriesRaw, IAuthorEntriesRaw } from "../data/db.js";
-import { Reflections } from "../charts/author/reflections.js";
+import { IAuthorAnalyticsData, ITags } from "../data/data";
+import { Network } from "../charts/author/network";
+import { TimelineNetwork } from "../charts/author/timelineNetwork";
+import { IAuthorAnalyticsEntriesRaw, IAuthorEntriesRaw } from "../data/db";
+import { Reflections } from "../charts/author/reflections";
 export declare class Dashboard {
     timeline: TimelineNetwork;
     network: Network;

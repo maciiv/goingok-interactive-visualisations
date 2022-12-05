@@ -1,10 +1,10 @@
-import { IAdminAnalyticsData } from "../data/data.js";
-import { IAdminAnalyticsDataRaw } from "../data/db.js";
-import { Histogram } from "../charts/admin/histogram.js";
-import { BarChart } from "../charts/admin/barChart.js";
-import { Timeline } from "../charts/admin/timeline.js";
-import { Users } from "../charts/admin/users.js";
-import { Totals } from "../charts/admin/totals.js";
+import { IAdminAnalyticsData } from "../data/data";
+import { IAdminAnalyticsDataRaw } from "../data/db";
+import { Histogram } from "../charts/admin/histogram";
+import { BarChart } from "../charts/admin/barChart";
+import { Timeline } from "../charts/admin/timeline";
+import { Users } from "../charts/admin/users";
+import { Totals } from "../charts/admin/totals";
 export declare class Dashboard {
     totals: Totals;
     barChart: BarChart;

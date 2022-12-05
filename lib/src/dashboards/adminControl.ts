@@ -1,13 +1,13 @@
-import d3 from "d3";
-import { Help } from "../utils/help.js";
-import { IAdminAnalyticsData, AdminAnalyticsData } from "../data/data.js";
-import { IAdminAnalyticsDataRaw, AdminAnalyticsDataRaw } from "../data/db.js";
-import { Tutorial, TutorialData } from "../utils/tutorial.js";
-import { Histogram } from "../charts/admin/histogram.js";
-import { BarChart } from "../charts/admin/barChart.js";
-import { Timeline } from "../charts/admin/timeline.js";
-import { Users } from "../charts/admin/users.js";
-import { Totals } from "../charts/admin/totals.js";
+import { scaleOrdinal, schemeCategory10, select } from "d3";
+import { Help } from "../utils/help";
+import { IAdminAnalyticsData, AdminAnalyticsData } from "../data/data";
+import { IAdminAnalyticsDataRaw, AdminAnalyticsDataRaw } from "../data/db";
+import { Tutorial, TutorialData } from "../utils/tutorial";
+import { Histogram } from "../charts/admin/histogram";
+import { BarChart } from "../charts/admin/barChart";
+import { Timeline } from "../charts/admin/timeline";
+import { Users } from "../charts/admin/users";
+import { Totals } from "../charts/admin/totals";
 
 export class Dashboard {
     totals: Totals
@@ -19,7 +19,7 @@ export class Dashboard {
         try {
             const rawData = entriesRaw.map(d => new AdminAnalyticsDataRaw(d.group, d.value, d.createDate))
             let data = rawData.map(d => d.transformData())
-            const colourScale = d3.scaleOrdinal(d3.schemeCategory10)
+            const colourScale = scaleOrdinal(schemeCategory10)
             data = data.map(d => new AdminAnalyticsData(d.group, d.value, d.createDate, colourScale(d.group), true))
             try {
                 this.totals = new Totals(data)
@@ -56,25 +56,25 @@ export class Dashboard {
         }      
     }
     renderError(e: any, chartId: string, css?: string) {
-        d3.select(`#${chartId} ${css === undefined ? ".chart-container" : css}`)
+        select(`#${chartId} ${css === undefined ? ".chart-container" : css}`)
             .text(`There was an error rendering the chart. ${e}`)
     }
     sidebarBtn(): void {
         //Handle side bar btn click
-        d3.select("#sidebar-btn").on("click", function () {
-            let isActive = d3.select("#sidebar").attr("class").includes("active");
-            d3.select("#sidebar")
+        select("#sidebar-btn").on("click", function () {
+            let isActive = select("#sidebar").attr("class").includes("active");
+            select("#sidebar")
                 .classed("active", !isActive);
-            d3.select("#groups")
+            select("#groups")
                 .classed("active", isActive);
-            d3.select("#switch-dashboard")
+            select("#switch-dashboard")
                 .classed("active", isActive);
-            d3.select(this)
+            select(this)
                 .classed("active", isActive);
         });
     };
     preloadGroups(allEntries: IAdminAnalyticsData[], enable: boolean = false): IAdminAnalyticsData[] {
-        d3.select("#groups")
+        select("#groups")
             .selectAll<HTMLLIElement, IAdminAnalyticsData>("li")
             .data(allEntries)
             .enter()
@@ -107,7 +107,7 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyticsData
     dashboard.sidebarBtn()
 
     //Create groups chart with current data
-    d3.select("#users .card-subtitle")
+    select("#users .card-subtitle")
         .html("")
 
     //Handle groups chart help
@@ -121,7 +121,7 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyticsData
         <u><i>Hover</i></u> over the boxes for information on demand`)
 
     //Handle timeline chart help
-    d3.select("#timeline .card-title button")
+    select("#timeline .card-title button")
         .on("click", function (e: Event) {
             help.helpPopover(`${dashboard.timeline.id}-help`, `<b>Scatter plot</b><br>
                 The data is showed as a collection of points<br>The data represented are <i>reflections over time</i><br>

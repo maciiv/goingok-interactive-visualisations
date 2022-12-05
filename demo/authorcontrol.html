@@ -8,7 +8,7 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" />
         <title>Author Control</title>
         <script src="https://d3js.org/d3.v6.min.js" type="module"></script>   
-        <script src="../lib/dist/index.js" type="module"></script>     
+        <script src="../lib/build/gokd3-bundle.js" type="module"></script>     
     </head>
     <body>            
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark" id="main-nav-bar">
@@ -126,7 +126,7 @@
         <script type="module">
             import * as chart from "../lib/dist/index.js"
             d3.json("analytics.json").then(function (c) {  
-                chart.buildControlAuthorAnalyticsCharts(c["data"]["entriesRaw"], c["data"]["analyticsRaw"])
+                gokd3.buildControlAuthorAnalyticsCharts(c["data"]["entriesRaw"], c["data"]["analyticsRaw"])
             });
         </script>
     </body>

@@ -8,7 +8,7 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" />
         <title>Group Admin Control</title>
         <script src="https://d3js.org/d3.v6.min.js" type="module"></script> 
-        <script src="../lib/dist/index.js" type="module"></script>       
+        <script src="../lib/build/gokd3-bundle.js" type="module"></script>       
     </head>
     <body>            
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark" id="main-nav-bar">
@@ -168,7 +168,7 @@
                         var group = _a[0], value = _a[1];
                         return ({ group: group, value: value });
                     });
-                chart.buildControlAdminAnalyticsCharts(groupData);
+                    gokd3.buildControlAdminAnalyticsCharts(groupData);
             });
         </script>
     </body>

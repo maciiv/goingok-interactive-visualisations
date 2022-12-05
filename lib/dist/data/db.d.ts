@@ -1,4 +1,4 @@
-import { IReflectionAuthor, AdminAnalyticsData, AuthorAnalyticsData, IAnalytics } from "./data.js";
+import { IReflectionAuthor, AdminAnalyticsData, AuthorAnalyticsData, IAnalytics } from "./data";
 export interface IReflectionAuthorRaw {
     refId: string;
     timestamp: string;

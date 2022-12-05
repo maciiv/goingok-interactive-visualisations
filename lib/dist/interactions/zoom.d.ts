@@ -1,6 +1,5 @@
-;
-import { IChart } from "../charts/chartBase.js";
-declare type ZoomFunction = {
+import { IChart } from "../charts/chartBase";
+type ZoomFunction = {
     (this: Element, event: d3.D3ZoomEvent<SVGRectElement, unknown>, d: unknown): void;
 };
 export interface IZoom {

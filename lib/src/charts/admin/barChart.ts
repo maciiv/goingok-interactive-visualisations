@@ -1,8 +1,8 @@
-import d3 from "d3";
-import { IAdminAnalyticsData } from "../../data/data.js";
-import { Click } from "../../interactions/click.js";
-import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
-import { ChartSeries } from "../chartBase.js";
+import { select } from "d3";
+import { IAdminAnalyticsData } from "../../data/data";
+import { Click } from "../../interactions/click";
+import { Tooltip, TooltipValues } from "../../interactions/tooltip";
+import { ChartSeries } from "../chartBase";
 
 export class BarChart extends ChartSeries {
     tooltip = new Tooltip(this)
@@ -16,7 +16,7 @@ export class BarChart extends ChartSeries {
         this._data = entries.filter(d => d.selected)
         if (this.data.length != 0) {
             this.x.transition(this.data.map(d => d.group))
-            this.y.transition([0, d3.max(this.data.map(d => d.usersTotal))])
+            this.y.transition([0, Math.max.apply(null, this.data.map(d => d.usersTotal))])
         }       
         this.render()
         this.extend !== undefined ? this.extend() : null
@@ -28,10 +28,10 @@ export class BarChart extends ChartSeries {
     render(): void {
         let _this = this;
 
-        d3.select(`#${_this.id} .card-title span`)
+        select(`#${_this.id} .card-title span`)
             .html()
 
-        d3.select(`#${_this.id} .card-subtitle`)
+        select(`#${_this.id} .card-subtitle`)
             .html(_this.data.length <= 1 ? "Add group codes from the left sidebar" : "Click a group code to filter");
 
         //Boxes processing
@@ -70,7 +70,7 @@ export class BarChart extends ChartSeries {
 
         const onMouseover = function (this: SVGRectElement, e: MouseEvent, d: IAdminAnalyticsData): void {
             //If box is clicked not append tooltip
-            if (d3.select(this).attr("class").includes("clicked")) {
+            if (select(this).attr("class").includes("clicked")) {
                 return
             }
             _this.tooltip.appendTooltipContainer()

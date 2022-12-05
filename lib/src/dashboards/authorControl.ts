@@ -1,12 +1,12 @@
-import d3 from "d3";
-import { Help } from "../utils/help.js";
-import { IAuthorAnalyticsData, ITags } from "../data/data.js";
-import { Tutorial, TutorialData } from "../utils/tutorial.js";
-import { Network } from "../charts/author/network.js";
-import { TimelineNetwork } from "../charts/author/timelineNetwork.js";
-import { AuthorAnalyticsDataRaw, IAuthorAnalyticsEntriesRaw, IAuthorEntriesRaw } from "../data/db.js";
-import { Reflections } from "../charts/author/reflections.js";
-import { groupBy } from "../utils/utils.js";
+import { scaleOrdinal, schemeCategory10, select } from "d3";
+import { Help } from "../utils/help";
+import { IAuthorAnalyticsData, ITags } from "../data/data";
+import { Tutorial, TutorialData } from "../utils/tutorial";
+import { Network } from "../charts/author/network";
+import { TimelineNetwork } from "../charts/author/timelineNetwork";
+import { AuthorAnalyticsDataRaw, IAuthorAnalyticsEntriesRaw, IAuthorEntriesRaw } from "../data/db";
+import { Reflections } from "../charts/author/reflections";
+import { groupBy } from "../utils/utils";
 
 export class Dashboard {
     timeline: TimelineNetwork
@@ -14,7 +14,7 @@ export class Dashboard {
     reflections: Reflections
     constructor(entriesRaw: IAuthorEntriesRaw[], analyticsRaw: IAuthorAnalyticsEntriesRaw[]) {
         try {
-            const colourScale = d3.scaleOrdinal(d3.schemeCategory10)
+            const colourScale = scaleOrdinal(schemeCategory10)
             const data = entriesRaw.map(d => new AuthorAnalyticsDataRaw(d.reflections, analyticsRaw.find(c => c.pseudonym == d.pseudonym)).transformData(colourScale))
             this.resizeTimeline()
             try {
@@ -42,7 +42,7 @@ export class Dashboard {
         }
     }
     renderError(e: any, chartId: string, css?: string) {
-        d3.select(`#${chartId} ${css === undefined ? ".chart-container" : css}`)
+        select(`#${chartId} ${css === undefined ? ".chart-container" : css}`)
             .text(`There was an error rendering the chart. ${e}`)
     }
     resizeTimeline(): void {
@@ -51,10 +51,10 @@ export class Dashboard {
     }
     handleMultiUser(entries: IAuthorAnalyticsData[], extend?: Function): void {
         if (entries.length > 1) {
-            d3.select(".multi-user button")
+            select(".multi-user button")
                 .classed("dropdown-toggle", true)
                 .property("disabled", false)
-            d3.select(".multi-user div").selectAll("a")
+            select(".multi-user div").selectAll("a")
                 .data(entries)
                 .enter()
                 .append("a")
@@ -70,14 +70,14 @@ export class Dashboard {
                         extend(e, d)
                     }
                     
-                    d3.select(".multi-user button")
+                    select(".multi-user button")
                         .text(d.pseudonym)
                 })
         }
     }
     preloadTags(entries: IAuthorAnalyticsData, enable: boolean = false): ITags[] {
         let tags = groupBy(entries.analytics.nodes, "name").map(r => { return {"name": r.key, "properties": r.value[0].properties, "selected": r.value[0].selected}})
-        d3.select("#tags").selectAll("li")
+        select("#tags").selectAll("li")
             .data(tags)
             .join(
                 enter => enter.append("li")

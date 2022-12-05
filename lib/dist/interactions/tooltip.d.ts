@@ -1,5 +1,5 @@
-import { IChart } from "../charts/chartBase.js";
-declare type TooltipFunction = {
+import { IChart } from "../charts/chartBase";
+type TooltipFunction = {
     (this: SVGRectElement | SVGCircleElement | SVGPathElement | d3.BaseType, event: MouseEvent, d: unknown): void;
 };
 export interface ITooltipValues {
