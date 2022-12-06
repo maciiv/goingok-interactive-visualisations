@@ -42,7 +42,7 @@ export class ExperimentalDashboard extends Dashboard {
             .insert("div", "input")
             .attr("class", "input-group-prepend")
             .append("div")
-            .attr("class", "input-group-text tag-row")
+            .attr("class", "input-group-text tag-row h-100")
             .append("input")
             .attr("type", "checkbox")
             .attr("value", d => d.name)

@@ -47,7 +47,7 @@ export class Histogram extends ChartSeries {
     }
     render() {
         select(`#${this.id} .card-subtitle`)
-            .html(this.data.length === 1 ? `Filtering by <span class="badge badge-pill badge-info pointer">${this.data[0].group} <i class="fas fa-window-close"></i></span>` :
+            .html(this.data.length === 1 ? `Filtering by <span class="badge rounded-pill bg-info pointer">${this.data[0].group} <i class="fas fa-window-close"></i></span>` :
                 this.data.length === 0 ? "Add group codes form the left sidebar" :"");
 
         //Process histogram

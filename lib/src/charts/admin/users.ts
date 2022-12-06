@@ -5,7 +5,7 @@ import { calculateMean, groupBy, maxDate, minDate } from "../../utils/utils";
 
 type UserData = {
     pseudonym: string
-    mean: number
+    avg: number
     total: number
     minDate: Date
     maxDate: Date
@@ -77,10 +77,10 @@ export class Users {
         const _this = this
 
         const minUser = data.reduce((a, b) => {
-            return (a.mean < b.mean) ? a : b
+            return (a.avg < b.avg) ? a : b
         })
         const maxUser = data.reduce((a, b) => {
-            return (a.mean > b.mean) ? a : b
+            return (a.avg > b.avg) ? a : b
         })
 
         select(`#${_this.id} .text-muted`)
@@ -116,7 +116,7 @@ export class Users {
                     .call(update => update.select("h5")
                         .html(d => `${d.pseudonym} <small>average is</small>`))
                     .call(update => update.select("meter")
-                        .attr("value", d => d.mean))
+                        .attr("value", d => d.avg))
                     .call(update => update.select("p span")
                         .html(d => `User ${d.pseudonym} reflections in chronological order:`))
                     .call(update => _this.renderReflections(update.select("p ul"))),
@@ -138,7 +138,7 @@ export class Users {
     private handleSort() {
         const _this = this
         const id = "sort-users"
-        selectAll(`#${id} .btn-group-toggle label`).on("click", function (this: HTMLLabelElement) {
+        selectAll(`#${id} .btn-group label`).on("click", function (this: HTMLLabelElement) {
             const selectedOption = (this.control as HTMLInputElement).value;
             _this.sort.sortBy = selectedOption
             let sortedData = _this.getUserData(_this.data.find(d => d.group === _this.group).value)
@@ -157,7 +157,7 @@ export class Users {
         const meter = document.createElement("meter")
         meter.classList.add("w-100", "user-meter")
         meter.setAttribute("max", "100")
-        meter.setAttribute("value", data.mean.toString())
+        meter.setAttribute("value", data.avg.toString())
         meter.setAttribute("low", this.thresholds[0].toString())
         meter.setAttribute("optimum", "99.99")
         meter.setAttribute("high", this.thresholds[1].toString())
@@ -196,7 +196,7 @@ export class Users {
         return groupBy(data, "pseudonym").map(d => {
             return {
                 "pseudonym": d.key,
-                "mean": calculateMean(d.value.map(c => c.point)),
+                "avg": calculateMean(d.value.map(c => c.point)),
                 "total": d.value.length,
                 "minDate": minDate(d.value.map(c => c.timestamp)),
                 "maxDate": maxDate(d.value.map(c => c.timestamp)),

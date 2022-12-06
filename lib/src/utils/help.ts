@@ -1,15 +1,17 @@
-import { IChart } from "../charts/chartBase.js";
+import { IChart } from "../charts/chartBase";
 
 export interface IHelp {
-    helpPopover(id: string, content: string): void;
-    removeHelp(chart: IChart): void;
+    helpPopover(id: string, content: string): void
+    removeHelp(chart: IChart): void
 }
 
 export class Help implements IHelp {
     helpPopover(id: string, content: string): void {
         const helpId = `${id}-help`
-        const button = document.querySelector<HTMLElement>(`#${id} .card-title button`);
+        const button = document.querySelector<HTMLElement>(`#${id} .card-title button`)
+        if (button === null) return;
         button.addEventListener("click", () => {    
+            let icon = button.querySelector("i")
             if (document.querySelector(`#${helpId}`) === null) {
                 let popover = document.createElement("div")
                 popover.setAttribute("id", helpId)
@@ -35,20 +37,20 @@ export class Help implements IHelp {
                     popover.setAttribute("class", "popover fade bs-popover-right show")
                 }
                 
-                button.querySelector("i").setAttribute("class", "fas fa-window-close")
+                icon?.setAttribute("class", "fas fa-window-close")
             } else {
                 document.querySelector(`#${helpId}`).remove()
-                button.querySelector("i").setAttribute("class", "fas fa-question-circle")
+                icon?.setAttribute("class", "fas fa-question-circle")
             }
         })
     }
     removeHelp(chart: IChart): void {
-        document.querySelector(`#${chart.id}-help`)?.remove();
-        document.querySelector(`#${chart.id}-help-button`)?.remove();
-        document.querySelector(`#${chart.id}-help-data`)?.remove();
-        document.querySelector(`#${chart.id}-help-drag`)?.remove();
-        document.querySelector(`#${chart.id}-help-zoom`)?.remove();
+        document.querySelector(`#${chart.id}-help`)?.remove()
+        document.querySelector(`#${chart.id}-help-button`)?.remove()
+        document.querySelector(`#${chart.id}-help-data`)?.remove()
+        document.querySelector(`#${chart.id}-help-drag`)?.remove()
+        document.querySelector(`#${chart.id}-help-zoom`)?.remove()
         let icon = document.querySelector(`#${chart.id} .card-title i`)
-        icon.setAttribute("class", "fas fa-question-circle");
+        icon?.setAttribute("class", "fas fa-question-circle")
     }
 }

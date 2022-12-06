@@ -44,7 +44,7 @@ export class Timeline extends ChartTime {
             
         } else {
             select(`#${_this.id} .card-subtitle .instructions`)
-                .html(_this.data.length === 1 ? `Filtering by <span class="badge badge-pill badge-info pointer">${_this.data[0].group} <i class="fas fa-window-close"></i></span>` : null)    
+                .html(_this.data.length === 1 ? `Filtering by <span class="badge rounded-pill bg-info pointer">${_this.data[0].group} <i class="fas fa-window-close"></i></span>` : null)    
             select(`#${_this.id} .card-subtitle .text-muted`)
                 .html(`The oldest reflection was on ${_this.minTimelineDate().toDateString()}${_this.data.length != 1 ? ` in the group code ${_this.data[minIndex(_this.data.map(d => min(d.value.map(d => d.timestamp))))].group}` : ""}, while
                     the newest reflection was on ${_this.maxTimelineDate().toDateString()}${_this.data.length != 1 ? ` in the group code ${_this.data[maxIndex(_this.data.map(d => max(d.value.map(d => d.timestamp))))].group}` : ""}`)

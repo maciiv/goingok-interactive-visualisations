@@ -33,7 +33,7 @@ export class ExperimentalDashboard extends Dashboard {
             .insert("div", "input")
             .attr("class", "input-group-prepend")
             .append("div")
-            .attr("class", "input-group-text group-row")
+            .attr("class", "input-group-text group-row h-100")
             .append("input")
             .attr("type", "checkbox")
             .attr("value", d => d.group)
@@ -106,7 +106,7 @@ export class ExperimentalDashboard extends Dashboard {
     handleGroupsSort(): void {
         const _this = this;
         const id = "sort-groups"
-        selectAll(`#${id} .btn-group-toggle label`).on("click", function (this: HTMLLabelElement) {
+        selectAll(`#${id} .btn-group label`).on("click", function (this: HTMLLabelElement) {
             const selectedOption = (this.control as HTMLInputElement).value
             _this.sort.sortBy = selectedOption
             _this.entries = _this.sort.sortData(_this.entries)
@@ -267,7 +267,7 @@ export class ExperimentalDashboard extends Dashboard {
         if (_this.histogram.clicking.clicked) {
             select(`#${chart.id} .instructions`)
                 .append("span")
-                .attr("class", "badge badge-pill badge-info pointer")
+                .attr("class", "badge rounded-pill bg-info pointer")
                 .html(`Users ${_this.histogram.clicking.clickedBin} <i class="fas fa-window-close"></i>`)
                 .on("click", () => {
                     _this.histogram.clicking.removeClick()

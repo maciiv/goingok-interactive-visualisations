@@ -121,12 +121,9 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyticsData
         <u><i>Hover</i></u> over the boxes for information on demand`)
 
     //Handle timeline chart help
-    select("#timeline .card-title button")
-        .on("click", function (e: Event) {
-            help.helpPopover(`${dashboard.timeline.id}-help`, `<b>Scatter plot</b><br>
-                The data is showed as a collection of points<br>The data represented are <i>reflections over time</i><br>
-                <u><i>Hover</i></u> over the circles for information on demand`)
-        })
+    help.helpPopover(dashboard.timeline.id, `<b>Scatter plot</b><br>
+        The data is showed as a collection of points<br>The data represented are <i>reflections over time</i><br>
+        <u><i>Hover</i></u> over the circles for information on demand`)
 
     //Handle users histogram chart help
     help.helpPopover("reflections", `<b>Reflections</b><br>

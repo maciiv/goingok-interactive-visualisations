@@ -37,7 +37,7 @@ export class Reflections {
         const _this = this
 
         select(`#${_this.id} .card-subtitle`)
-        .html(_this.data.length == 1 ? `Filtering by <span class="badge badge-pill badge-info">${_this.data[0].timestamp.toDateString()} <i class="fas fa-window-close"></i></span>`:
+        .html(_this.data.length == 1 ? `Filtering by <span class="badge rounded-pill bg-info pointer">${_this.data[0].timestamp.toDateString()} <i class="fas fa-window-close"></i></span>`:
             "");
 
         select<HTMLDivElement, IReflection>(`#${_this.id} .reflections-tab`)
@@ -64,7 +64,7 @@ export class Reflections {
             const isOpenTag = data.nodes.find(c => c.startIdx === i);
             const isCloseTag = data.nodes.find(c => c.endIdx === i);
             if (isOpenTag !== undefined) {
-                html += `<span id="node-${isOpenTag.idx}" class="badge badge-pill" style="border: 2px solid ${isOpenTag.properties["color"]}">${data.text[i]}`
+                html += `<span id="node-${isOpenTag.idx}" class="badge rounded-pill" style="border: 2px solid ${isOpenTag.properties["color"]}">${data.text[i]}`
             } else if (isCloseTag !== undefined) {
                 html += `${data.text[i]}</span>`
             } else {
@@ -87,7 +87,7 @@ export class Reflections {
     private handleSort() {
         const _this = this
         const id = "sort"
-        selectAll(`#${id} .btn-group-toggle label`).on("click", function (this: HTMLLabelElement) {
+        selectAll(`#${id} .sort-by label`).on("click", function (this: HTMLLabelElement) {
             const selectedOption = (this.control as HTMLInputElement).value
             _this.sort.sortBy = selectedOption
             _this._data = _this.sort.sortData(_this.data)
