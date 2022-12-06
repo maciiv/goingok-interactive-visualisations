@@ -131,11 +131,13 @@ export class ExperimentalDashboard extends Dashboard {
 
         chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
             chart.clicking.removeClick()
+            _this.reflections.nodes = undefined
         });
 
         const onClick = function(e: Event, d: INodes) {
             if (select(this).attr("class").includes("clicked")) {
                 chart.clicking.removeClick()
+                _this.reflections.nodes = undefined
             }
 
             chart.clicking.removeClick()

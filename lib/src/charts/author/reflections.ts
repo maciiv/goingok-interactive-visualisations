@@ -12,8 +12,7 @@ export class Reflections {
     }
     set nodes(nodes: INodes[]) {
         this._nodes = nodes
-        this.fillNodesText()
-
+        this.nodes !== undefined ? this.fillNodesText() : null
     }
     private _data: IReflectionAnalytics[]
     get data() {
