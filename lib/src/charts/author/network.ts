@@ -1,4 +1,4 @@
-import { select, selectAll, forceSimulation, forceLink, forceManyBody, forceCollide, forceCenter } from "d3";
+import { select, selectAll, forceSimulation, forceLink, forceManyBody, forceCollide, forceCenter, forceY } from "d3";
 import { IAnalytics, IEdges, INodes } from "../../data/data";
 import { Click } from "../../interactions/click";
 import { Tooltip } from "../../interactions/tooltip";
@@ -202,9 +202,10 @@ export class Network extends ChartNetwork {
                 .id(d => d.idx)
                 .distance(100)
                 .links(data.edges))
-            .force("charge", forceManyBody().strength(-25))
-            .force("collide", forceCollide().radius(30).iterations(5))
-            .force("center", forceCenter((this.width -this.padding.yAxis - this.padding.right - 10) / 2, (this.height - this.padding.top - this.padding.xAxis + 5) / 2));
+            .force("charge", forceManyBody().strength(0))
+            .force("collide", forceCollide().radius(10))
+            .force("center", forceCenter((this.width -this.padding.yAxis - this.padding.right - 10) / 2, (this.height - this.padding.top - this.padding.xAxis + 5) / 2))
+            .force("forceX", forceY((this.width -this.padding.yAxis - this.padding.right - 10) / 2).strength(0.02))
     }
     private filterData(data: IAnalytics): IAnalytics {
         let nodes = data.nodes.filter(d => d.selected)

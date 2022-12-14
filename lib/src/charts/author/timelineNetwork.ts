@@ -170,8 +170,8 @@ export class TimelineNetwork extends ChartTime {
     }
     private simulation(reflection: IReflectionAnalytics): void {
         let simulation = forceSimulation<INodes, undefined>(reflection.nodes)
-            .force("collide", forceCollide().radius(5))
-            .force("forceRadial", forceRadial(0, 0).radius(15))
+            .force("collide", forceCollide().radius(6))
+            .force("forceRadial", forceRadial(0, 0).radius(15).strength(0.5))
         const centerY = this.y.scale(reflection.point)
         const centerX = this.x.scale(reflection.timestamp)
         if (centerY < 20) {

@@ -17,8 +17,6 @@ export class ExperimentalDashboard extends Dashboard {
         this.extendNetwork()
         this.reflections.extend = this.extendReflections.bind(this)
         this.extendReflections()
-        this.handleTags()
-        this.handleTagsColours()
     }
     handleMultiUser(entries: IAuthorAnalyticsData[]): void {
         const extendFunction = (e: any, d: IAuthorAnalyticsData) => {
@@ -38,6 +36,8 @@ export class ExperimentalDashboard extends Dashboard {
         this.tags = super.preloadTags(entries, true).filter(d => d.selected)
         this.reflectionAnalytics = entries.reflections
         this.analytics = entries.analytics
+        this.handleTags()
+        this.handleTagsColours()
         return this.tags
     }
     handleTags(): void {
