@@ -2,7 +2,18 @@
     "data": {
         "entriesRaw": [
             {
-                "pseudonym": "test",
+                "pseudonym": "test 0",
+                "reflections": [
+                    {
+                        "refId": 0,
+                        "timestamp": "2019-09-26T07:31:33.082585",
+                        "point": 100,
+                        "text": "nothing to say."
+                    }
+                ]
+            },
+            {
+                "pseudonym": "test 1",
                 "reflections": [
                     {
                         "refId": 1,
@@ -25,7 +36,7 @@
                 ]
             },
             {
-                "pseudonym": "test 1",
+                "pseudonym": "test 2",
                 "reflections": [
                     {
                         "refId": 4,
@@ -50,10 +61,19 @@
         ],
         "analyticsRaw": [
             {
-                "pseudonym": "test",
+                "pseudonym": "test 0",
+                "analytics": {
+                    "name": "Network graph 0",
+                    "description": "Network chart author 0",
+                    "nodes": [],
+                    "edges":[]
+                }
+            },
+            {
+                "pseudonym": "test 1",
                 "analytics": {
                     "name": "Network graph",
-                    "description": "Network chart author",
+                    "description": "Network chart author 1",
                     "nodes": [
                         { 
                             "idx": 1,
@@ -282,10 +302,10 @@
                 }
             },
             {
-                "pseudonym": "test 1",
+                "pseudonym": "test 2",
                 "analytics": {
-                    "name": "Network graph 1",
-                    "description": "Network chart author 1",
+                    "name": "Network graph 2",
+                    "description": "Network chart author 2",
                     "nodes": [
                         { 
                             "idx": 11,

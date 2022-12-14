@@ -62,6 +62,7 @@ export class Dashboard {
                 .text(d => d.pseudonym)
                 .on("click", (e, d) => {
                     if (extend === undefined) {
+                        this.preloadTags(d)
                         this.timeline.data = d.reflections
                         this.reflections.data = d.reflections
                         if (d.analytics.nodes.some(d => d.index === undefined)) this.network.processSimulation(d.analytics)
@@ -84,6 +85,14 @@ export class Dashboard {
                     .attr("class", "mx-3")
                     .append("div")
                     .attr("class", "input-group")
+                    .call(div => enable ? div.append("div")
+                        .attr("class", "input-group-prepend")
+                        .append("div")
+                        .attr("class", "input-group-text tag-row h-100")
+                        .append("input")
+                        .attr("type", "checkbox")
+                        .attr("value", d => d.name)
+                        .property("checked", true) : null)
                     .call(div => div.append("input")
                         .attr("type", "text")
                         .attr("class", "form-control tag-row")

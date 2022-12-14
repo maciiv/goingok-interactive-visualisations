@@ -22,6 +22,7 @@ export class ExperimentalDashboard extends Dashboard {
     }
     handleMultiUser(entries: IAuthorAnalyticsData[]): void {
         const extendFunction = (e: any, d: IAuthorAnalyticsData) => {
+            this.preloadTags(d)
             this.timeline.clicking.removeClick()
             this.reflectionAnalytics = d.reflections
             this.analytics = d.analytics
@@ -37,17 +38,6 @@ export class ExperimentalDashboard extends Dashboard {
         this.tags = super.preloadTags(entries, true).filter(d => d.selected)
         this.reflectionAnalytics = entries.reflections
         this.analytics = entries.analytics
-
-        select("#tags").selectAll<HTMLLIElement, INodes>("li").select("div")
-            .insert("div", "input")
-            .attr("class", "input-group-prepend")
-            .append("div")
-            .attr("class", "input-group-text tag-row h-100")
-            .append("input")
-            .attr("type", "checkbox")
-            .attr("value", d => d.name)
-            .property("checked", true)
-        
         return this.tags
     }
     handleTags(): void {
