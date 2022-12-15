@@ -29,13 +29,13 @@ export class Reflections {
     }
     constructor(data: IReflectionAnalytics[]) {
         this.id = "reflections"
-        this.sort = new Sort("sort", "timestamp")
+        this.sort = new Sort("sort-reflections", "timestamp")
         this.data = data
     }
     render() {
         const _this = this
 
-        select(`#${_this.id} .card-subtitle`)
+        select(`#${_this.id} .card-subtitle .text-muted`)
         .html(_this.data.length == 1 ? `Filtering by <span class="badge rounded-pill bg-info pointer">${_this.data[0].timestamp.toDateString()} <i class="fas fa-window-close"></i></span>`:
             "");
 
@@ -85,7 +85,7 @@ export class Reflections {
     }
     private handleSort() {
         const _this = this
-        const id = "sort"
+        const id = "sort-reflections"
         selectAll(`#${id} .sort-by label`).on("click", function (this: HTMLLabelElement) {
             const selectedOption = (this.control as HTMLInputElement).value
             _this.sort.sortBy = selectedOption
