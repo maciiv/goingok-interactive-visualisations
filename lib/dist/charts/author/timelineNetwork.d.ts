@@ -12,7 +12,7 @@ export declare class TimelineNetwork extends ChartTime {
     constructor(data: IReflectionAnalytics[]);
     render(): Promise<void>;
     private getLines;
-    private renderReflectionNetwork;
+    private renderReflectionNodes;
     private simulation;
 }
 declare class ClickTimelineNetwork<T extends TimelineNetwork> extends Click<T> {

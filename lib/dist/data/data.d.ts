@@ -133,8 +133,13 @@ export interface IAnalytics {
 }
 export interface IReflectionAnalytics extends IReflection {
     nodes: INodes[];
+    nodeTags: INodeTags[];
 }
-export interface ITags {
+export interface INodeTags extends ITags, d3.SimulationNodeDatum {
+    refId: number;
+    total: number;
+}
+export interface ITags extends d3.SimulationNodeDatum {
     name: string;
     properties: any;
     selected?: boolean;

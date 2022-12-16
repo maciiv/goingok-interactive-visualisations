@@ -37,29 +37,29 @@ export class ChartSeriesAxis implements IChartAxis {
 
 export class ChartLinearAxis implements IChartAxis {
     protected id: string
-    scale: d3.ScaleLinear<number, number, never>;
-    axis: d3.Axis<d3.AxisDomain>;
-    label: string;
+    scale: d3.ScaleLinear<number, number, never>
+    axis: d3.Axis<d3.AxisDomain>
+    label: string
     constructor(id:string, label: string, domain: number[], range: number[], position?: string, isGoingOk: boolean = true) {
         this.id = id
-        this.label = label;
+        this.label = label
         this.scale = scaleLinear()
             .domain([Math.min.apply(null, domain) < 0 ? Math.min.apply(null, domain) : 0, Math.max.apply(null, domain)])
             .range(range);
         if (position == "right") {
-            this.axis = axisRight(this.scale);
+            this.axis = axisRight(this.scale)
         } else if (position == "bottom") {
-            this.axis = axisBottom(this.scale);
+            this.axis = axisBottom(this.scale)
         } else {
-            this.axis = axisLeft(this.scale);
+            this.axis = axisLeft(this.scale)
         }
         if (isGoingOk) {
-            let labels: Map<number | d3.AxisDomain, string> = new Map();
-            labels.set(0, "distressed");
-            labels.set(50, "going ok");
-            labels.set(100, "soaring");
+            let labels: Map<number | d3.AxisDomain, string> = new Map()
+            labels.set(0, "distressed")
+            labels.set(50, "going ok")
+            labels.set(100, "soaring")
             this.axis.tickValues([0, 25, 50, 75, 100])
-                .tickFormat(d => labels.get(d));
+                .tickFormat(d => labels.get(d))
         }
     }
     transition(data: number[]): void {

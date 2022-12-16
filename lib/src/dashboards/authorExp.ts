@@ -187,7 +187,13 @@ export class ExperimentalDashboard extends Dashboard {
                 r.properties["color"] = tag.properties["color"]
                 return r
             })
-            return {"refId": c.refId, "point": c.point, "text": c.text, "timestamp": c.timestamp, "nodes": c.nodes}
+            c.nodeTags = c.nodeTags.map(r => {
+                let tag = this.tags.find(d => d.name === r.name)
+                r.selected = tag.selected
+                r.properties["color"] = tag.properties["color"]
+                return r
+            })
+            return {"refId": c.refId, "point": c.point, "text": c.text, "timestamp": c.timestamp, "nodes": c.nodes, "nodeTags": c.nodeTags}
         })
     }
     private updateAnalyticsData(): IAnalytics {

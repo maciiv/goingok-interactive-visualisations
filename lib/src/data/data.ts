@@ -1,3 +1,4 @@
+import { scaleLinear } from "d3";
 import { calculateMean, groupBy } from "../utils/utils";
 
 export interface IReflection {
@@ -146,14 +147,14 @@ export class ClickTextData implements IClickTextData {
 
 export interface INodes extends d3.SimulationNodeDatum {
     idx: number
-    nodeType: string,
-    refId: number,
-    startIdx?: number,
-    endIdx?: number,
-    expression: string,
-    labelType: string,
-    name: string,
-    description: string,
+    nodeType: string
+    refId: number
+    startIdx?: number
+    endIdx?: number
+    expression: string
+    labelType: string
+    name: string
+    description: string
     selected?: boolean
     properties: any
 }
@@ -180,9 +181,15 @@ export interface IAnalytics {
 
 export interface IReflectionAnalytics extends IReflection {
     nodes: INodes[]
+    nodeTags: INodeTags[]
 }
 
-export interface ITags {
+export interface INodeTags extends ITags, d3.SimulationNodeDatum {
+    refId: number
+    total: number
+}
+
+export interface ITags extends d3.SimulationNodeDatum {
     name: string
     properties: any
     selected?: boolean
@@ -202,7 +209,15 @@ export class AuthorAnalyticsData implements IAuthorAnalyticsData {
         this.reflections = reflections.map(c => { 
             let nodes = JSON.parse(JSON.stringify(analytics.nodes.filter(r => r.refId === c.refId))) as INodes[]
             nodes.forEach(r => this.processColour(r, colourScale))
-            return {"refId": c.refId, "timestamp": c.timestamp, "point": c.point, "text": c.text, "nodes": nodes }
+            let tags = groupBy(nodes, "name").map(r => { 
+                return {
+                    "name": r.key, 
+                    "refId": c.refId,
+                    "properties": r.value[0].properties, 
+                    "total": r.value.length
+                } as INodeTags}
+                )
+            return {"refId": c.refId, "timestamp": c.timestamp, "point": c.point, "text": c.text, "nodes": nodes, "nodeTags": tags }
         })
         analytics.nodes.forEach(r => this.processColour(r, colourScale))
         this.analytics = analytics

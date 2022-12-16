@@ -1,5 +1,5 @@
-import { select, line, curveMonotoneX, curveBasis, sort, forceSimulation, forceCollide, forceX, forceY, forceRadial } from "d3";
-import { INodes, IReflectionAnalytics } from "../../data/data";
+import { select, line, curveMonotoneX, curveBasis, sort, forceSimulation, forceCollide, forceX, forceY, forceRadial, scaleLinear, utcParse } from "d3";
+import { INodeTags, IReflectionAnalytics, ITags } from "../../data/data";
 import { Click } from "../../interactions/click";
 import { Tooltip, TooltipValues } from "../../interactions/tooltip";
 import { addDays, calculateMean, groupBy, maxDate, minDate } from "../../utils/utils";
@@ -17,8 +17,8 @@ export class TimelineNetwork extends ChartTime {
         (async() => {
             this.loading.isLoading = true
             this._data = entries.map(c => {
-                c.nodes = c.nodes.filter(d => d.selected)
-                c.nodes.forEach(d => d.index === undefined ? this.simulation(c) : d)
+                c.nodeTags = c.nodeTags.filter(d => d.selected)
+                c.nodeTags.forEach(d => d.index === undefined ? this.simulation(c) : d)
                 return c
             })
             this.x.scale.domain([addDays(minDate(entries.map(d => d.timestamp)), -30), addDays(maxDate(entries.map(d => d.timestamp)), 30)])
@@ -35,10 +35,7 @@ export class TimelineNetwork extends ChartTime {
     constructor(data: IReflectionAnalytics[]){
         super("timeline", [addDays(minDate(data.map(d => d.timestamp)), -30), addDays(maxDate(data.map(d => d.timestamp)), 30)], new ChartPadding(40, 75, 10, 10))
         this.clicking = new ClickTimelineNetwork(this)
-        this.data = data.map(c => {
-            this.simulation(c)
-            return c
-        })
+        this.data = data
     }
     async render() {
         const _this = this
@@ -69,16 +66,14 @@ export class TimelineNetwork extends ChartTime {
                         .attr("r", 5)
                         .style("fill", "#999999")
                         .style("stroke", "#999999"))
-                    .call(enter => _this.renderReflectionNetwork(enter))
+                    .call(enter => _this.renderReflectionNodes(enter))
                     .call(enter => enter.transition()
                         .duration(750)
                         .attr("transform", d => `translate (${_this.x.scale(d.timestamp)}, ${_this.y.scale(d.point)})`)),
                 update => update.call(update => update.transition()
                     .duration(750)
-                    .attr("transform", d => `translate (${_this.x.scale(d.timestamp)}, ${_this.y.scale(d.point)})`)
-                    .style("fill", "#999999")
-                    .style("stroke", "#999999"))
-                    .call(update => _this.renderReflectionNetwork(update)),
+                    .attr("transform", d => `translate (${_this.x.scale(d.timestamp)}, ${_this.y.scale(d.point)})`))
+                    .call(update => _this.renderReflectionNodes(update)),
                 exit => exit.remove()
             )
         
@@ -86,12 +81,12 @@ export class TimelineNetwork extends ChartTime {
 
         const onMouseover = function() {
             if (select(this).attr("class").includes("clicked")) return
-            _this.tooltip.appendTooltipContainer();
+            _this.tooltip.appendTooltipContainer()
             const parentData = select<SVGGElement, IReflectionAnalytics>(select(this).node().parentElement).datum()
             let tooltipValues = [new TooltipValues("Point", parentData.point)]
-            let tags = groupBy(_this.data.find(c => c.refId === parentData.refId).nodes, "name").map(c => { return {"name": c.key, "total": c.value.length}})
+            let tags = _this.data.find(c => c.refId === parentData.refId).nodeTags
             tags.forEach(c => {
-                tooltipValues.push(new TooltipValues(c.name, c.total));
+                tooltipValues.push(new TooltipValues(c.name, c.total))
             })
             let tooltipBox = _this.tooltip.appendTooltipText(parentData.timestamp.toDateString(), tooltipValues);
             _this.tooltip.positionTooltipContainer(xTooltip(parentData.timestamp, tooltipBox), yTooltip(parentData.point, tooltipBox));
@@ -148,28 +143,35 @@ export class TimelineNetwork extends ChartTime {
             {"name": "meanline", "line": meanLine, "datum": sort(this.data, d => d.timestamp)}
         ]
     }
-    private renderReflectionNetwork(enter: d3.Selection<SVGGElement | d3.BaseType, IReflectionAnalytics, SVGGElement, unknown>) {
+    private renderReflectionNodes(enter: d3.Selection<SVGGElement | d3.BaseType, IReflectionAnalytics, SVGGElement, unknown>) {
+        const rScale = (d: INodeTags) => { 
+            return scaleLinear()
+                .domain([1, Math.max.apply(null, enter.data().find(c => c.refId == d.refId).nodeTags.map(c => c.total))])
+                .range([1, 5])(d.total)
+        }
+
         enter.selectAll(".circle-tag")
-            .data(d => d.nodes)
+            .data(d => d.nodeTags)
             .join(
                 enter => enter.append("circle")
                     .attr("class", "circle-tag")
                     .attr("cx", d => d.x)
                     .attr("cy", d => d.y)
-                    .attr("r", 5)
+                    .attr("r", d => rScale(d))
                     .style("fill", d => d.properties["color"])
                     .style("stroke", d => d.properties["color"]),
                 update => update.call(update => update.transition()
                     .duration(750)
                     .attr("cx", d => d.x)
                     .attr("cy", d => d.y)
+                    .attr("r", d => rScale(d))
                     .style("fill", d => d.properties["color"])
                     .style("stroke", d => d.properties["color"])),
                 exit => exit.remove()
             )
     }
     private simulation(reflection: IReflectionAnalytics): void {
-        let simulation = forceSimulation<INodes, undefined>(reflection.nodes)
+        let simulation = forceSimulation<ITags, undefined>(reflection.nodeTags)
             .force("collide", forceCollide().radius(6))
             .force("forceRadial", forceRadial(0, 0).radius(15).strength(0.5))
         const centerY = this.y.scale(reflection.point)

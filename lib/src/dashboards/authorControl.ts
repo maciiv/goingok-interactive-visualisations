@@ -77,7 +77,7 @@ export class Dashboard {
         }
     }
     preloadTags(entries: IAuthorAnalyticsData, enable: boolean = false): ITags[] {
-        let tags = groupBy(entries.analytics.nodes, "name").map(r => { return {"name": r.key, "properties": r.value[0].properties, "selected": r.value[0].selected}})
+        let tags = groupBy(entries.analytics.nodes, "name").map(r => { return {"name": r.key, "properties": r.value[0].properties, "selected": r.value[0].selected, "total": r.value.length} as ITags})
         select("#tags").selectAll("li")
             .data(tags)
             .join(
