@@ -62,7 +62,7 @@ export class TimelineNetwork extends ChartTime {
                 enter => enter.append("g")
                     .attr("class", "circle-tag-container")
                     .call(enter => enter.append("circle")
-                        .attr("class", "circle-ref")
+                        .attr("class", "circle-ref pointer")
                         .attr("r", 7.5)
                         .style("fill", "#999999")
                         .style("stroke", "#999999"))

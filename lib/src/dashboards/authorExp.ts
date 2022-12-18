@@ -110,6 +110,7 @@ export class ExperimentalDashboard extends Dashboard {
             const parentData = select<SVGGElement, IReflectionAnalytics>(select(this).node().parentElement).datum()
             _this.network.data = _this.getClickTimelineNetworkNodes(parentData)
             _this.reflections.data = [parentData]
+            document.querySelector(`#${_this.network.id}`).scrollIntoView({ behavior: 'smooth', block: 'start' })
         }
         chart.clicking.enableClick(onClick)
     }
