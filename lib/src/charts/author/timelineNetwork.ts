@@ -62,8 +62,8 @@ export class TimelineNetwork extends ChartTime {
                 enter => enter.append("g")
                     .attr("class", "circle-tag-container")
                     .call(enter => enter.append("circle")
-                        .attr("class", "circle")
-                        .attr("r", 5)
+                        .attr("class", "circle-ref")
+                        .attr("r", 7.5)
                         .style("fill", "#999999")
                         .style("stroke", "#999999"))
                     .call(enter => _this.renderReflectionNodes(enter))
@@ -77,7 +77,7 @@ export class TimelineNetwork extends ChartTime {
                 exit => exit.remove()
             )
         
-        _this.elements.content = _this.elements.contentContainer.selectAll(".circle");
+        _this.elements.content = _this.elements.contentContainer.selectAll(".circle-ref");
 
         const onMouseover = function() {
             if (select(this).attr("class").includes("clicked")) return
@@ -116,7 +116,7 @@ export class TimelineNetwork extends ChartTime {
                 .style("opacity", 0)
             _this.tooltip.removeTooltip()
             if (select(this).attr("class").includes("clicked")) return
-            select(this).attr("r", 5)
+            select(this).attr("r", 7.5)
         }
         //Enable tooltip       
         _this.tooltip.enableTooltip(onMouseover, onMouseout)
@@ -196,6 +196,6 @@ class ClickTimelineNetwork<T extends TimelineNetwork> extends Click<T> {
     removeClick(): void {
         super.removeClick()
         this.chart.elements.content
-            .attr("r", 5)
+            .attr("r", 7.5)
     }
 }
