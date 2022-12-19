@@ -148,12 +148,13 @@ export class ClickTextData implements IClickTextData {
 export interface INodes extends d3.SimulationNodeDatum {
     idx: number
     nodeType: string
+    nodeCode: string
     refId: number
     startIdx?: number
     endIdx?: number
     expression: string
     labelType: string
-    name: string
+    name?: string
     description: string
     selected?: boolean
     properties: any
@@ -189,7 +190,7 @@ export interface INodeTags extends ITags, d3.SimulationNodeDatum {
     total: number
 }
 
-export interface ITags extends d3.SimulationNodeDatum {
+export interface ITags {
     name: string
     properties: any
     selected?: boolean
@@ -209,9 +210,9 @@ export class AuthorAnalyticsData implements IAuthorAnalyticsData {
         this.reflections = reflections.map(c => { 
             let nodes = JSON.parse(JSON.stringify(analytics.nodes.filter(r => r.refId === c.refId))) as INodes[]
             nodes.forEach(r => this.processColour(r, colourScale))
-            let tags = groupBy(nodes, "name").map(r => { 
+            let tags = groupBy(nodes, "nodeCode").map(r => { 
                 return {
-                    "name": r.key, 
+                    "name": r.value[0].name !== null ? r.value[0].name : r.key, 
                     "refId": c.refId,
                     "properties": r.value[0].properties, 
                     "total": r.value.length,
@@ -226,7 +227,7 @@ export class AuthorAnalyticsData implements IAuthorAnalyticsData {
     }
     private processColour(node: INodes, colourScale: Function): INodes {
         if (node.properties["color"] === undefined) {
-            node.properties = {"color": colourScale(node.name)}
+            node.properties = {"color": colourScale(node.name !== null ? node.name : node.nodeCode)}
         }
         return node;
     }

@@ -183,7 +183,8 @@ export class ExperimentalDashboard extends Dashboard {
             this.reflectionAnalytics.filter(d => d.refId === analytics.refId)
         return reflectionAnalytics.map(c => {
             c.nodes = c.nodes.map(r => {
-                let tag = this.tags.find(d => d.name === r.name)
+                let name = r.name !== null ? r.name : r.nodeCode
+                let tag = this.tags.find(d => d.name === name)
                 r.selected = tag.selected
                 r.properties["color"] = tag.properties["color"]
                 return r
@@ -199,14 +200,17 @@ export class ExperimentalDashboard extends Dashboard {
     }
     private updateAnalyticsData(): IAnalytics {
         let nodes = this.analytics.nodes.map(c => {
-            let tag = this.tags.find(d => d.name === c.name)
+            let name = c.name !== null ? c.name : c.nodeCode
+            let tag = this.tags.find(d => d.name === name)
             c.selected = tag.selected
             c.properties["color"] = tag.properties["color"]
             return c
         })
         let edges = this.analytics.edges.map(c => {
-            (c.source as INodes).selected = this.tags.find(d => d.name === (c.source as INodes).name).selected;
-            (c.target as INodes).selected = this.tags.find(d => d.name === (c.target as INodes).name).selected;
+            let sourceName = (c.source as INodes).name !== null ? (c.source as INodes).name : (c.source as INodes).nodeCode
+            let targetName = (c.target as INodes).name !== null ? (c.target as INodes).name : (c.target as INodes).nodeCode;
+            (c.source as INodes).selected = this.tags.find(d => d.name === sourceName).selected;
+            (c.target as INodes).selected = this.tags.find(d => d.name === targetName).selected;
             return c
         })
         return { "name": this.analytics.name, "description": this.analytics.description, "nodes": nodes, "edges": edges }

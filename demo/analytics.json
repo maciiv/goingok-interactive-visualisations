@@ -78,12 +78,13 @@
                         { 
                             "idx": 1,
                             "nodeType": "SYS",
+                            "nodeCode": "AR",
                             "refId": 1,
                             "startIdx": 6, 
                             "endIdx": 26,
                             "expression": "waiting for my grades", 
                             "labelType": "SYS",
-                            "name": "AR",
+                            "name": "AR UI",
                             "description": "Anteroreflexive",
                             "selected": true,
                             "properties": {}
@@ -91,12 +92,13 @@
                         { 
                             "idx": 2,
                             "nodeType": "SYS",
+                            "nodeCode": "AF",
                             "refId": 1,
                             "startIdx": 52, 
                             "endIdx": 68,
                             "expression": "but still feeling", 
                             "labelType": "SYS",
-                            "name": "AF",
+                            "name": "AF UI",
                             "description": "Affective",
                             "selected": true,
                             "properties": {}
@@ -104,12 +106,13 @@
                         { 
                             "idx": 3,
                             "nodeType": "SYS",
+                            "nodeCode": "EP",
                             "refId": 1,
                             "startIdx": 139, 
                             "endIdx": 149,
                             "expression": "really well", 
                             "labelType": "SYS",
-                            "name": "EP",
+                            "name": "EP UI",
                             "description": "Epistemic",
                             "selected": true,
                             "properties": {}
@@ -117,12 +120,13 @@
                         { 
                             "idx": 4,
                             "nodeType": "SYS",
+                            "nodeCode": "AR",
                             "refId": 2,
                             "startIdx": 14, 
                             "endIdx": 22,
                             "expression": "have been", 
                             "labelType": "SYS",
-                            "name": "AR",
+                            "name": "AR UI",
                             "description": "Anteroreflexive",
                             "selected": true,
                             "properties": {}
@@ -130,12 +134,13 @@
                         { 
                             "idx": 5,
                             "nodeType": "SYS",
+                            "nodeCode": "AF",
                             "refId": 2,
                             "startIdx": 75, 
                             "endIdx": 83,
                             "expression": "stressfull", 
                             "labelType": "SYS",
-                            "name": "AF",
+                            "name": "AF UI",
                             "description": "Affective",
                             "selected": true,
                             "properties": {}
@@ -143,12 +148,13 @@
                         { 
                             "idx": 6,
                             "nodeType": "SYS",
+                            "nodeCode": "AF",
                             "refId": 2,
                             "startIdx": 127, 
                             "endIdx": 145,
                             "expression": "luckily things have", 
                             "labelType": "SYS",
-                            "name": "AF",
+                            "name": "AF UI",
                             "description": "Affective",
                             "selected": true,
                             "properties": {}
@@ -156,12 +162,13 @@
                         { 
                             "idx": 7,
                             "nodeType": "SYS",
+                            "nodeCode": "AF",
                             "refId": 2,
                             "startIdx": 191, 
                             "endIdx": 202,
                             "expression": "i moved into", 
                             "labelType": "SYS",
-                            "name": "AF",
+                            "name": "AF UI",
                             "description": "Affective",
                             "selected": true,
                             "properties": {}
@@ -169,12 +176,13 @@
                         { 
                             "idx": 8,
                             "nodeType": "SYS",
+                            "nodeCode": "AR",
                             "refId": 3,
                             "startIdx": 0, 
                             "endIdx": 11,
                             "expression": "have not had", 
                             "labelType": "SYS",
-                            "name": "AR",
+                            "name": "AR UI",
                             "description": "Anteroreflexive",
                             "selected": true,
                             "properties": {}
@@ -182,12 +190,13 @@
                         { 
                             "idx": 9,
                             "nodeType": "SYS",
+                            "nodeCode": "EP",
                             "refId": 3,
                             "startIdx": 82, 
                             "endIdx": 96,
                             "expression": "were due before", 
                             "labelType": "SYS",
-                            "name": "EP",
+                            "name": "EP UI",
                             "description": "Epistemic",
                             "selected": true,
                             "properties": {}
@@ -195,12 +204,13 @@
                         { 
                             "idx": 10,
                             "nodeType": "SYS",
+                            "nodeCode": "EP",
                             "refId": 3,
                             "startIdx": 110, 
                             "endIdx": 120,
                             "expression": "i have been", 
                             "labelType": "SYS",
-                            "name": "EP",
+                            "name": "EP UI",
                             "description": "Epistemic",
                             "selected": true,
                             "properties": {}
@@ -310,12 +320,13 @@
                         { 
                             "idx": 11,
                             "nodeType": "SYS",
+                            "nodeCode": "AR",
                             "refId": 4,
                             "startIdx": 6, 
                             "endIdx": 26,
                             "expression": "waiting for my grades", 
                             "labelType": "SYS",
-                            "name": "AR",
+                            "name": null,
                             "description": "Anteroreflexive",
                             "selected": true,
                             "properties": {}
@@ -323,12 +334,13 @@
                         { 
                             "idx": 12,
                             "nodeType": "SYS",
+                            "nodeCode": "AF",
                             "refId": 4,
                             "startIdx": 52, 
                             "endIdx": 68,
                             "expression": "but still feeling", 
                             "labelType": "SYS",
-                            "name": "AF",
+                            "name": null,
                             "description": "Affective",
                             "selected": true,
                             "properties": {}
@@ -336,12 +348,13 @@
                         { 
                             "idx": 13,
                             "nodeType": "SYS",
+                            "nodeCode": "EP",
                             "refId": 5,
                             "startIdx": 139, 
                             "endIdx": 149,
                             "expression": "really well", 
                             "labelType": "SYS",
-                            "name": "EP",
+                            "name": null,
                             "description": "Epistemic",
                             "selected": true,
                             "properties": {}
@@ -349,12 +362,13 @@
                         { 
                             "idx": 14,
                             "nodeType": "SYS",
+                            "nodeCode": "AR",
                             "refId": 5,
                             "startIdx": 14, 
                             "endIdx": 22,
                             "expression": "have been", 
                             "labelType": "SYS",
-                            "name": "AR",
+                            "name": null,
                             "description": "Anteroreflexive",
                             "selected": true,
                             "properties": {}
@@ -362,12 +376,13 @@
                         { 
                             "idx": 15,
                             "nodeType": "SYS",
+                            "nodeCode": "AF",
                             "refId": 5,
                             "startIdx": 75, 
                             "endIdx": 83,
                             "expression": "stressfull", 
                             "labelType": "SYS",
-                            "name": "AF",
+                            "name": null,
                             "description": "Affective",
                             "selected": true,
                             "properties": {}
@@ -375,12 +390,13 @@
                         { 
                             "idx": 16,
                             "nodeType": "SYS",
+                            "nodeCode": "AF",
                             "refId": 6,
                             "startIdx": 127, 
                             "endIdx": 145,
                             "expression": "luckily things have", 
                             "labelType": "SYS",
-                            "name": "AF",
+                            "name": null,
                             "description": "Affective",
                             "selected": true,
                             "properties": {}
@@ -388,12 +404,13 @@
                         { 
                             "idx": 17,
                             "nodeType": "SYS",
+                            "nodeCode": "AF",
                             "refId": 6,
                             "startIdx": 191, 
                             "endIdx": 202,
                             "expression": "i moved into", 
                             "labelType": "SYS",
-                            "name": "AF",
+                            "name": null,
                             "description": "Affective",
                             "selected": true,
                             "properties": {}
@@ -401,12 +418,13 @@
                         { 
                             "idx": 18,
                             "nodeType": "SYS",
+                            "nodeCode": "AR",
                             "refId": 6,
                             "startIdx": 0, 
                             "endIdx": 11,
                             "expression": "have not had", 
                             "labelType": "SYS",
-                            "name": "AR",
+                            "name": null,
                             "description": "Anteroreflexive",
                             "selected": true,
                             "properties": {}
@@ -414,12 +432,13 @@
                         { 
                             "idx": 19,
                             "nodeType": "SYS",
+                            "nodeCode": "EP",
                             "refId": 6,
                             "startIdx": 82, 
                             "endIdx": 96,
                             "expression": "were due before", 
                             "labelType": "SYS",
-                            "name": "EP",
+                            "name": null,
                             "description": "Epistemic",
                             "selected": true,
                             "properties": {}
@@ -427,12 +446,13 @@
                         { 
                             "idx": 20,
                             "nodeType": "SYS",
+                            "nodeCode": "AF",
                             "refId": 6,
                             "startIdx": 110, 
                             "endIdx": 120,
                             "expression": "i have been", 
                             "labelType": "SYS",
-                            "name": "AF",
+                            "name": null,
                             "description": "Affective",
                             "selected": true,
                             "properties": {}

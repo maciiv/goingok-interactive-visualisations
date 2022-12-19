@@ -1,8 +1,8 @@
-import { select, line, curveMonotoneX, curveBasis, sort, forceSimulation, forceCollide, forceX, forceY, forceRadial, scaleLinear, utcParse } from "d3";
+import { select, line, curveMonotoneX, curveBasis, sort, forceSimulation, forceCollide, forceX, forceY, forceRadial, scaleLinear } from "d3";
 import { INodeTags, IReflectionAnalytics, ITags } from "../../data/data";
 import { Click } from "../../interactions/click";
 import { Tooltip, TooltipValues } from "../../interactions/tooltip";
-import { addDays, calculateMean, groupBy, maxDate, minDate } from "../../utils/utils";
+import { addDays, calculateMean, maxDate, minDate } from "../../utils/utils";
 import { ChartPadding, ChartTime } from "../chartBase";
 
 export class TimelineNetwork extends ChartTime {
@@ -171,7 +171,7 @@ export class TimelineNetwork extends ChartTime {
             )
     }
     private simulation(reflection: IReflectionAnalytics): void {
-        let simulation = forceSimulation<ITags, undefined>(reflection.nodeTags)
+        let simulation = forceSimulation<INodeTags, undefined>(reflection.nodeTags)
             .force("collide", forceCollide().radius(6))
             .force("forceRadial", forceRadial(0, 0).radius(15).strength(0.5))
         const centerY = this.y.scale(reflection.point)

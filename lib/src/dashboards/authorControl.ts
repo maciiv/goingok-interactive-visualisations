@@ -77,7 +77,7 @@ export class Dashboard {
         }
     }
     preloadTags(entries: IAuthorAnalyticsData, enable: boolean = false): ITags[] {
-        let tags = groupBy(entries.analytics.nodes, "name").map(r => { return {"name": r.key, "properties": r.value[0].properties, "selected": r.value[0].selected, "total": r.value.length} as ITags})
+        let tags = groupBy(entries.analytics.nodes, "nodeCode").map(r => { return {"name": r.value[0].name !== null ? r.value[0].name : r.key, "properties": r.value[0].properties, "selected": r.value[0].selected, "total": r.value.length} as ITags})
         select("#tags").selectAll("li")
             .data(tags)
             .join(
@@ -102,7 +102,10 @@ export class Dashboard {
                         .attr("type", "color")
                         .attr("value", d => d.properties["color"])
                         .property("disabled", !enable)),
-                update => update,
+                update => update.call(update => update.select("div label")
+                    .text(d => d.name))
+                    .call(update => update.select("input")
+                        .attr("value", d => d.properties["color"])),
                 exit => exit.remove()
             )
         return tags

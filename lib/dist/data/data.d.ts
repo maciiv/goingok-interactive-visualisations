@@ -103,12 +103,13 @@ export declare class ClickTextData implements IClickTextData {
 export interface INodes extends d3.SimulationNodeDatum {
     idx: number;
     nodeType: string;
+    nodeCode: string;
     refId: number;
     startIdx?: number;
     endIdx?: number;
     expression: string;
     labelType: string;
-    name: string;
+    name?: string;
     description: string;
     selected?: boolean;
     properties: any;
@@ -139,7 +140,7 @@ export interface INodeTags extends ITags, d3.SimulationNodeDatum {
     refId: number;
     total: number;
 }
-export interface ITags extends d3.SimulationNodeDatum {
+export interface ITags {
     name: string;
     properties: any;
     selected?: boolean;
