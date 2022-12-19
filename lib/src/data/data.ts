@@ -214,7 +214,8 @@ export class AuthorAnalyticsData implements IAuthorAnalyticsData {
                     "name": r.key, 
                     "refId": c.refId,
                     "properties": r.value[0].properties, 
-                    "total": r.value.length
+                    "total": r.value.length,
+                    "selected": true
                 } as INodeTags}
                 )
             return {"refId": c.refId, "timestamp": c.timestamp, "point": c.point, "text": c.text, "nodes": nodes, "nodeTags": tags }
