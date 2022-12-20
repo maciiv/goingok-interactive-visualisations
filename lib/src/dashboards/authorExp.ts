@@ -145,21 +145,21 @@ export class ExperimentalDashboard extends Dashboard {
         chart.clicking.enableClick(onClick)
 
         const dragStart = function(e: d3.D3DragEvent<SVGGElement, INodes, INodes>) {
-            if (!e.active) chart.simulation.alphaTarget(0.3).restart();
-            e.subject.fx = e.subject.x;
-            e.subject.fy = e.subject.y;
-            select(this).attr("transform", `translate(${e.subject.fx}, ${e.subject.fy})`);
+            if (!e.active) chart.simulation.alphaTarget(0.3).restart()
+            e.subject.fx = e.subject.x
+            e.subject.fy = e.subject.y
+            select(this).attr("transform", `translate(${e.subject.fx}, ${e.subject.fy})`)
         } 
         const dragging = function(e: d3.D3DragEvent<SVGGElement, INodes, INodes>) {
-            e.subject.fx = e.x;
-            e.subject.fy = e.y;
-            select(this).attr("transform", `translate(${e.subject.fx}, ${e.subject.fy})`);
+            e.subject.fx = e.x
+            e.subject.fy = e.y
+            select(this).attr("transform", `translate(${e.subject.fx}, ${e.subject.fy})`)
         }
         const dragEnd = function(e: d3.D3DragEvent<SVGGElement, INodes, INodes>) {
-            if (!e.active) chart.simulation.alphaTarget(0);
-            e.subject.fx = null;
-            e.subject.fy = null;
-            select(this).attr("transform", `translate(${e.subject.x}, ${e.subject.y})`);
+            if (!e.active) chart.simulation.alphaTarget(0)
+            e.subject.fx = null
+            e.subject.fy = null
+            select(this).attr("transform", `translate(${e.subject.x}, ${e.subject.y})`)
         }
         chart.elements.content
         .call(drag()
