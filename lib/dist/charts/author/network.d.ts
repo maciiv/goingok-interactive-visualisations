@@ -25,9 +25,8 @@ export declare class Network extends ChartNetwork {
     constructor(data: IAnalytics, domain: Date[]);
     render(): Promise<void>;
     getTooltipNodes(data: IAnalytics, nodeData: INodes): INodes[];
-    openNodes(data: INodes[]): void;
-    closeNodes(): void;
-    processGroupBySimulation(): void;
+    openNodes(data: INodes[], applyForce?: boolean): void;
+    closeNodes(applyForce?: boolean): void;
     processSimulation(data: IAnalytics): void;
     private processData;
     private filterData;
