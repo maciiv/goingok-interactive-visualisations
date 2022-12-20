@@ -221,6 +221,13 @@ export class Network extends ChartNetwork {
                 .attr("width", 10)
                 .attr("height", 10))
     }
+    processGroupBySimulation() {
+        this.groupBySimulation = forceSimulation<INodesGroupBy<INodes, IEdges<INodes>>>(this.networkData)
+            .force("charge", forceManyBody().strength(0))
+            .force("collide", forceCollide().radius(10))
+            .force("center", forceCenter((this.width -this.padding.yAxis - this.padding.right - 10) / 2, (this.height - this.padding.top - this.padding.xAxis + 5) / 2))
+            .force("forceX", forceY((this.width -this.padding.yAxis - this.padding.right - 10) / 2).strength(0.02))
+    }
     processSimulation(data: IAnalytics) {
         this.simulation = forceSimulation<INodes, undefined>(data.nodes)
             .force("link", forceLink<INodes, IEdges<INodes>>()
