@@ -77,7 +77,7 @@ export class Dashboard {
         }
     }
     preloadTags(entries: IAuthorAnalyticsData, enable: boolean = false): ITags[] {
-        let tags = groupBy(entries.analytics.nodes, "nodeCode").map(r => { return {"name": r.value[0].name !== null ? r.value[0].name : r.key, "properties": r.value[0].properties, "selected": r.value[0].selected, "total": r.value.length} as ITags})
+        let tags = groupBy(entries.analytics.nodes, "nodeCode").map(r => { return {"key": r.key, "name": r.value[0].name !== null ? r.value[0].name : r.key, "properties": r.value[0].properties, "selected": r.value[0].selected, "total": r.value.length} as ITags})
         select("#tags").selectAll("li")
             .data(tags)
             .join(
@@ -88,23 +88,23 @@ export class Dashboard {
                         .attr("class", "form-check me-2")
                         .call(div => enable ? div.append("input")
                             .attr("class", "form-check-input")
-                            .attr("id", d => `tag-${d.name}`)
+                            .attr("id", d => `tag-${d.key}`)
                             .attr("type", "checkbox")
-                            .attr("value", d => d.name)
+                            .attr("value", d => d.key)
                             .property("checked", true) :  null)
                         .call(div => div.append("label")
                             .attr("class", "form-check-label")
-                            .attr("for", d => `tag-${d.name}`)
+                            .attr("for", d => `tag-${d.key}`)
                             .text(d => d.name)))
                     .call(div => div.append("input")
                         .attr("class", "tag-color-picker")
-                        .attr("id", d => `colour-${d.name}`)
+                        .attr("id", d => `colour-${d.key}`)
                         .attr("type", "color")
                         .attr("value", d => d.properties["color"])
                         .property("disabled", !enable)),
                 update => update.call(update => update.select("div label")
                     .text(d => d.name))
-                    .call(update => update.select("input")
+                    .call(update => update.select(".tag-color-picker")
                         .attr("value", d => d.properties["color"])),
                 exit => exit.remove()
             )

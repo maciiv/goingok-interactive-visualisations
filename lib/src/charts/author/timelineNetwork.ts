@@ -1,5 +1,5 @@
 import { select, line, curveMonotoneX, curveBasis, sort, forceSimulation, forceCollide, forceX, forceY, forceRadial, scaleLinear } from "d3";
-import { INodeTags, IReflectionAnalytics, ITags } from "../../data/data";
+import { INodeTags, IReflectionAnalytics } from "../../data/data";
 import { Click } from "../../interactions/click";
 import { Tooltip, TooltipValues } from "../../interactions/tooltip";
 import { addDays, calculateMean, maxDate, minDate } from "../../utils/utils";

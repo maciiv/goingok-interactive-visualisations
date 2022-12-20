@@ -1,4 +1,3 @@
-import { scaleLinear } from "d3";
 import { calculateMean, groupBy } from "../utils/utils";
 
 export interface IReflection {
@@ -191,6 +190,7 @@ export interface INodeTags extends ITags, d3.SimulationNodeDatum {
 }
 
 export interface ITags {
+    key: string
     name: string
     properties: any
     selected?: boolean
@@ -212,6 +212,7 @@ export class AuthorAnalyticsData implements IAuthorAnalyticsData {
             nodes.forEach(r => this.processColour(r, colourScale))
             let tags = groupBy(nodes, "nodeCode").map(r => { 
                 return {
+                    "key": r.key,
                     "name": r.value[0].name !== null ? r.value[0].name : r.key, 
                     "refId": c.refId,
                     "properties": r.value[0].properties, 

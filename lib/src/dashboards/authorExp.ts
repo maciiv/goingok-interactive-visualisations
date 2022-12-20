@@ -45,9 +45,9 @@ export class ExperimentalDashboard extends Dashboard {
         selectAll("#tags input[type=checkbox]").on("change", (e: Event) => {
             const target = e.target as HTMLInputElement;
             if (target.checked) {
-                _this.tags.find(c => c.name === target.value).selected = true
+                _this.tags.find(c => c.key === target.value).selected = true
             } else {
-                _this.tags.find(c => c.name === target.value).selected = false
+                _this.tags.find(c => c.key === target.value).selected = false
             }
 
             const reflectionsData = _this.updateReflectionNodesData()
@@ -183,14 +183,13 @@ export class ExperimentalDashboard extends Dashboard {
             this.reflectionAnalytics.filter(d => d.refId === analytics.refId)
         return reflectionAnalytics.map(c => {
             c.nodes = c.nodes.map(r => {
-                let name = r.name !== null ? r.name : r.nodeCode
-                let tag = this.tags.find(d => d.name === name)
+                let tag = this.tags.find(d => d.key === r.nodeCode)
                 r.selected = tag.selected
                 r.properties["color"] = tag.properties["color"]
                 return r
             })
             c.nodeTags = c.nodeTags.map(r => {
-                let tag = this.tags.find(d => d.name === r.name)
+                let tag = this.tags.find(d => d.key === r.key)
                 r.selected = tag.selected
                 r.properties["color"] = tag.properties["color"]
                 return r

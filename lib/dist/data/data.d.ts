@@ -141,6 +141,7 @@ export interface INodeTags extends ITags, d3.SimulationNodeDatum {
     total: number;
 }
 export interface ITags {
+    key: string;
     name: string;
     properties: any;
     selected?: boolean;
