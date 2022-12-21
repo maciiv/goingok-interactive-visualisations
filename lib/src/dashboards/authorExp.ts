@@ -1,5 +1,5 @@
 import { select, selectAll, drag } from "d3";
-import { IAnalytics, INodes, IAuthorAnalyticsData, ITags, IReflectionAnalytics } from "../data/data";
+import { IAnalytics, INodes, IAuthorAnalyticsData, ITags, IReflectionAnalytics, AuthorAnalytics, IAuthorAnalytics, IEdges } from "../data/data";
 import { Dashboard } from "./authorControl";
 import { Tutorial, TutorialData } from "../utils/tutorial";
 import { IAuthorAnalyticsEntriesRaw, IAuthorEntriesRaw } from "../data/db";
@@ -27,7 +27,6 @@ export class ExperimentalDashboard extends Dashboard {
             const reflectionsData = this.updateReflectionNodesData()
             this.timeline.data = reflectionsData
             this.reflections.data = reflectionsData
-            if (d.analytics.nodes.some(d => d.index === undefined)) this.network.processSimulation(d.analytics)
             this.network.data = this.updateAnalyticsData()
         }
         super.handleMultiUser(entries, extendFunction)
@@ -74,8 +73,8 @@ export class ExperimentalDashboard extends Dashboard {
         const _this = this;
         selectAll("#tags input[type=color]").on("change", (e: Event) => {
             const target = e.target as HTMLInputElement
-            const name = target.id.replace("colour-", "")
-            _this.tags.find(c => c.name === name).properties["color"] = target.value
+            const key = target.id.replace("colour-", "")
+            _this.tags.find(c => c.key === key).properties["color"] = target.value
             const reflectionsData = _this.updateReflectionNodesData()
             const nodes = _this.network.clicking.clicked ? _this.reflections.nodes : null
             _this.timeline.data = reflectionsData
@@ -157,8 +156,8 @@ export class ExperimentalDashboard extends Dashboard {
         }
         const dragEnd = function(e: d3.D3DragEvent<SVGGElement, INodes, INodes>) {
             if (!e.active) chart.simulation.alphaTarget(0)
-            e.subject.fx = null
-            e.subject.fy = null
+            e.subject.fx = undefined
+            e.subject.fy = undefined
             select(this).attr("transform", `translate(${e.subject.x}, ${e.subject.y})`)
         }
         chart.elements.content
@@ -175,6 +174,7 @@ export class ExperimentalDashboard extends Dashboard {
         const reflectionsData = this.updateReflectionNodesData()
         this.timeline.data = reflectionsData
         this.reflections.data = reflectionsData
+        this.network.clicking.removeClick()
         this.network.data = this.updateAnalyticsData()
     };
     private updateReflectionNodesData(analytics?: IReflectionAnalytics): IReflectionAnalytics[] {
@@ -205,29 +205,28 @@ export class ExperimentalDashboard extends Dashboard {
             c.properties["color"] = tag.properties["color"]
             return c
         })
-        let edges = this.analytics.edges.map(c => {
-            let sourceName = (c.source as INodes).name !== null ? (c.source as INodes).name : (c.source as INodes).nodeCode
-            let targetName = (c.target as INodes).name !== null ? (c.target as INodes).name : (c.target as INodes).nodeCode;
-            (c.source as INodes).selected = this.tags.find(d => d.name === sourceName).selected;
-            (c.target as INodes).selected = this.tags.find(d => d.name === targetName).selected;
+        let edges = (this.analytics.edges).map(c => {
+            let source = typeof c.source === "number" ? nodes.find(d => d.idx == c.source) : c.source
+            let sourceName = source.name !== null ? source.name : source.nodeCode
+            let target = typeof c.target === "number" ? nodes.find(d => d.idx == c.target) : c.target
+            let targetName = target.name !== null ? target.name : target.nodeCode
+            c.selected = this.tags.find(d => d.name === sourceName)?.selected && this.tags.find(d => d.name === targetName)?.selected
             return c
         })
-        return { "name": this.analytics.name, "description": this.analytics.description, "nodes": nodes, "edges": edges }
+        return { "reflections": this.analytics.reflections, "nodes": nodes, "edges": edges }
     }
     private getClickTimelineNetworkData(): IReflectionAnalytics {
         const el = document.querySelector(`#${this.timeline.id} .clicked`)
         if(el === null) return
         return select(el.parentElement).datum() as IReflectionAnalytics
     }
-    private getClickTimelineNetworkNodes(d: IReflectionAnalytics) {
+    private getClickTimelineNetworkNodes(d: IReflectionAnalytics): IAnalytics {
         const analytics = this.updateAnalyticsData()
         let nodes = analytics.nodes.filter(c => {
             return (d.refId === c.refId || c.name === d.timestamp.toDateString()) && c.selected
         });
-        let edges = analytics.edges.filter(c => {
-            return nodes.includes(c.source as INodes) || nodes.includes(c.target as INodes)
-        })
-        return {"name": this.analytics.name, "description": this.analytics.description, "nodes": nodes, "edges": edges}
+        let edges = (analytics.edges as IEdges<INodes>[]).filter(c => c.selected && nodes.includes(c.source) && nodes.includes(c.target))
+        return { "reflections": analytics.reflections, "nodes": nodes, "edges": edges }
     }
 }
 

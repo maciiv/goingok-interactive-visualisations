@@ -147,7 +147,7 @@ export class TimelineNetwork extends ChartTime {
         const rScale = (d: INodeTags) => { 
             return scaleLinear()
                 .domain([1, Math.max.apply(null, enter.data().find(c => c.refId == d.refId).nodeTags.map(c => c.total))])
-                .range([1, 5])(d.total)
+                .range([2, 5])(d.total)
         }
 
         enter.selectAll(".circle-tag")

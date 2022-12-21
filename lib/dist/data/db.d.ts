@@ -1,4 +1,4 @@
-import { IReflectionAuthor, AdminAnalyticsData, AuthorAnalyticsData, IAnalytics } from "./data";
+import { IReflectionAuthor, AdminAnalyticsData, AuthorAnalyticsData, INodes, IEdges } from "./data";
 export interface IReflectionAuthorRaw {
     refId: string;
     timestamp: string;
@@ -24,20 +24,24 @@ export interface IAuthorEntriesRaw {
     pseudonym: string;
     reflections: IReflectionAuthorRaw[];
 }
+export interface IAnalyticsEntriesRaw {
+    nodes: INodes[];
+    edges: IEdges<number | INodes>[];
+}
 export interface IAuthorAnalyticsEntriesRaw {
     pseudonym: string;
-    analytics: IAnalytics;
+    analytics: IAnalyticsEntriesRaw;
 }
 export interface IAuthorAnalyticsDataRaw {
     pseudonym: string;
     reflections: IReflectionAuthorRaw[];
-    analytics: IAnalytics;
+    analytics: IAnalyticsEntriesRaw;
     transformData(): AuthorAnalyticsData;
 }
 export declare class AuthorAnalyticsDataRaw implements IAuthorAnalyticsDataRaw {
     pseudonym: string;
     reflections: IReflectionAuthorRaw[];
-    analytics: IAnalytics;
+    analytics: IAnalyticsEntriesRaw;
     constructor(entries: IReflectionAuthorRaw[], analytics: IAuthorAnalyticsEntriesRaw);
     transformData(colourScale?: Function): AuthorAnalyticsData;
 }

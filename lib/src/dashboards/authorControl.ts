@@ -1,6 +1,6 @@
 import { scaleOrdinal, schemeCategory10, select } from "d3";
 import { Help } from "../utils/help";
-import { IAuthorAnalyticsData, ITags } from "../data/data";
+import { AuthorAnalytics, IAuthorAnalyticsData, IEdges, INodes, ITags } from "../data/data";
 import { Tutorial, TutorialData } from "../utils/tutorial";
 import { Network } from "../charts/author/network";
 import { TimelineNetwork } from "../charts/author/timelineNetwork";
@@ -23,7 +23,7 @@ export class Dashboard {
                 this.renderError(e, "timeline")
             }
             try {
-                this.network = new Network(data[0].analytics, data[0].reflections.map(d => d.timestamp))
+                this.network = new Network(new AuthorAnalytics(data[0].reflections, data[0].analytics.nodes, data[0].analytics.edges as IEdges<INodes>[]), data[0].reflections.map(d => d.timestamp))
             } catch (e) {
                 this.renderError(e, "network")
             }
@@ -42,6 +42,7 @@ export class Dashboard {
         }
     }
     renderError(e: any, chartId: string, css?: string) {
+        console.error(e)
         select(`#${chartId} ${css === undefined ? ".chart-container" : css}`)
             .text(`There was an error rendering the chart. ${e}`)
     }
@@ -65,7 +66,6 @@ export class Dashboard {
                         this.preloadTags(d)
                         this.timeline.data = d.reflections
                         this.reflections.data = d.reflections
-                        if (d.analytics.nodes.some(d => d.index === undefined)) this.network.processSimulation(d.analytics)
                         this.network.data = d.analytics
                     } else {
                         extend(e, d)

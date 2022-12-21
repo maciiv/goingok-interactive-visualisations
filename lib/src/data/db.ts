@@ -1,4 +1,4 @@
-import { IReflectionAuthor, AdminAnalyticsData, AuthorAnalyticsData, IReflection, IAnalytics } from "./data";
+import { IReflectionAuthor, AdminAnalyticsData, AuthorAnalyticsData, IReflection, IAnalytics, INodes, IEdges, Analytics } from "./data";
 
 export interface IReflectionAuthorRaw {
     refId: string
@@ -39,30 +39,41 @@ export interface IAuthorEntriesRaw {
     reflections: IReflectionAuthorRaw[]
 }
 
+export interface IAnalyticsEntriesRaw {
+    nodes: INodes[]
+    edges: IEdges<number | INodes>[]
+}
+
 export interface IAuthorAnalyticsEntriesRaw {
     pseudonym: string
-    analytics: IAnalytics
+    analytics: IAnalyticsEntriesRaw
 }
 
 export interface IAuthorAnalyticsDataRaw {
     pseudonym: string
     reflections: IReflectionAuthorRaw[]
-    analytics: IAnalytics
+    analytics: IAnalyticsEntriesRaw
     transformData(): AuthorAnalyticsData
 }
 
 export class AuthorAnalyticsDataRaw implements IAuthorAnalyticsDataRaw {
     pseudonym: string
     reflections: IReflectionAuthorRaw[]
-    analytics: IAnalytics
+    analytics: IAnalyticsEntriesRaw
     constructor(entries: IReflectionAuthorRaw[], analytics: IAuthorAnalyticsEntriesRaw) {
         this.pseudonym = analytics.pseudonym
         this.reflections = entries
         this.analytics = analytics.analytics
     }
     transformData(colourScale?: Function): AuthorAnalyticsData {
-        return new AuthorAnalyticsData(this.reflections.map(d => { 
-            return { "refId": parseInt(d.refId), "timestamp": new Date(d.timestamp), "point": parseInt(d.point), "text": d.text } 
-        }) as IReflection[], this.analytics, this.pseudonym, colourScale)
+        let reflections = this.reflections.map(d => { 
+            return { 
+                "refId": parseInt(d.refId), 
+                "timestamp": new Date(d.timestamp), 
+                "point": parseInt(d.point), 
+                "text": d.text 
+            } as IReflection
+        })
+        return new AuthorAnalyticsData(reflections, new Analytics(reflections, this.analytics.nodes, this.analytics.edges), this.pseudonym, colourScale)
     }
 }

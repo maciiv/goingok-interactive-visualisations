@@ -1,28 +1,21 @@
 import { select, selectAll, forceSimulation, forceLink, forceManyBody, forceCollide, forceCenter, forceY } from "d3";
-import { IAnalytics, IEdges, INodes } from "../../data/data";
+import { AuthorAnalytics, EdgeType, GroupByType, IAnalytics, IAuthorAnalytics, IEdges, INodes, NodeType } from "../../data/data";
 import { Click } from "../../interactions/click";
 import { Tooltip } from "../../interactions/tooltip";
 import { Zoom } from "../../interactions/zoom";
-import { addDays, groupBy, maxDate, minDate } from "../../utils/utils";
+import { addDays, maxDate, minDate } from "../../utils/utils";
 import { ChartNetwork } from "../chartBase";
 import { Help } from "../../utils/help";
-
-interface INodesGroupBy<T extends d3.SimulationNodeDatum, R extends d3.SimulationLinkDatum<T>> extends d3.SimulationNodeDatum {
-    key: "refId" | "nodeCode"
-    nodes: T[]
-    edges: R[]
-}
 
 export class Network extends ChartNetwork {
     tooltip = new Tooltip(this)
     zoom = new Zoom(this)
     help = new Help()
-    groupByKey = "refId"
+    groupByKey = GroupByType.Ref
     clicking: ClickNetwork<this>
-    groupBySimulation: d3.Simulation<INodesGroupBy<INodes, IEdges<INodes>>, undefined>
+    groupBySimulation: d3.Simulation<INodes, undefined>
     simulation: d3.Simulation<INodes, undefined>
     extend?: Function
-    networkData: INodesGroupBy<INodes, IEdges<INodes>>[]
     private _data: IAnalytics
     get data() {
         return this._data
@@ -31,6 +24,8 @@ export class Network extends ChartNetwork {
         (async () => {
             this.loading.isLoading = true
             this._data = this.filterData(entries)
+            this.x.scale.domain([addDays(minDate(entries.reflections.map(d => d.timestamp)), -30), addDays(maxDate(entries.reflections.map(d => d.timestamp)), 30)])
+            if (this.data.nodes.some(d => d.index === undefined)) this.processSimulation()
             this.zoom.resetZoom()
             try {
                 await this.render()
@@ -42,9 +37,8 @@ export class Network extends ChartNetwork {
         })()
         
     }
-    constructor(data: IAnalytics, domain: Date[]) {
+    constructor(data: IAuthorAnalytics, domain: Date[]) {
         super("network", "chart-container.network", [addDays(minDate(domain), -30), addDays(maxDate(domain), 30)])
-        this.processSimulation(data)
         this.data = data
         this.clicking = new ClickNetwork(this)
     }
@@ -52,27 +46,23 @@ export class Network extends ChartNetwork {
         const _this = this
 
         let edges = _this.elements.contentContainer.selectAll(".network-link")
-            .data(_this.data.edges)
+            .data(_this.data.edges as IEdges<INodes>[])
             .join(
                 enter => enter.append("line")
                     .attr("class", "network-link")
-                    .classed("reflection-link", d => d.isReflection)
+                    .classed("reflection-link", d => d.edgeType == EdgeType.Grp)
                     .attr("x1", _this.width / 2)
                     .attr("y1", _this.height / 2)
                     .attr("x2", _this.width / 2)
-                    .attr("y2", _this.height / 2)
-                    .call(enter => enter.transition()
-                    .duration(750)
-                    .attr("x1", d => (d.source as INodes).x)
-                    .attr("y1", d => (d.source as INodes).y)
-                    .attr("x2", d => (d.target as INodes).x)
-                    .attr("y2", d => (d.target as INodes).y)),
-                update => update.call(update => update.transition()
+                    .attr("y2", _this.height / 2),
+                update => update.call(update => update
+                    .classed("reflection-link", d => d.edgeType == EdgeType.Grp)
+                    .transition()
                     .duration(750)               
-                    .attr("x1", d => (d.source as INodes).x)
-                    .attr("y1", d => (d.source as INodes).y)
-                    .attr("x2", d => (d.target as INodes).x)
-                    .attr("y2", d => (d.target as INodes).y)),
+                    .attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y)),
                 exit => exit.remove()
             );
         
@@ -81,6 +71,7 @@ export class Network extends ChartNetwork {
             .join(
                 enter => enter.append("g")
                     .attr("class", "network-node-group pointer")
+                    .classed("groupby", d => d.nodeType == NodeType.Grp)
                     .attr("transform", `translate(${_this.width / 2}, ${_this.height / 2})`)
                     .call(enter => enter.append("rect")
                         .attr("class", "network-node")
@@ -96,10 +87,7 @@ export class Network extends ChartNetwork {
                         .attr("x", -5)
                         .attr("y", -5)
                         .attr("width", 10)
-                        .attr("height", 10))
-                    .call(enter => enter.transition()
-                        .duration(750)
-                        .attr("transform", d => `translate(${d.x}, ${d.y})`)),
+                        .attr("height", 10)),
                 update => update.call(update => update.transition()
                     .duration(750)
                     .attr("transform", d => `translate(${d.x}, ${d.y})`))
@@ -114,14 +102,18 @@ export class Network extends ChartNetwork {
         _this.elements.content = _this.elements.contentContainer.selectAll(".network-node-group");
 
         const ticked = function() {
-            edges.attr("x1", d => (d.source as INodes).x)
-            .attr("y1", d => (d.source as INodes).y)
-            .attr("x2", d => (d.target as INodes).x)
-            .attr("y2", d => (d.target as INodes).y)
+            edges.transition()
+                .duration(50)
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y)
 
-            nodes.attr("transform", (d: INodes) => `translate(${d.x}, ${d.y})`)
+            nodes.transition()
+                .duration(50)
+                .attr("transform", d => `translate(${d.fx !== undefined ? d.fx : d.x}, ${d.fy !== undefined ? d.fy : d.y})`)
         }
-        _this.simulation.on("tick", ticked)
+        if (this.simulation !== undefined) _this.simulation.on("tick", ticked)
 
         const onMouseover = function(e: MouseEvent, d: INodes) {
             if (select(this).attr("class").includes("clicked")) {
@@ -129,20 +121,31 @@ export class Network extends ChartNetwork {
             }
             _this.simulation.alphaTarget(0.3).restart()
             const nodes = _this.getTooltipNodes(_this.data, d)
-            const datum = select<SVGGElement, INodes>(this).datum()
-            datum.fx = datum.x
-            datum.fy = datum.y
+            if (d.nodeType !== NodeType.Grp) {
+                const datum = select<SVGGElement, INodes>(this).datum()
+                datum.fx = datum.x
+                datum.fy = datum.y
+            }           
             _this.openNodes(nodes, true)
+            setTimeout(() => _this.simulation.alphaTarget(0), 100)
         }
-        const onMouseout = function() {
+        const onMouseout = function(e: MouseEvent, d: INodes) {
             if (select(this).attr("class").includes("clicked")) {
                 return
             }
-            const datum = select<SVGGElement, INodes>(this).datum()
-            datum.fx = null
-            datum.fy = null
+            if (d.nodeType !== NodeType.Grp) {
+                const datum = select<SVGGElement, INodes>(this).datum()
+                datum.fx = undefined
+                datum.fy = undefined
+            }
+            const simulationFinished = _this.simulation.alphaTarget() === 0
+            if (simulationFinished) _this.simulation.alphaTarget(0.3).restart()
             _this.closeNodes(true)
             _this.tooltip.removeTooltip()
+            if (simulationFinished) {
+                setTimeout(() => _this.simulation.alphaTarget(0), 500)
+                return
+            }
             _this.simulation.alphaTarget(0)
         }
         //Enable tooltip       
@@ -184,7 +187,7 @@ export class Network extends ChartNetwork {
             const clientRect = enter.select<SVGTextElement>(`#text-${d.idx}`).node().getBoundingClientRect()
             const width = clientRect.width + 10
             const height = clientRect.height + 5
-            if (applyForce && last) this.simulation.force("collide", forceCollide().radius(d => enter.data().map(c => c.index).includes(d.index) ? width / 2 : 10))
+            if (applyForce && last) this.simulation.force("collide", forceCollide().radius(d => enter.data().map(c => c.index).includes(d.index) ? width / 3 : 10))
             return {width, height}
         }
 
@@ -221,37 +224,27 @@ export class Network extends ChartNetwork {
                 .attr("width", 10)
                 .attr("height", 10))
     }
-    processGroupBySimulation() {
-        this.groupBySimulation = forceSimulation<INodesGroupBy<INodes, IEdges<INodes>>>(this.networkData)
-            .force("charge", forceManyBody().strength(0))
-            .force("collide", forceCollide().radius(10))
-            .force("center", forceCenter((this.width -this.padding.yAxis - this.padding.right - 10) / 2, (this.height - this.padding.top - this.padding.xAxis + 5) / 2))
-            .force("forceX", forceY((this.width -this.padding.yAxis - this.padding.right - 10) / 2).strength(0.02))
-    }
-    processSimulation(data: IAnalytics) {
-        this.simulation = forceSimulation<INodes, undefined>(data.nodes)
+    private processSimulation() {
+        this.simulation = forceSimulation<INodes, undefined>(this.data.nodes)
             .force("link", forceLink<INodes, IEdges<INodes>>()
                 .id(d => d.idx)
-                .distance(100)
-                .links(data.edges))
+                .distance(50)
+                .links(this.data.edges as IEdges<INodes>[]))
             .force("charge", forceManyBody().strength(0))
             .force("collide", forceCollide().radius(10))
             .force("center", forceCenter((this.width -this.padding.yAxis - this.padding.right - 10) / 2, (this.height - this.padding.top - this.padding.xAxis + 5) / 2))
             .force("forceX", forceY((this.width -this.padding.yAxis - this.padding.right - 10) / 2).strength(0.02))
-    }
-    private processData() {
-        this.networkData = groupBy(this.data.nodes, this.groupByKey).map(c => {
-            return {
-                "key": c.key,
-                "nodes": c.value,
-                "edges": this.data.edges.filter(d => c.value.map(a => a.idx).includes((d.source as INodes).idx && (d.target as INodes).idx))
-            } as INodesGroupBy<INodes, IEdges<INodes>>
+        
+        this.data.nodes.filter(d => d.nodeType === NodeType.Grp).forEach(d => { 
+            let ref = this.data.reflections.find(c => c.refId == d.refId)
+            d.fx = this.x.scale(ref?.timestamp)
+            d.fy = this.y.scale(ref?.point)
         })
     }
     private filterData(data: IAnalytics): IAnalytics {
         let nodes = data.nodes.filter(d => d.selected)
-        let edges = data.edges.filter(d => (d.source as INodes).selected && (d.target as INodes).selected)
-        return { "name": data.name, "description": data.description, "nodes": nodes, "edges": edges }
+        let edges = data.edges.filter(d => d.selected)
+        return new AuthorAnalytics(data.reflections, nodes, edges as IEdges<INodes>[], this.groupByKey)
     }
 }
 

@@ -66,6 +66,7 @@ export class ChartSeries implements IChart {
         this.loading = new Loading(this)
     }
     renderError(e: any) {
+        console.error(e)
         this.elements.contentContainer.text(`There was an error rendering the chart. ${e}`)
     }
 }
@@ -93,6 +94,7 @@ export class ChartTime implements IChart {
         this.loading = new Loading(this)
     }
     renderError(e: any) {
+        console.error(e)
         this.elements.contentContainer.text(`There was an error rendering the chart. ${e}`)
     }
 }
@@ -112,7 +114,7 @@ export class ChartNetwork implements IChart {
         this.width = containerDimensions.width
         this.height = containerDimensions.height
         this.padding = new ChartPadding(30, 10, 10, 10)
-        this.y = new ChartLinearAxis(this.id, "", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left")       
+        this.y = new ChartLinearAxis(this.id, "", [-50, 150], [this.height - this.padding.xAxis - this.padding.top, 0], "left")       
         this.x = new ChartTimeAxis(this.id, "", domain, [0, this.width - this.padding.yAxis - this.padding.right])
         this.elements = new ChartElements(this, containerClass);
         this.elements.yAxis.remove()
@@ -120,6 +122,7 @@ export class ChartNetwork implements IChart {
         this.loading = new Loading(this)
     }
     renderError(e: any) {
+        console.error(e)
         this.elements.contentContainer.text(`There was an error rendering the chart. ${e}`)
     }
 }

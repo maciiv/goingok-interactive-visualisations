@@ -33,8 +33,8 @@ export class Tooltip<T extends IChart> implements ITooltip {
         this.chart = chart
     }
     enableTooltip(onMouseover: TooltipFunction, onMouseout: TooltipFunction): void {
-        this.chart.elements.content.on("mouseover", onMouseover)
-        this.chart.elements.content.on("mouseout", onMouseout);
+        this.chart.elements.content.on("mouseenter", onMouseover)
+        this.chart.elements.content.on("mouseleave", onMouseout);
     };
     removeTooltip(): void {
         this.chart.elements.contentContainer.selectAll(".tooltip-container").remove();

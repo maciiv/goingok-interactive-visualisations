@@ -144,13 +144,33 @@ export class ClickTextData implements IClickTextData {
     }
 }
 
-export interface INodes extends d3.SimulationNodeDatum {
+export enum NodeType {
+    Sys = "SYS",
+    Usr = "USR",
+    Grp = "GRP"
+}
+
+export enum EdgeType {
+    Sys = "SYS",
+    Usr = "USR",
+    Grp = "GRP"
+}
+
+export enum GroupByType {
+    Ref = "refId",
+    Code = "nodeCode"
+}
+
+export interface INodesBase {
     idx: number
-    nodeType: string
+    nodeType: NodeType
     nodeCode: string
     refId: number
     startIdx?: number
     endIdx?: number
+}
+
+export interface INodes extends INodesBase, d3.SimulationNodeDatum {    
     expression: string
     labelType: string
     name?: string
@@ -159,24 +179,76 @@ export interface INodes extends d3.SimulationNodeDatum {
     properties: any
 }
 
-export interface IEdges<T> extends d3.SimulationLinkDatum<T> {
+export interface IEdgesBase<T> extends d3.SimulationLinkDatum<T> {
     idx: number
-    edgeType: string
+    edgeType: EdgeType
     directional: boolean
     weight: number
+    source: T
+    target: T
+}
+
+export interface IEdges<T> extends IEdgesBase<T> {
     labelType: string
     name: string
     description: string
     selected?: boolean
     properties: any
-    isReflection?: boolean
 }
 
 export interface IAnalytics {
-    name: string
-    description: string
+    reflections: IReflection[]
     nodes: INodes[]
-    edges: IEdges<INodes>[]
+    edges: IEdges<number | INodes>[]
+}
+
+export class Analytics implements IAnalytics {
+    reflections: IReflection[]
+    nodes: INodes[]
+    edges: IEdges<number | INodes>[]
+    constructor(reflections: IReflection[], nodes: INodes[], edges: IEdges<number | INodes>[]) {
+        this.reflections = reflections
+        this.nodes = nodes
+        this.edges = edges
+    }
+}
+
+export interface IAuthorAnalytics extends IAnalytics { 
+    groupByKey: GroupByType
+}
+
+export class AuthorAnalytics extends Analytics implements IAuthorAnalytics {
+    groupByKey: GroupByType
+    constructor(reflections: IReflection[], nodes: INodes[], edges: IEdges<INodes>[], groupByKey: GroupByType = GroupByType.Ref) {
+        super(reflections, nodes, edges)
+        this.groupByKey = groupByKey
+        this.addGroupByAnalytics()
+    }
+    private addGroupByAnalytics() {
+        let nodes = groupBy(this.nodes, this.groupByKey).map((d, i) => {
+            return {
+                "idx": -i - 1,
+                "nodeCode": d.key,
+                "nodeType": NodeType.Grp,
+                "refId": parseInt(d.key),
+                "expression": GroupByType.Ref === this.groupByKey ? this.reflections.find(c => c.refId.toString() == d.key)?.timestamp.toDateString() : d.key,
+                "properties": {"color": "#999999"}
+            } as INodes
+        })
+        let edges = nodes.map((d, i) => {
+            let nodesTarget = this.nodes.filter(c => this.groupByKey == GroupByType.Ref ? c.refId.toString() == d.nodeCode : c.nodeCode == d.nodeCode)
+            return nodesTarget.map((c, x) => {
+                return {
+                    "idx": -x - 1,
+                    "edgeType": EdgeType.Grp,
+                    "source": d,
+                    "target": c
+                } as IEdges<INodes>
+            })
+        })
+        this.nodes = this.nodes.concat(nodes)
+        this.edges = this.edges.concat(edges.flat())
+    }
 }
 
 export interface IReflectionAnalytics extends IReflection {
