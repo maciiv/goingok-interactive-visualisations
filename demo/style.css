@@ -292,7 +292,7 @@ Admin CSS
 }
 
 .zoom-buttons {
-    margin-left: auto;
+    margin-left: 0.25rem;
     margin-bottom: 0;
     width: 160px !important;
 }
