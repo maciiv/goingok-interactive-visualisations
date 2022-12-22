@@ -3,6 +3,7 @@ interface IChartAxis {
     axis: d3.Axis<d3.AxisDomain>;
     label: string;
     transition(data: string[] | number[] | Date[]): void;
+    withinRange(x: number): number;
 }
 export declare class ChartSeriesAxis implements IChartAxis {
     protected id: string;
@@ -11,6 +12,7 @@ export declare class ChartSeriesAxis implements IChartAxis {
     label: string;
     constructor(id: string, label: string, domain: string[], range: number[], position?: string);
     transition(data: string[]): void;
+    withinRange(x: number): number;
 }
 export declare class ChartLinearAxis implements IChartAxis {
     protected id: string;
@@ -19,6 +21,7 @@ export declare class ChartLinearAxis implements IChartAxis {
     label: string;
     constructor(id: string, label: string, domain: number[], range: number[], position?: string, isGoingOk?: boolean);
     transition(data: number[]): void;
+    withinRange(x: number): number;
     setThresholdAxis(tDistressed: number, tSoaring: number): d3.Axis<d3.NumberValue>;
 }
 export declare class ChartTimeAxis implements IChartAxis {
@@ -28,5 +31,6 @@ export declare class ChartTimeAxis implements IChartAxis {
     label: string;
     constructor(id: string, label: string, domain: Date[], range: number[]);
     transition(data: Date[]): void;
+    withinRange(x: number): number;
 }
 export {};

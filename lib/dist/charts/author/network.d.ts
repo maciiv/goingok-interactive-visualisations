@@ -6,7 +6,7 @@ import { ChartNetwork } from "../chartBase";
 import { Help } from "../../utils/help";
 export declare class Network extends ChartNetwork {
     tooltip: Tooltip<this>;
-    zoom: Zoom<this>;
+    zoom: ZoomNetwork<this>;
     help: Help;
     groupByKey: GroupByType;
     clicking: ClickNetwork<this>;
@@ -23,8 +23,13 @@ export declare class Network extends ChartNetwork {
     closeNodes(applyForce?: boolean): void;
     private processSimulation;
     private filterData;
+    private fixGroupNodes;
 }
 declare class ClickNetwork<T extends Network> extends Click<T> {
     removeClick(): void;
+}
+declare class ZoomNetwork<T extends Network> extends Zoom<T> {
+    protected handleZoomMinus(): void;
+    protected handleZoomPlus(): void;
 }
 export {};

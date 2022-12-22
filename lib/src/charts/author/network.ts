@@ -9,7 +9,7 @@ import { Help } from "../../utils/help";
 
 export class Network extends ChartNetwork {
     tooltip = new Tooltip(this)
-    zoom = new Zoom(this)
+    zoom: ZoomNetwork<this>
     help = new Help()
     groupByKey = GroupByType.Ref
     clicking: ClickNetwork<this>
@@ -39,8 +39,9 @@ export class Network extends ChartNetwork {
     }
     constructor(data: IAuthorAnalytics, domain: Date[]) {
         super("network", "chart-container.network", [addDays(minDate(domain), -30), addDays(maxDate(domain), 30)])
-        this.data = data
         this.clicking = new ClickNetwork(this)
+        this.zoom = new ZoomNetwork(this)
+        this.data = data
     }
     async render() {
         const _this = this
@@ -101,7 +102,7 @@ export class Network extends ChartNetwork {
         
         _this.elements.content = _this.elements.contentContainer.selectAll(".network-node-group");
 
-        const ticked = function() {
+        const ticked = () => {
             edges.transition()
                 .duration(50)
                 .attr("x1", d => d.source.x)
@@ -111,7 +112,11 @@ export class Network extends ChartNetwork {
 
             nodes.transition()
                 .duration(50)
-                .attr("transform", d => `translate(${d.fx !== undefined ? d.fx : d.x}, ${d.fy !== undefined ? d.fy : d.y})`)
+                .attr("transform", d => { 
+                    const x = d.fx !== undefined ? d.fx : d.x
+                    const y = d.fy !== undefined ? d.fy : d.y 
+                    return `translate(${_this.x.withinRange(x)}, ${_this.y.withinRange(y)})` 
+                })
         }
         if (this.simulation !== undefined) _this.simulation.on("tick", ticked)
 
@@ -151,7 +156,7 @@ export class Network extends ChartNetwork {
         //Enable tooltip       
         _this.tooltip.enableTooltip(onMouseover, onMouseout);
 
-        const zoomed = function(e: d3.D3ZoomEvent<SVGRectElement, unknown>) {
+        const zoomed = (e: d3.D3ZoomEvent<SVGRectElement, unknown>) => {
             if (e.sourceEvent !== null) {
                 if (e.sourceEvent.type === "dblclick") return
                 if (e.sourceEvent.type === "wheel") {
@@ -159,19 +164,23 @@ export class Network extends ChartNetwork {
                     return
                 }
             }
-            let newChartRange = [0, _this.width - _this.padding.yAxis - _this.padding.right].map(d => e.transform.applyX(d));
-            _this.x.scale.rangeRound(newChartRange);
+            const newChartRange = [0, _this.width - _this.padding.yAxis - _this.padding.right].map(d => e.transform.applyX(d))
+            _this.x.scale.rangeRound(newChartRange)
 
             _this.elements.contentContainer.selectAll<SVGLineElement, any>(".network-link")
                 .attr("x1", d => e.transform.applyX(d.source.x))
-                .attr("x2", d => e.transform.applyX(d.target.x));
+                .attr("x2", d => e.transform.applyX(d.target.x))
 
             _this.elements.contentContainer.selectAll<SVGGElement, INodes>(".network-node-group")
-                .attr("transform", (d, i, g) => `translate(${e.transform.applyX(d.x)}, ${d.y})`);
+                .attr("transform", d => { 
+                    const x = d.fx !== undefined ? d.fx : d.x
+                    const y = d.fy !== undefined ? d.fy : d.y 
+                    return `translate(${_this.x.withinRange(e.transform.applyX(x))}, ${_this.y.withinRange(y)})`
+                })
 
-            _this.x.axis.ticks(newChartRange[1] / 75);
-            _this.elements.xAxis.call(_this.x.axis);
-            _this.help.removeHelp(_this);
+            _this.x.axis.ticks(newChartRange[1] / 75)
+            _this.elements.xAxis.call(_this.x.axis)
+            _this.help.removeHelp(_this)
         }
         //Enable zoom
         _this.zoom.enableZoom(zoomed)
@@ -234,17 +243,19 @@ export class Network extends ChartNetwork {
             .force("collide", forceCollide().radius(10))
             .force("center", forceCenter((this.width -this.padding.yAxis - this.padding.right - 10) / 2, (this.height - this.padding.top - this.padding.xAxis + 5) / 2))
             .force("forceX", forceY((this.width -this.padding.yAxis - this.padding.right - 10) / 2).strength(0.02))
-        
-        this.data.nodes.filter(d => d.nodeType === NodeType.Grp).forEach(d => { 
-            let ref = this.data.reflections.find(c => c.refId == d.refId)
-            d.fx = this.x.scale(ref?.timestamp)
-            d.fy = this.y.scale(ref?.point)
-        })
+        this.fixGroupNodes()
     }
     private filterData(data: IAnalytics): IAnalytics {
         let nodes = data.nodes.filter(d => d.selected)
         let edges = data.edges.filter(d => d.selected)
         return new AuthorAnalytics(data.reflections, nodes, edges as IEdges<INodes>[], this.groupByKey)
+    }
+    private fixGroupNodes() {
+        this.data.nodes.filter(d => d.nodeType === NodeType.Grp).forEach(d => { 
+            let ref = this.data.reflections.find(c => c.refId == d.refId)
+            d.fx = this.x.scale(ref?.timestamp)
+            d.fy = this.y.scale(ref?.point)
+        })
     }
 }
 
@@ -253,7 +264,17 @@ class ClickNetwork<T extends Network> extends Click<T> {
         super.removeClick()
         this.chart.closeNodes()
         selectAll<HTMLSpanElement, unknown>("#reflections .reflections-tab span")
-            .style("background-color", null)
-        
+            .style("background-color", null)      
+    }
+}
+
+class ZoomNetwork<T extends Network> extends Zoom<T> {
+    protected handleZoomMinus(): void {
+        this.chart.simulation.stop()
+        setTimeout(() => super.handleZoomMinus(), 100)
+    }
+    protected handleZoomPlus(): void {
+        this.chart.simulation.stop()
+        setTimeout(() => super.handleZoomPlus(), 100)
     }
 }

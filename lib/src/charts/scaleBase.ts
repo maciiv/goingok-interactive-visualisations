@@ -5,6 +5,7 @@ interface IChartAxis {
     axis: d3.Axis<d3.AxisDomain>;
     label: string;
     transition(data: string[] | number[] | Date[]): void
+    withinRange(x: number): number
 }
 
 export class ChartSeriesAxis implements IChartAxis {
@@ -32,7 +33,13 @@ export class ChartSeriesAxis implements IChartAxis {
         select<SVGGElement, unknown>(`#${this.id} .x-axis`).transition()
             .duration(750)
             .call(this.axis);
-    };
+    }
+    withinRange(x: number): number {
+        let range = this.scale.range()
+        let min = Math.min.apply(null, range)
+        let max = Math.max.apply(null, range)
+        return x < min ? min : x > max ? max : x
+    }
 }
 
 export class ChartLinearAxis implements IChartAxis {
@@ -67,7 +74,13 @@ export class ChartLinearAxis implements IChartAxis {
         select<SVGGElement, unknown>(`#${this.id} .y-axis`).transition()
             .duration(750)
             .call(this.axis);
-    };
+    }
+    withinRange(x: number): number {
+        let range = this.scale.range()
+        let min = Math.min.apply(null, range)
+        let max = Math.max.apply(null, range)
+        return x < min ? min : x > max ? max : x
+    }
     setThresholdAxis(tDistressed: number, tSoaring: number) : d3.Axis<d3.NumberValue> {
         return axisRight(this.scale)
             .tickValues([tDistressed, tSoaring])
@@ -93,5 +106,11 @@ export class ChartTimeAxis implements IChartAxis {
         select<SVGGElement, unknown>(`#${this.id} .x-axis`).transition()
             .duration(750)
             .call(this.axis)
-    };
+    }
+    withinRange(x: number): number {
+        let range = this.scale.range()
+        let min = Math.min.apply(null, range)
+        let max = Math.max.apply(null, range)
+        return x < min ? min : x > max ? max : x
+    }
 }

@@ -50,15 +50,17 @@ export class Zoom<T extends IChart> implements IZoom {
         this.k = 1
         this.updateZoomNumber()
     }
-    protected handleZoom() {
-        select(`#${this.chart.id} #zoom-minus`).on("click", () => { 
-            this.k = this.k - 1
-            this.updateZoomNumber()
-        })
-        select(`#${this.chart.id} #zoom-plus`).on("click", () => { 
-            this.k = this.k + 1
-            this.updateZoomNumber()
-        })
+    protected handleZoomMinus() {
+        this.k = this.k - 1
+        this.updateZoomNumber()
+    }
+    protected handleZoomPlus() {
+        this.k = this.k + 1
+        this.updateZoomNumber()
+    }
+    private handleZoom() {
+        select(`#${this.chart.id} #zoom-minus`).on("click", this.handleZoomMinus.bind(this))
+        select(`#${this.chart.id} #zoom-plus`).on("click", this.handleZoomPlus.bind(this))
     }
     private updateZoomNumber() {
         select(`#${this.chart.id} #zoom-number`).attr("value", `${100 + ((this.k - 1) * 25)}%`)
