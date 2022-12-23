@@ -1,11 +1,11 @@
-import d3, { BaseType } from "d3";
-import { IAdminAnalyticsData, IReflectionAuthor } from "../../data/data.js";
-import { Sort } from "../../interactions/sort.js";
-import { calculateMean, groupBy, maxDate, minDate } from "../../utils/utils.js";
+import { select, selectAll, sort, BaseType } from "d3";
+import { IAdminAnalyticsData, IReflectionAuthor } from "../../data/data";
+import { Sort } from "../../interactions/sort";
+import { calculateMean, groupBy, maxDate, minDate } from "../../utils/utils";
 
 type UserData = {
     pseudonym: string
-    mean: number
+    avg: number
     total: number
     minDate: Date
     maxDate: Date
@@ -30,7 +30,7 @@ export class Users {
     }
     set thresholds(thresholds: number[]) {
         this._thresholds = thresholds
-        d3.selectAll(`#${this.id} meter`)
+        selectAll(`#${this.id} meter`)
             .attr("low", this.thresholds[0])
             .attr("high", this.thresholds[1])
     }
@@ -43,7 +43,7 @@ export class Users {
     render() {
         const _this = this
 
-        d3.select(`#${_this.id} .nav.nav-tabs`).selectAll("li")
+        select(`#${_this.id} .nav.nav-tabs`).selectAll("li")
             .data(_this.data)
             .join(
                 enter => enter.append("li")
@@ -53,9 +53,9 @@ export class Users {
                     .classed("active", (d, i) => i === 0)
                     .html(d => d.group)
                     .on("click", function (e, d) {
-                        d3.select(`#${_this.id} .nav.nav-tabs`).selectAll("a")
+                        select(`#${_this.id} .nav.nav-tabs`).selectAll("a")
                             .classed("active", false)
-                        d3.select(this).classed("active", true)
+                        select(this).classed("active", true)
                         _this.group = d.group
                         _this.renderTabContent(_this.getUserData(d.value))
                     }),
@@ -77,18 +77,18 @@ export class Users {
         const _this = this
 
         const minUser = data.reduce((a, b) => {
-            return (a.mean < b.mean) ? a : b
+            return (a.avg < b.avg) ? a : b
         })
         const maxUser = data.reduce((a, b) => {
-            return (a.mean > b.mean) ? a : b
+            return (a.avg > b.avg) ? a : b
         })
 
-        d3.select(`#${_this.id} .text-muted`)
+        select(`#${_this.id} .text-muted`)
             .html(data.length === 1 ? `The user ${data[0].pseudonym} has a total of ${data[0].total} reflections between
                 ${data[0].minDate.toDateString()} and ${data[0].maxDate.toDateString()}` : 
                 `The user ${minUser.pseudonym} is the most distressed, while the user ${maxUser.pseudonym} is the most soaring`)
 
-        d3.select(`#${_this.id} .tab-content`)
+        select(`#${_this.id} .tab-content`)
             .selectAll("div .statistics-text")
             .data(_this.sort.sortData(data))
             .join(
@@ -116,7 +116,7 @@ export class Users {
                     .call(update => update.select("h5")
                         .html(d => `${d.pseudonym} <small>average is</small>`))
                     .call(update => update.select("meter")
-                        .attr("value", d => d.mean))
+                        .attr("value", d => d.avg))
                     .call(update => update.select("p span")
                         .html(d => `User ${d.pseudonym} reflections in chronological order:`))
                     .call(update => _this.renderReflections(update.select("p ul"))),
@@ -125,7 +125,7 @@ export class Users {
     }
     private renderReflections(update: d3.Selection<BaseType, UserData, BaseType, unknown>): void {
         update.selectAll("li")
-            .data(d => d3.sort(d.reflections, r => r.timestamp))
+            .data(d => sort(d.reflections, r => r.timestamp))
             .join(
                 enter => enter.append("li")
                     .classed("reflection-selected", d => d.selected)
@@ -138,7 +138,7 @@ export class Users {
     private handleSort() {
         const _this = this
         const id = "sort-users"
-        d3.selectAll(`#${id} .btn-group-toggle label`).on("click", function (this: HTMLLabelElement) {
+        selectAll(`#${id} .btn-group label`).on("click", function (this: HTMLLabelElement) {
             const selectedOption = (this.control as HTMLInputElement).value;
             _this.sort.sortBy = selectedOption
             let sortedData = _this.getUserData(_this.data.find(d => d.group === _this.group).value)
@@ -157,7 +157,7 @@ export class Users {
         const meter = document.createElement("meter")
         meter.classList.add("w-100", "user-meter")
         meter.setAttribute("max", "100")
-        meter.setAttribute("value", data.mean.toString())
+        meter.setAttribute("value", data.avg.toString())
         meter.setAttribute("low", this.thresholds[0].toString())
         meter.setAttribute("optimum", "99.99")
         meter.setAttribute("high", this.thresholds[1].toString())
@@ -185,10 +185,10 @@ export class Users {
         }
     }
     private renderNoData(): void {
-        d3.select(`#${this.id} .text-muted`)
+        select(`#${this.id} .text-muted`)
             .html("Add group codes from the left sidebar")
         
-        d3.select(`#${this.id} .tab-content`)
+        select(`#${this.id} .tab-content`)
             .selectAll("div .statistics-text")
             .remove()
     }
@@ -196,7 +196,7 @@ export class Users {
         return groupBy(data, "pseudonym").map(d => {
             return {
                 "pseudonym": d.key,
-                "mean": calculateMean(d.value.map(c => c.point)),
+                "avg": calculateMean(d.value.map(c => c.point)),
                 "total": d.value.length,
                 "minDate": minDate(d.value.map(c => c.timestamp)),
                 "maxDate": maxDate(d.value.map(c => c.timestamp)),

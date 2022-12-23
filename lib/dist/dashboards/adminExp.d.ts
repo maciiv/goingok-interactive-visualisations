@@ -1,13 +1,13 @@
-import { IAdminAnalyticsData } from "../data/data.js";
-import { Dashboard } from "./adminControl.js";
-import { IAdminAnalyticsDataRaw } from "../data/db.js";
-import { Sort } from "../interactions/sort.js";
-import { Help } from "../utils/help.js";
+import { IAdminAnalyticsData } from "../data/data";
+import { Dashboard } from "./adminControl";
+import { IAdminAnalyticsDataRaw } from "../data/db";
+import { Sort } from "../interactions/sort";
+import { Help } from "../utils/help";
 export declare class ExperimentalDashboard extends Dashboard {
     entries: IAdminAnalyticsData[];
     sort: Sort<IAdminAnalyticsData>;
     help: Help;
-    constructor(data: IAdminAnalyticsData[]);
+    constructor(entriesRaw: IAdminAnalyticsDataRaw[]);
     preloadGroups(entries: IAdminAnalyticsData[]): IAdminAnalyticsData[];
     handleGroups(): void;
     handleGroupsColours(): void;

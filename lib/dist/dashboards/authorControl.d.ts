@@ -1,14 +1,16 @@
-import { IAnalytics, IAuthorAnalyticsData, ITags } from "../data/data.js";
-import { Network } from "../charts/author/network.js";
-import { TimelineNetwork } from "../charts/author/timelineNetwork.js";
-import { IReflectionAuthorRaw } from "../data/db.js";
-import { Reflections } from "../charts/author/reflections.js";
+import { IAuthorAnalyticsData, ITags } from "../data/data";
+import { Network } from "../charts/author/network";
+import { TimelineNetwork } from "../charts/author/timelineNetwork";
+import { IAuthorAnalyticsEntriesRaw, IAuthorEntriesRaw } from "../data/db";
+import { Reflections } from "../charts/author/reflections";
 export declare class Dashboard {
     timeline: TimelineNetwork;
     network: Network;
     reflections: Reflections;
-    constructor(data: IAuthorAnalyticsData);
+    constructor(entriesRaw: IAuthorEntriesRaw[], analyticsRaw: IAuthorAnalyticsEntriesRaw[]);
+    renderError(e: any, chartId: string, css?: string): void;
     resizeTimeline(): void;
+    handleMultiUser(entries: IAuthorAnalyticsData[], extend?: Function): void;
     preloadTags(entries: IAuthorAnalyticsData, enable?: boolean): ITags[];
 }
-export declare function buildControlAuthorAnalyticsCharts(entriesRaw: IReflectionAuthorRaw[], analyticsRaw: IAnalytics): Promise<void>;
+export declare function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[], analyticsRaw: IAuthorAnalyticsEntriesRaw[]): void;

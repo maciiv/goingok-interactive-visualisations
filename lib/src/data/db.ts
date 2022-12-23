@@ -1,4 +1,4 @@
-import { IReflectionAuthor, AdminAnalyticsData, AuthorAnalyticsData, IReflection, IAnalytics } from "./data.js";
+import { IReflectionAuthor, AdminAnalyticsData, AuthorAnalyticsData, IReflection, IAnalytics, INodes, IEdges, Analytics } from "./data";
 
 export interface IReflectionAuthorRaw {
     refId: string
@@ -34,22 +34,46 @@ export class AdminAnalyticsDataRaw implements IAdminAnalyticsDataRaw {
     }
 }
 
-export interface IAuthorAnalyticsDataRaw {
+export interface IAuthorEntriesRaw {
+    pseudonym: string
     reflections: IReflectionAuthorRaw[]
-    analytics: IAnalytics
+}
+
+export interface IAnalyticsEntriesRaw {
+    nodes: INodes[]
+    edges: IEdges<number | INodes>[]
+}
+
+export interface IAuthorAnalyticsEntriesRaw {
+    pseudonym: string
+    analytics: IAnalyticsEntriesRaw
+}
+
+export interface IAuthorAnalyticsDataRaw {
+    pseudonym: string
+    reflections: IReflectionAuthorRaw[]
+    analytics: IAnalyticsEntriesRaw
     transformData(): AuthorAnalyticsData
 }
 
 export class AuthorAnalyticsDataRaw implements IAuthorAnalyticsDataRaw {
+    pseudonym: string
     reflections: IReflectionAuthorRaw[]
-    analytics: IAnalytics
-    constructor(entries: IReflectionAuthorRaw[], analytics: IAnalytics) {
+    analytics: IAnalyticsEntriesRaw
+    constructor(entries: IReflectionAuthorRaw[], analytics: IAuthorAnalyticsEntriesRaw) {
+        this.pseudonym = analytics.pseudonym
         this.reflections = entries
-        this.analytics = analytics
+        this.analytics = analytics.analytics
     }
     transformData(colourScale?: Function): AuthorAnalyticsData {
-        return new AuthorAnalyticsData(this.reflections.map(d => { 
-            return { "refId": parseInt(d.refId), "timestamp": new Date(d.timestamp), "point": parseInt(d.point), "text": d.text } 
-        }) as IReflection[], this.analytics, colourScale)
+        let reflections = this.reflections.map(d => { 
+            return { 
+                "refId": parseInt(d.refId), 
+                "timestamp": new Date(d.timestamp), 
+                "point": parseInt(d.point), 
+                "text": d.text 
+            } as IReflection
+        })
+        return new AuthorAnalyticsData(reflections, new Analytics(reflections, this.analytics.nodes, this.analytics.edges), this.pseudonym, colourScale)
     }
 }

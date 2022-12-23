@@ -1,4 +1,4 @@
-export { buildControlAdminAnalyticsCharts } from "./dashboards/adminControl.js"
-export { buildExperimentAdminAnalyticsCharts } from "./dashboards/adminExp.js"
-export { buildControlAuthorAnalyticsCharts } from "./dashboards/authorControl.js"
-export { buildExperimentAuthorAnalyticsCharts } from "./dashboards/authorExp.js";
+export { buildControlAdminAnalyticsCharts } from "./dashboards/adminControl"
+export { buildExperimentAdminAnalyticsCharts } from "./dashboards/adminExp"
+export { buildControlAuthorAnalyticsCharts } from "./dashboards/authorControl"
+export { buildExperimentAuthorAnalyticsCharts } from "./dashboards/authorExp";

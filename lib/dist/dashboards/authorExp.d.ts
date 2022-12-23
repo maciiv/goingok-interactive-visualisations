@@ -1,11 +1,12 @@
-import { IAnalytics, IAuthorAnalyticsData, ITags, IReflectionAnalytics } from "../data/data.js";
-import { Dashboard } from "./authorControl.js";
-import { IReflectionAuthorRaw } from "../data/db.js";
+import { IAnalytics, IAuthorAnalyticsData, ITags, IReflectionAnalytics } from "../data/data";
+import { Dashboard } from "./authorControl";
+import { IAuthorAnalyticsEntriesRaw, IAuthorEntriesRaw } from "../data/db";
 export declare class ExperimentalDashboard extends Dashboard {
     tags: ITags[];
     reflectionAnalytics: IReflectionAnalytics[];
     analytics: IAnalytics;
-    constructor(data: IAuthorAnalyticsData);
+    constructor(entriesRaw: IAuthorEntriesRaw[], analyticsRaw: IAuthorAnalyticsEntriesRaw[]);
+    handleMultiUser(entries: IAuthorAnalyticsData[]): void;
     preloadTags(entries: IAuthorAnalyticsData): ITags[];
     handleTags(): void;
     handleTagsColours(): void;
@@ -18,4 +19,4 @@ export declare class ExperimentalDashboard extends Dashboard {
     private getClickTimelineNetworkData;
     private getClickTimelineNetworkNodes;
 }
-export declare function buildExperimentAuthorAnalyticsCharts(entriesRaw: IReflectionAuthorRaw[], analyticsRaw: IAnalytics): Promise<void>;
+export declare function buildExperimentAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[], analyticsRaw: IAuthorAnalyticsEntriesRaw[]): void;

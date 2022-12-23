@@ -10,5 +10,5 @@ export declare class Sort<T> {
     private setAsc;
     protected setChevronVisibility(): void;
     protected handleChevronChange(): void;
-    private getParentEl;
+    private getCurrentLabel;
 }

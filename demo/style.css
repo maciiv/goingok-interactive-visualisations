@@ -96,6 +96,7 @@ Admin CSS
 
 .chart-container {
     min-height: 30vh;
+    position: relative;
 }
 
 .instructions {
@@ -291,7 +292,7 @@ Admin CSS
 }
 
 .zoom-buttons {
-    margin-left: auto;
+    margin-left: 0.25rem;
     margin-bottom: 0;
     width: 160px !important;
 }
@@ -371,12 +372,28 @@ Author CSS
     overflow-y: auto;
 }
 
+#tags li {
+    margin-left: 0.5rem;
+}
+
+#tags li:not(:last-child) {
+    padding-right: 0.5rem;
+    border-right: 2px solid #ced4da;
+}
+
 .tag-row {
     background-color: #fff !important;
     border-top: none !important;
     border-left: none !important;
     border-right: none !important;
     text-align: center;
+}
+
+.tag-color-picker {
+    width: 30px;
+    padding: 2px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
 }
 
 .hardline {
@@ -440,17 +457,19 @@ Author CSS
     stroke-dasharray: 5,5;
 }
 
+.reflection-text span {
+    color: #000000;
+}
+
 /**************************************************
 Spinner CSS
 ***************************************************/
 
 .loader {
-    background: #000;
-    background: radial-gradient(#222, #000);
     bottom: 0;
     left: 0;
     overflow: hidden;
-    position: fixed;
+    position: absolute;
     right: 0;
     top: 0;
     z-index: 99999;
@@ -499,34 +518,39 @@ Spinner CSS
 .loader-line-wrap:nth-child(5) { animation-delay: -250ms; }
 
 .loader-line-wrap:nth-child(1) .loader-line {
-    border-color: hsl(0, 80%, 60%);
+    border-color: #0f856b;
     height: 90px;
     width: 90px;
     top: 7px;
 }
 .loader-line-wrap:nth-child(2) .loader-line {
-    border-color: hsl(60, 80%, 60%);
+    border-color: #0f856b;
     height: 76px;
     width: 76px;
     top: 14px;
 }
 .loader-line-wrap:nth-child(3) .loader-line {
-    border-color: hsl(120, 80%, 60%);
+    border-color: #0f856b;
     height: 62px;
     width: 62px;
     top: 21px;
 }
 .loader-line-wrap:nth-child(4) .loader-line {
-    border-color: hsl(180, 80%, 60%);
+    border-color: #0f856b;
     height: 48px;
     width: 48px;
     top: 28px;
 }
 .loader-line-wrap:nth-child(5) .loader-line {
-    border-color: hsl(240, 80%, 60%);
+    border-color: #0f856b;
     height: 34px;
     width: 34px;
     top: 35px;
+}
+.cancel-loading {
+    position: absolute;
+    top: 10%;
+    right: 10%;
 }
 
 @keyframes spin {

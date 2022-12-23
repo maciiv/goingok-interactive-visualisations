@@ -1,11 +1,11 @@
-import d3 from "d3";
-import { ClickTextData, HistogramData, IAdminAnalyticsData, IHistogramData } from "../../data/data.js";
-import { Click } from "../../interactions/click.js";
-import { Tooltip, TooltipValues } from "../../interactions/tooltip.js";
-import { groupBy, calculateMean } from "../../utils/utils.js";
-import { ChartSeries, ChartPadding } from "../chartBase.js";
-import { ChartElements } from "../render.js";
-import { ChartSeriesAxis } from "../scaleBase.js";
+import { scaleLinear, select, bin } from "d3";
+import { ClickTextData, HistogramData, IAdminAnalyticsData, IHistogramData } from "../../data/data";
+import { Click } from "../../interactions/click";
+import { Tooltip, TooltipValues } from "../../interactions/tooltip";
+import { groupBy, calculateMean } from "../../utils/utils";
+import { ChartSeries, ChartPadding } from "../chartBase";
+import { ChartElements } from "../render";
+import { ChartSeriesAxis } from "../scaleBase";
 
 export class Histogram extends ChartSeries {
     elements: HistogramChartElements<this>
@@ -21,7 +21,7 @@ export class Histogram extends ChartSeries {
     set data(entries: IAdminAnalyticsData[]) {
         this._data = entries.filter(d => d.selected)
         this.x.scale.domain(entries.filter(d => d.selected).map(d => d.group));
-        this.bandwidth = d3.scaleLinear()
+        this.bandwidth = scaleLinear()
             .range([0, this.x.scale.bandwidth()])
             .domain([-100, 100]);
         this.x.transition(this.data.map(d => d.group))
@@ -32,22 +32,22 @@ export class Histogram extends ChartSeries {
         super("histogram", data.map(d => d.group));
         this.padding = new ChartPadding(40, 75, 5, 85);
         this.x = new ChartSeriesAxis(this.id, "Group Code", data.map(d => d.group), [0, this.width - this.padding.yAxis - this.padding.right]);
-        d3.select(`#${this.id} svg`).remove();
+        select(`#${this.id} svg`).remove();
         this.thresholdAxis = this.y.setThresholdAxis(30, 70);
         this.elements = new HistogramChartElements(this);
         this.clicking = new ClickHistogram(this)
         this.data = data
     }
     getBinData(d: IAdminAnalyticsData): HistogramData[] {
-        const bin = d3.bin().domain([0, 100]).thresholds([0, this.elements.getThresholdsValues()[0], this.elements.getThresholdsValues()[1]])
+        const binData = bin().domain([0, 100]).thresholds([0, this.elements.getThresholdsValues()[0], this.elements.getThresholdsValues()[1]])
         const usersData = groupBy(d.value, "pseudonym").map(c => { return { "pseudonym": c.key, "mean": calculateMean(c.value.map(r => r.point))} })
-        return bin(usersData.map(c => c.mean)).map(c => { 
+        return binData(usersData.map(c => c.mean)).map(c => { 
             return new HistogramData(d.value.filter(a => usersData.filter(r => c.includes(r.mean)).map(r => r.pseudonym).includes(a.pseudonym)), d.group, d.colour, c, Math.round(c.length / usersData.length * 100)) 
         })
     }
     render() {
-        d3.select(`#${this.id} .card-subtitle`)
-            .html(this.data.length === 1 ? `Filtering by <span class="badge badge-pill badge-info pointer">${this.data[0].group} <i class="fas fa-window-close"></i></span>` :
+        select(`#${this.id} .card-subtitle`)
+            .html(this.data.length === 1 ? `Filtering by <span class="badge rounded-pill bg-info pointer">${this.data[0].group} <i class="fas fa-window-close"></i></span>` :
                 this.data.length === 0 ? "Add group codes form the left sidebar" :"");
 
         //Process histogram

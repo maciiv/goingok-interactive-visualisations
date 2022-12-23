@@ -1,11 +1,11 @@
-import d3 from "d3";
-import { IAdminAnalyticsData, IReflectionAuthor, ITimelineData, TimelineData } from "../../data/data.js";
-import { Click } from "../../interactions/click.js";
-import { ITooltipValues, Tooltip, TooltipValues } from "../../interactions/tooltip.js";
-import { Zoom } from "../../interactions/zoom.js";
-import { maxDate, minDate } from "../../utils/utils.js";
-import { ChartTime, IChart, IChartScales } from "../chartBase.js";
-import { ChartTimeAxis, ChartLinearAxis } from "../scaleBase.js";
+import { select, selectAll, line, minIndex, maxIndex, min, max } from "d3";
+import { IAdminAnalyticsData, IReflectionAuthor, ITimelineData, TimelineData } from "../../data/data";
+import { Click } from "../../interactions/click";
+import { ITooltipValues, Tooltip, TooltipValues } from "../../interactions/tooltip";
+import { Zoom } from "../../interactions/zoom";
+import { maxDate, minDate } from "../../utils/utils";
+import { ChartTime, IChart, IChartScales } from "../chartBase";
+import { ChartTimeAxis, ChartLinearAxis } from "../scaleBase";
 
 export class Timeline extends ChartTime {
     zoomChart: ChartTimeZoom
@@ -37,17 +37,17 @@ export class Timeline extends ChartTime {
         let _this = this
 
         if (_this.data.length == 0) {
-            d3.selectAll(`#${_this.id} .card-subtitle span`)
+            selectAll(`#${_this.id} .card-subtitle span`)
                 .html("")
-            d3.selectAll(`#${_this.id} .card-subtitle .text-muted`)
+            selectAll(`#${_this.id} .card-subtitle .text-muted`)
                 .html("Add group codes from the left sidebar")
             
         } else {
-            d3.select(`#${_this.id} .card-subtitle .instructions`)
-                .html(_this.data.length === 1 ? `Filtering by <span class="badge badge-pill badge-info pointer">${_this.data[0].group} <i class="fas fa-window-close"></i></span>` : null)    
-            d3.select(`#${_this.id} .card-subtitle .text-muted`)
-                .html(`The oldest reflection was on ${_this.minTimelineDate().toDateString()}${_this.data.length != 1 ? ` in the group code ${_this.data[d3.minIndex(_this.data.map(d => d3.min(d.value.map(d => d.timestamp))))].group}` : ""}, while
-                    the newest reflection was on ${_this.maxTimelineDate().toDateString()}${_this.data.length != 1 ? ` in the group code ${_this.data[d3.maxIndex(_this.data.map(d => d3.max(d.value.map(d => d.timestamp))))].group}` : ""}`)
+            select(`#${_this.id} .card-subtitle .instructions`)
+                .html(_this.data.length === 1 ? `Filtering by <span class="badge rounded-pill bg-info pointer">${_this.data[0].group} <i class="fas fa-window-close"></i></span>` : null)    
+            select(`#${_this.id} .card-subtitle .text-muted`)
+                .html(`The oldest reflection was on ${_this.minTimelineDate().toDateString()}${_this.data.length != 1 ? ` in the group code ${_this.data[minIndex(_this.data.map(d => min(d.value.map(d => d.timestamp))))].group}` : ""}, while
+                    the newest reflection was on ${_this.maxTimelineDate().toDateString()}${_this.data.length != 1 ? ` in the group code ${_this.data[maxIndex(_this.data.map(d => max(d.value.map(d => d.timestamp))))].group}` : ""}`)
         }
 
         //Draw circles
@@ -64,7 +64,7 @@ export class Timeline extends ChartTime {
 
         
         const onMouseover = function(this: SVGCircleElement, e: MouseEvent, d: ITimelineData) {
-            if (d3.select(this).attr("class").includes("clicked")) return
+            if (select(this).attr("class").includes("clicked")) return
             _this.tooltip.appendTooltipContainer();
             let tooltipBox = _this.tooltip.appendTooltipText(d.timestamp.toDateString(), 
                 [new TooltipValues("User", d.pseudonym), 
@@ -87,7 +87,7 @@ export class Timeline extends ChartTime {
                 return yTooltip;
             };
 
-            d3.select(this).attr("r", 10)
+            select(this).attr("r", 10)
             _this.tooltip.appendLine(0, _this.y.scale(d.point), _this.x.scale(d.timestamp) - 10, _this.y.scale(d.point), d.colour);
             _this.tooltip.appendLine(_this.x.scale(d.timestamp), _this.y.scale(0), _this.x.scale(d.timestamp), _this.y.scale(d.point) + 10, d.colour);
         }
@@ -95,8 +95,8 @@ export class Timeline extends ChartTime {
             _this.elements.svg.select(".tooltip-container").transition()
                 .style("opacity", 0)
             _this.tooltip.removeTooltip()
-            if (d3.select(this).attr("class").includes("clicked")) return
-            d3.select(this).attr("r", 5)
+            if (select(this).attr("class").includes("clicked")) return
+            select(this).attr("r", 5)
         }
         //Enable tooltip       
         _this.tooltip.enableTooltip(onMouseover, onMouseout);
@@ -139,7 +139,7 @@ export class Timeline extends ChartTime {
             let newChartRange = [0, _this.width - _this.padding.yAxis].map(d => e.transform.applyX(d));
             _this.x.scale.rangeRound(newChartRange);
             _this.zoomChart.x.scale.rangeRound([0, _this.width - _this.padding.yAxis - 5].map(d => e.transform.invertX(d)));
-            let newLine = d3.line<IReflectionAuthor>()
+            let newLine = line<IReflectionAuthor>()
                 .x(d => _this.x.scale(d.timestamp))
                 .y(d => _this.y.scale(d.point));
 

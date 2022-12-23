@@ -1,19 +1,18 @@
-import d3 from "d3";
-import { ChartSeries } from "../charts/chartBase.js";
-import { IAdminAnalyticsData, IHistogramData, IReflectionAuthor, HistogramData, ITimelineData, AdminAnalyticsData } from "../data/data.js";
-import { Dashboard } from "./adminControl.js";
-import { IAdminAnalyticsDataRaw, AdminAnalyticsDataRaw } from "../data/db.js";
-import { Loading } from "../utils/loading.js";
-import { Tutorial, TutorialData } from "../utils/tutorial.js";
-import { Sort } from "../interactions/sort.js";
-import { Help } from "../utils/help.js";
+import { select, selectAll, drag, line, curveMonotoneX, sort } from "d3";
+import { ChartSeries } from "../charts/chartBase";
+import { IAdminAnalyticsData, IHistogramData, IReflectionAuthor, HistogramData, ITimelineData, AdminAnalyticsData } from "../data/data";
+import { Dashboard } from "./adminControl";
+import { IAdminAnalyticsDataRaw } from "../data/db";
+import { Tutorial, TutorialData } from "../utils/tutorial";
+import { Sort } from "../interactions/sort";
+import { Help } from "../utils/help";
 
 export class ExperimentalDashboard extends Dashboard {
     entries: IAdminAnalyticsData[]
     sort: Sort<IAdminAnalyticsData>
     help = new Help()
-    constructor(data: IAdminAnalyticsData[]) {
-        super(data)
+    constructor(entriesRaw: IAdminAnalyticsDataRaw[]) {
+        super(entriesRaw)
         this.sort = new Sort("sort-groups", "createDate")
         this.barChart.extend = this.extendBarChart.bind(this)
         this.extendBarChart()
@@ -21,17 +20,20 @@ export class ExperimentalDashboard extends Dashboard {
         this.extendHistogram()
         this.timeline.extend = this.extendTimeline.bind(this)
         this.extendTimeline()
+        this.handleGroups()
+        this.handleGroupsColours()
+        this.handleGroupsSort()
     }
     preloadGroups(entries: IAdminAnalyticsData[]): IAdminAnalyticsData[] {
         super.preloadGroups(entries, true)
         this.entries = entries;
 
-        d3.select("#groups")
+        select("#groups")
             .selectAll<HTMLLIElement, IAdminAnalyticsData>("li").select("div")
             .insert("div", "input")
             .attr("class", "input-group-prepend")
             .append("div")
-            .attr("class", "input-group-text group-row")
+            .attr("class", "input-group-text group-row h-100")
             .append("input")
             .attr("type", "checkbox")
             .attr("value", d => d.group)
@@ -41,7 +43,7 @@ export class ExperimentalDashboard extends Dashboard {
     }
     handleGroups(): void {
         const _this = this;
-        const inputs = d3.selectAll("#all-groups input[type=checkbox]")
+        const inputs = selectAll("#all-groups input[type=checkbox]")
         inputs.on("change", (e: Event) => {
             const target = e.target as HTMLInputElement;
             const entry = _this.entries.find(d => d.group == target.value)
@@ -83,7 +85,7 @@ export class ExperimentalDashboard extends Dashboard {
     }
     handleGroupsColours(): void {
         const _this = this;
-        d3.selectAll("#groups input[type=color]").on("change", (e: Event) => {
+        selectAll("#groups input[type=color]").on("change", (e: Event) => {
             let target = e.target as HTMLInputElement;
             let groupId = target.id.replace("colour-", "");
             _this.entries.find(d => d.group == groupId).colour = target.value;
@@ -104,7 +106,7 @@ export class ExperimentalDashboard extends Dashboard {
     handleGroupsSort(): void {
         const _this = this;
         const id = "sort-groups"
-        d3.selectAll(`#${id} .btn-group-toggle label`).on("click", function (this: HTMLLabelElement) {
+        selectAll(`#${id} .btn-group label`).on("click", function (this: HTMLLabelElement) {
             const selectedOption = (this.control as HTMLInputElement).value
             _this.sort.sortBy = selectedOption
             _this.entries = _this.sort.sortData(_this.entries)
@@ -142,7 +144,7 @@ export class ExperimentalDashboard extends Dashboard {
             _this.users.data = chart.data
         });
         const onClick = function(e: Event, d: IAdminAnalyticsData) {
-            if (d3.select(this).attr("class").includes("clicked")) {
+            if (select(this).attr("class").includes("clicked")) {
                 chart.clicking.removeClick()
                 _this.totals.data = chart.data
                 _this.histogram.data = chart.data
@@ -151,7 +153,7 @@ export class ExperimentalDashboard extends Dashboard {
                 return
             }
             chart.clicking.removeClick()
-            d3.select(this)
+            select(this)
                 .classed("clicked", true)
             chart.clicking.clicked = true
             _this.totals.data = [d]
@@ -166,7 +168,7 @@ export class ExperimentalDashboard extends Dashboard {
         const _this = this
         const chart = _this.histogram
 
-        d3.select(`#${chart.id} .badge`).on("click", () => _this.handleFilterButton())
+        select(`#${chart.id} .badge`).on("click", () => _this.handleFilterButton())
 
         chart.elements.contentContainer.select(".zoom-rect").on("click", () => {
             chart.clicking.removeClick()
@@ -178,8 +180,8 @@ export class ExperimentalDashboard extends Dashboard {
         //Start dragging functions           
         const dragStart = function() {
             chart.elements.contentContainer.selectAll(`.${chart.id}-histogram-text-container`).remove()
-            d3.select(this).classed("grab", false)
-            d3.select(this).classed("grabbing", true)
+            select(this).classed("grab", false)
+            select(this).classed("grabbing", true)
             _this.help.removeHelp(chart)
         }
         const dragging = function(e: MouseEvent, d: number) {
@@ -197,7 +199,7 @@ export class ExperimentalDashboard extends Dashboard {
             let tDistressed = thresholds[0]
             let tSoaring = thresholds[1]
 
-            d3.select<SVGLineElement, number>(this)
+            select<SVGLineElement, number>(this)
                 .datum(chart.y.scale.invert(e.y))
                 .attr("y1", d => chart.y.scale(d))
                 .attr("y2", d => chart.y.scale(d))
@@ -213,8 +215,8 @@ export class ExperimentalDashboard extends Dashboard {
         }
         const dragEnd = function() {
             chart.render()
-            d3.select(this).classed("grabbing", false)
-            d3.select(this).classed("grab", true)
+            select(this).classed("grabbing", false)
+            select(this).classed("grab", true)
             if (chart.clicking.clicked) {
                 let clickData = chart.elements.contentContainer.select<SVGRectElement>(".clicked").datum() as IHistogramData
                 chart.clicking.appendThresholdPercentages(chart.data, clickData)
@@ -226,13 +228,13 @@ export class ExperimentalDashboard extends Dashboard {
         //Add drag functions to the distressed threshold
         chart.elements.contentContainer.selectAll(".threshold-line")
             .classed("grab", true)
-            .call(d3.drag()
+            .call(drag()
                 .on("start", dragStart)
                 .on("drag", dragging)
                 .on("end", dragEnd))
 
         const onClick = function(e: Event, d: HistogramData) {
-            if (d3.select(this).attr("class").includes("clicked")) {
+            if (select(this).attr("class").includes("clicked")) {
                 chart.clicking.removeClick()
                 _this.totals.data = chart.data
                 _this.timeline.data = chart.data
@@ -260,12 +262,12 @@ export class ExperimentalDashboard extends Dashboard {
             chart.elements.zoomFocus = undefined
         }
 
-        d3.select(`#${chart.id} .badge`).on("click", () => _this.handleFilterButton())
+        select(`#${chart.id} .badge`).on("click", () => _this.handleFilterButton())
 
         if (_this.histogram.clicking.clicked) {
-            d3.select(`#${chart.id} .instructions`)
+            select(`#${chart.id} .instructions`)
                 .append("span")
-                .attr("class", "badge badge-pill badge-info pointer")
+                .attr("class", "badge rounded-pill bg-info pointer")
                 .html(`Users ${_this.histogram.clicking.clickedBin} <i class="fas fa-window-close"></i>`)
                 .on("click", () => {
                     _this.histogram.clicking.removeClick()
@@ -284,8 +286,8 @@ export class ExperimentalDashboard extends Dashboard {
         });
 
         const onClick = function(this: SVGCircleElement, e: MouseEvent, d: ITimelineData) {
-            if (d3.select(this).attr("class").includes("clicked")) {
-                if (d3.select(this).attr("class").includes("main")) {
+            if (select(this).attr("class").includes("clicked")) {
+                if (select(this).attr("class").includes("main")) {
                     chart.clicking.removeClick()
                     _this.users.data = chart.data
                     return
@@ -302,7 +304,7 @@ export class ExperimentalDashboard extends Dashboard {
                 .classed("clicked", true)
                 .attr("r", 10)
             chart.elements.content.classed("not-clicked", (data: IReflectionAuthor) => data.pseudonym != d.pseudonym)
-            d3.select(this)
+            select(this)
                 .classed("main", true)
                 .attr("r", 15)
             
@@ -318,15 +320,15 @@ export class ExperimentalDashboard extends Dashboard {
                 } as IReflectionAuthor
             })
 
-            const line = d3.line<IReflectionAuthor>()
+            const refLine = line<IReflectionAuthor>()
                 .x(d => chart.x.scale(d.timestamp))
                 .y(d => chart.y.scale(d.point))
-                .curve(d3.curveMonotoneX)
+                .curve(curveMonotoneX)
 
             chart.elements.contentContainer.append("path")
-                .datum(d3.sort(usersData, d => d.timestamp))
+                .datum(sort(usersData, d => d.timestamp))
                 .attr("class", "click-line")
-                .attr("d", d => line(d))
+                .attr("d", d => refLine(d))
                 .style("stroke", d.colour);
 
             //Draw click containers
@@ -354,12 +356,34 @@ export class ExperimentalDashboard extends Dashboard {
 }
 
 export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAdminAnalyticsDataRaw[]) {
-    const loading = new Loading();
-    const rawData = entriesRaw.map(d => new AdminAnalyticsDataRaw(d.group, d.value, d.createDate));
-    let entries = rawData.map(d => d.transformData());
-    const colourScale = d3.scaleOrdinal(d3.schemeCategory10);
-    entries = entries.map(d => new AdminAnalyticsData(d.group, d.value, d.createDate, colourScale(d.group), true));
-    await drawCharts(entries);
+    const dashboard = new ExperimentalDashboard(entriesRaw)
+    //Handle sidebar button
+    dashboard.sidebarBtn()
+
+    //Handle groups chart help
+    dashboard.help.helpPopover(dashboard.barChart.id, `<b>Bar chart</b><br>
+        A bar chart of the users in each group code<br>
+        <u><i>Hover</i></u> over the bars for information on demand<br>
+        <u><i>Click</i></u> a bar to compare and drill-down`)
+
+    //Handle users histogram chart help
+    dashboard.help.helpPopover(dashboard.histogram.id, `<b>Histogram</b><br>
+        A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i><br>
+        <u><i>Hover</i></u> over the boxes for information on demand<br>
+        <u><i>Click</i></u> a box to compare and drill-down<br>
+        <u><i>Drag</i></u> the lines to change the thresholds`)
+
+    //Handle timeline chart help
+    dashboard.help.helpPopover(dashboard.timeline.id, `<b>Scatter plot</b><br>
+        The data is showed as a collection of points<br>The data represented are <i>reflections over time</i><br>
+        <u><i>Hover</i></u> over the circles for information on demand<br>
+        <u><i>Click</i></u> a circle to connect the user's reflections and drill-down`)
+    
+    //Handle users histogram chart help
+    dashboard.help.helpPopover("reflections", `<b>Reflections</b><br>
+        Each user's reflections are shown by group. The chart depicts the user's average reflection point<br>
+        <u><i>Sort</i></u> by user's name or average reflection state point`)
+    
     new Tutorial([new TutorialData("#groups", "Add groups to the charts and change their colours"),
     new TutorialData("#sort-groups .sort-by", "Sort groups by creation date, name or users' reflection point average"),
     new TutorialData(".card-title button", "Click the help symbol in any chart to get additional information"),
@@ -368,44 +392,5 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAdminAnal
     new TutorialData("#histogram .histogram-rect", "Click to compare the bin with other's group bins and drill-down"),
     new TutorialData("#timeline .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area"),
     new TutorialData("#timeline .circle", "Hover for information on demand or click to connect the user's reflections"),
-    new TutorialData("#reflections .sort-by", "Sort users alphabetically or by their average reflection state point")]);
-    loading.isLoading = false;
-    loading.removeDiv();
-    async function drawCharts(allEntries: IAdminAnalyticsData[]) {
-        const dashboard = new ExperimentalDashboard(allEntries)
-        //Handle sidebar button
-        dashboard.sidebarBtn()
-
-        //Preloaded groups
-        dashboard.preloadGroups(allEntries)
-
-        //Handle groups chart help
-        dashboard.help.helpPopover(dashboard.barChart.id, `<b>Bar chart</b><br>
-            A bar chart of the users in each group code<br>
-            <u><i>Hover</i></u> over the bars for information on demand<br>
-            <u><i>Click</i></u> a bar to compare and drill-down`)
-
-        //Handle users histogram chart help
-        dashboard.help.helpPopover(dashboard.histogram.id, `<b>Histogram</b><br>
-            A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i><br>
-            <u><i>Hover</i></u> over the boxes for information on demand<br>
-            <u><i>Click</i></u> a box to compare and drill-down<br>
-            <u><i>Drag</i></u> the lines to change the thresholds`)
-
-        //Handle timeline chart help
-        dashboard.help.helpPopover(dashboard.timeline.id, `<b>Scatter plot</b><br>
-            The data is showed as a collection of points<br>The data represented are <i>reflections over time</i><br>
-            <u><i>Hover</i></u> over the circles for information on demand<br>
-            <u><i>Click</i></u> a circle to connect the user's reflections and drill-down`)
-        
-        //Handle users histogram chart help
-        dashboard.help.helpPopover("reflections", `<b>Reflections</b><br>
-            Each user's reflections are shown by group. The chart depicts the user's average reflection point<br>
-            <u><i>Sort</i></u> by user's name or average reflection state point`)
-
-        //Update charts depending on group
-        dashboard.handleGroups()
-        dashboard.handleGroupsColours()
-        dashboard.handleGroupsSort()
-    }
+    new TutorialData("#reflections .sort-by", "Sort users alphabetically or by their average reflection state point")])
 }

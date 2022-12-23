@@ -1,9 +1,8 @@
-;
-import { HistogramData, IAdminAnalyticsData, IHistogramData } from "../../data/data.js";
-import { Click } from "../../interactions/click.js";
-import { Tooltip } from "../../interactions/tooltip.js";
-import { ChartSeries } from "../chartBase.js";
-import { ChartElements } from "../render.js";
+import { HistogramData, IAdminAnalyticsData, IHistogramData } from "../../data/data";
+import { Click } from "../../interactions/click";
+import { Tooltip } from "../../interactions/tooltip";
+import { ChartSeries } from "../chartBase";
+import { ChartElements } from "../render";
 export declare class Histogram extends ChartSeries {
     elements: HistogramChartElements<this>;
     thresholdAxis: d3.Axis<d3.NumberValue>;

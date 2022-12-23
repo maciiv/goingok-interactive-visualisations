@@ -1,6 +1,6 @@
-import d3 from "d3"
-import { INodes, IReflection, IReflectionAnalytics } from "../../data/data.js"
-import { Sort } from "../../interactions/sort.js"
+import { select, selectAll } from "d3"
+import { INodes, IReflection, IReflectionAnalytics } from "../../data/data"
+import { Sort } from "../../interactions/sort"
 
 export class Reflections {
     id: string
@@ -12,14 +12,14 @@ export class Reflections {
     }
     set nodes(nodes: INodes[]) {
         this._nodes = nodes
-        this.fillNodesText()
-
+        this.nodes !== undefined ? this.fillNodesText() : null
     }
     private _data: IReflectionAnalytics[]
     get data() {
         return this._data
     }
     set data(entries: IReflectionAnalytics[]) {
+        
         this._data = entries.map(c => {
             c.nodes = c.nodes.filter(d => d.selected)
             return c
@@ -29,17 +29,17 @@ export class Reflections {
     }
     constructor(data: IReflectionAnalytics[]) {
         this.id = "reflections"
-        this.sort = new Sort("sort", "timestamp")
+        this.sort = new Sort("sort-reflections", "timestamp")
         this.data = data
     }
     render() {
         const _this = this
 
-        d3.select(`#${_this.id} .card-subtitle`)
-        .html(_this.data.length == 1 ? `Filtering by <span class="badge badge-pill badge-info">${_this.data[0].timestamp.toDateString()} <i class="fas fa-window-close"></i></span>`:
+        select(`#${_this.id} .card-subtitle .text-muted`)
+        .html(_this.data.length == 1 ? `Filtering by <span class="badge rounded-pill bg-info pointer">${_this.data[0].timestamp.toDateString()} <i class="fas fa-window-close"></i></span>`:
             "");
 
-        d3.select<HTMLDivElement, IReflection>(`#${_this.id} .reflections-tab`)
+        select<HTMLDivElement, IReflection>(`#${_this.id} .reflections-tab`)
             .selectAll(".reflection")
             .data(_this.data)
             .join(
@@ -63,7 +63,7 @@ export class Reflections {
             const isOpenTag = data.nodes.find(c => c.startIdx === i);
             const isCloseTag = data.nodes.find(c => c.endIdx === i);
             if (isOpenTag !== undefined) {
-                html += `<span id="node-${isOpenTag.idx}" class="badge badge-pill" style="border: 2px solid ${isOpenTag.properties["color"]}">${data.text[i]}`
+                html += `<span id="node-${isOpenTag.idx}" class="badge rounded-pill" style="border: 2px solid ${isOpenTag.properties["color"]}">${data.text[i]}`
             } else if (isCloseTag !== undefined) {
                 html += `${data.text[i]}</span>`
             } else {
@@ -73,20 +73,20 @@ export class Reflections {
         return html;
     }
     private fillNodesText() {
-        d3.selectAll<HTMLDivElement, IReflection>(`#${this.id} .reflections-tab div`)
+        selectAll<HTMLDivElement, IReflection>(`#${this.id} .reflections-tab div`)
         .filter(c => this.nodes.map(d => d.refId).includes(c.refId))
         .selectAll("span")
             .each((c, i, g) => {
-                let node = this.nodes.find(r => r.idx === parseInt(d3.select(g[i]).attr("id").replace("node-", "")))
+                let node = this.nodes.find(r => r.idx === parseInt(select(g[i]).attr("id").replace("node-", "")))
                 if (node !== undefined) {
-                    d3.select(g[i]).style("background-color", node.properties["color"])
+                    select(g[i]).style("background-color", node.properties["color"])
                 }
             })
     }
     private handleSort() {
         const _this = this
-        const id = "sort"
-        d3.selectAll(`#${id} .btn-group-toggle label`).on("click", function (this: HTMLLabelElement) {
+        const id = "sort-reflections"
+        selectAll(`#${id} .sort-by label`).on("click", function (this: HTMLLabelElement) {
             const selectedOption = (this.control as HTMLInputElement).value
             _this.sort.sortBy = selectedOption
             _this._data = _this.sort.sortData(_this.data)

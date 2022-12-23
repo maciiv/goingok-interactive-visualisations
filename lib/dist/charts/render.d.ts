@@ -1,5 +1,4 @@
-;
-import { IChart, IChartBasic } from "./chartBase.js";
+import { IChart, IChartBasic } from "./chartBase";
 interface IChartElementsContainers {
     svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>;
     contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>;

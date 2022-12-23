@@ -1,5 +1,5 @@
-import d3 from "d3";
-import { IChart, IChartBasic } from "./chartBase.js";
+import { select } from "d3";
+import { IChart, IChartBasic } from "./chartBase";
 
 interface IChartElementsContainers {
     svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>
@@ -18,7 +18,7 @@ class ChartElementsContainers<T extends IChartBasic> implements IChartElementsCo
         this.contentContainer = this.appendContentContainer();
     }
     private appendSVG(containerClass?: string): d3.Selection<SVGSVGElement, unknown, HTMLElement, any> {
-        return d3.select(`#${this.chart.id} ${containerClass == undefined ? ".chart-container" : "." + containerClass}`)
+        return select(`#${this.chart.id} ${containerClass == undefined ? ".chart-container" : "." + containerClass}`)
             .append("svg")
             .attr("class", "chart-svg")
             .attr("preserveAspectRatio", "xMinYMin meet")

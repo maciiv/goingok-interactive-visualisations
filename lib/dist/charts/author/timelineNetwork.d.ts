@@ -1,7 +1,7 @@
-import { IReflectionAnalytics } from "../../data/data.js";
-import { Click } from "../../interactions/click.js";
-import { Tooltip } from "../../interactions/tooltip.js";
-import { ChartTime } from "../chartBase.js";
+import { IReflectionAnalytics } from "../../data/data";
+import { Click } from "../../interactions/click";
+import { Tooltip } from "../../interactions/tooltip";
+import { ChartTime } from "../chartBase";
 export declare class TimelineNetwork extends ChartTime {
     tooltip: Tooltip<this>;
     clicking: ClickTimelineNetwork<this>;
@@ -10,9 +10,9 @@ export declare class TimelineNetwork extends ChartTime {
     get data(): IReflectionAnalytics[];
     set data(entries: IReflectionAnalytics[]);
     constructor(data: IReflectionAnalytics[]);
-    render(): void;
+    render(): Promise<void>;
     private getLines;
-    private renderReflectionNetwork;
+    private renderReflectionNodes;
     private simulation;
 }
 declare class ClickTimelineNetwork<T extends TimelineNetwork> extends Click<T> {

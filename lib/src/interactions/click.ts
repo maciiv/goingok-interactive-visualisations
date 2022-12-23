@@ -1,5 +1,5 @@
-import { IClickTextData } from "../data/data.js";
-import { IChart } from "../charts/chartBase.js";
+import { IClickTextData } from "../data/data";
+import { IChart } from "../charts/chartBase";
 
 type ClickFunction = {
     (this: SVGRectElement | SVGCircleElement | SVGPathElement | d3.BaseType, event: MouseEvent, d: unknown): void

@@ -100,52 +100,93 @@ export declare class ClickTextData implements IClickTextData {
     };
     constructor(clickStat: IDataStats | number, dataStat: IDataStats | number, clickGroup: string, dataGroup: string);
 }
-export interface INodes extends d3.SimulationNodeDatum {
+export declare enum NodeType {
+    Sys = "SYS",
+    Usr = "USR",
+    Grp = "GRP"
+}
+export declare enum EdgeType {
+    Sys = "SYS",
+    Usr = "USR",
+    Grp = "GRP"
+}
+export declare enum GroupByType {
+    Ref = "refId",
+    Code = "nodeCode"
+}
+export interface INodesBase {
     idx: number;
-    nodeType: string;
+    nodeType: NodeType;
+    nodeCode: string;
     refId: number;
     startIdx?: number;
     endIdx?: number;
+}
+export interface INodes extends INodesBase, d3.SimulationNodeDatum {
     expression: string;
     labelType: string;
-    name: string;
+    name?: string;
     description: string;
     selected?: boolean;
     properties: any;
 }
-export interface IEdges<T> extends d3.SimulationLinkDatum<T> {
+export interface IEdgesBase<T> extends d3.SimulationLinkDatum<T> {
     idx: number;
-    edgeType: string;
+    edgeType: EdgeType;
     directional: boolean;
     weight: number;
+    source: T;
+    target: T;
+}
+export interface IEdges<T> extends IEdgesBase<T> {
     labelType: string;
     name: string;
     description: string;
     selected?: boolean;
     properties: any;
-    isReflection?: boolean;
 }
 export interface IAnalytics {
-    name: string;
-    description: string;
+    reflections: IReflection[];
     nodes: INodes[];
-    edges: IEdges<INodes>[];
+    edges: IEdges<number | INodes>[];
+}
+export declare class Analytics implements IAnalytics {
+    reflections: IReflection[];
+    nodes: INodes[];
+    edges: IEdges<number | INodes>[];
+    constructor(reflections: IReflection[], nodes: INodes[], edges: IEdges<number | INodes>[]);
+}
+export interface IAuthorAnalytics extends IAnalytics {
+    groupByKey: GroupByType;
+}
+export declare class AuthorAnalytics extends Analytics implements IAuthorAnalytics {
+    groupByKey: GroupByType;
+    constructor(reflections: IReflection[], nodes: INodes[], edges: IEdges<INodes>[], groupByKey?: GroupByType);
+    private addGroupByAnalytics;
 }
 export interface IReflectionAnalytics extends IReflection {
     nodes: INodes[];
+    nodeTags: INodeTags[];
+}
+export interface INodeTags extends ITags, d3.SimulationNodeDatum {
+    refId: number;
+    total: number;
 }
 export interface ITags {
+    key: string;
     name: string;
     properties: any;
     selected?: boolean;
 }
 export interface IAuthorAnalyticsData {
+    pseudonym: string;
     reflections: IReflectionAnalytics[];
     analytics: IAnalytics;
 }
 export declare class AuthorAnalyticsData implements IAuthorAnalyticsData {
+    pseudonym: string;
     reflections: IReflectionAnalytics[];
     analytics: IAnalytics;
-    constructor(reflections: IReflection[], analytics: IAnalytics, colourScale: Function);
+    constructor(reflections: IReflection[], analytics: IAnalytics, pseudonym: string, colourScale: Function);
     private processColour;
 }

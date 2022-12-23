@@ -1,70 +1,70 @@
-import d3 from "d3";
+import { select, scaleLinear, line, curveCatmullRom } from "d3";
 
 export interface ITutorialData {
-    id: string;
-    content: string;
+    id: string
+    content: string
 }
 
 export class TutorialData implements ITutorialData {
-    id: string;
-    content: string;
+    id: string
+    content: string
     constructor(id: string, content: string) {
-        this.id = id;
-        this.content = content;
+        this.id = id
+        this.content = content
     }
 }
 
 export interface ITutorial {
-    tutorial: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
-    tutorialData: ITutorialData[];
-    slide: number;
-    appendTutorial(id: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
-    removeTutorial(): void;
+    tutorial: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>
+    tutorialData: ITutorialData[]
+    slide: number
+    appendTutorial(id: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>
+    removeTutorial(): void
 }
 
 export class Tutorial implements ITutorial {
-    tutorial: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
-    tutorialData: ITutorialData[];
-    slide: number;
+    tutorial: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>
+    tutorialData: ITutorialData[]
+    slide: number
     constructor(data: ITutorialData[]) {
-        this.tutorial = this.appendTutorial();
-        this.tutorialData = data;
-        this.slide = 0;
-        this.appendTutorialBackdrop();
+        this.tutorial = this.appendTutorial()
+        this.tutorialData = data
+        this.slide = 0
+        this.appendTutorialBackdrop()
     }
     appendTutorial(): d3.Selection<HTMLDivElement, unknown, HTMLElement, any> {
-        d3.select("body")
-            .classed("no-overflow", true);
-        let div = d3.select(".wrapper")
+        select("body")
+            .classed("no-overflow", true)
+        let div = select(".wrapper")
             .append("div")
-            .attr("class", "tutorial");
-        return div;
+            .attr("class", "tutorial")
+        return div
     };
     private appendTutorialBackdrop(): void {
         if (this.slide >= this.tutorialData.length) {
-            this.removeTutorial();
-            return;
+            this.removeTutorial()
+            return
         }
         window.scroll(0, 0);
-        let tutorialData = this.tutorialData[this.slide];
-        let tutorialFocus = d3.select<HTMLDivElement, unknown>(tutorialData.id).node().getBoundingClientRect();
+        let tutorialData = this.tutorialData[this.slide]
+        let tutorialFocus = select<HTMLDivElement, unknown>(tutorialData.id).node().getBoundingClientRect()
         class TutorialContentData {
-            top: string;
-            left: string;
-            width: string;
-            height: string;
+            top: string
+            left: string
+            width: string
+            height: string
             constructor(top: string, left: string, width: string, height: string) {
-                this.top = top;
-                this.left = left;
-                this.width = width;
-                this.height = height;
+                this.top = top
+                this.left = left
+                this.width = width
+                this.height = height
             }
         }
-        window.scroll(0, tutorialFocus.top - 200);
-        let data = [new TutorialContentData("0px", "0px", "100%", tutorialFocus.top + "px"), 
-            new TutorialContentData(tutorialFocus.bottom + "px", "0px", "100%", "100%"), 
-            new TutorialContentData(tutorialFocus.top + "px", "0px", tutorialFocus.left + "px", tutorialFocus.height + "px"), 
-            new TutorialContentData(tutorialFocus.top + "px", tutorialFocus.right + "px", "100%", tutorialFocus.height + "px")]
+        window.scroll(0, tutorialFocus.top + window.scrollY - 200);
+        let data = [new TutorialContentData("0px", "0px", "100%", (tutorialFocus.top + window.scrollY) + "px"), 
+            new TutorialContentData((tutorialFocus.bottom + window.scrollY) + "px", "0px", "100%", "100%"), 
+            new TutorialContentData((tutorialFocus.top + window.scrollY) + "px", "0px", tutorialFocus.left + "px", tutorialFocus.height + "px"), 
+            new TutorialContentData((tutorialFocus.top + window.scrollY) + "px", tutorialFocus.right + "px", "100%", tutorialFocus.height + "px")]
         this.tutorial.selectAll(".tutorial-backdrop")
             .data(data)
             .join(
@@ -79,10 +79,10 @@ export class Tutorial implements ITutorial {
                     .style("width", d => d.width)
                     .style("height", d => d.height),
                 exit => exit.remove()
-            );
+            )
         
-        this.appendTutorialContent(tutorialFocus, tutorialData.content);
-    };
+        this.appendTutorialContent(tutorialFocus, tutorialData.content)
+    }
     private appendTutorialContent(tutorialFocus: DOMRect, content: string) {
         let isLeft = true;
         let left = tutorialFocus.left + tutorialFocus.width - 200
@@ -98,7 +98,7 @@ export class Tutorial implements ITutorial {
         if (this.tutorial.selectAll(".tutorial-content").empty()) {
             this.tutorial.append("div")
                 .attr("class", "tutorial-content")
-                .style("top", (tutorialFocus.top - 50) + "px")
+                .style("top", (tutorialFocus.top + window.scrollY - 50) + "px")
                 .style("left", left + "px")
                 .call(div => div.append("div")
                     .attr("class", "row")
@@ -124,7 +124,7 @@ export class Tutorial implements ITutorial {
             this.drawArrow(tutorialFocus, isLeft);
         } else {
             this.tutorial.select<HTMLDivElement>(".tutorial-content")
-                .style("top", (tutorialFocus.top - 50) + "px")
+                .style("top", (tutorialFocus.top + window.scrollY - 50) + "px")
                 .style("left", isLeft ? tutorialFocus.left + tutorialFocus.width + 50 + "px" : 
                     tutorialFocus.left - this.tutorial.select<HTMLDivElement>(".tutorial-content").node().getBoundingClientRect().width - 50 + "px");
             this.tutorial.select(".col-md-12")
@@ -132,11 +132,11 @@ export class Tutorial implements ITutorial {
             this.tutorial.select(".tutorial-arrow").remove();
             this.drawArrow(tutorialFocus, isLeft);
         }
-    };
+    }
     private drawArrow(tutorialFocus: DOMRect, isLeft: boolean): void {
         let tutorialArrow = this.tutorial.append("div")
             .attr("class", "tutorial-arrow")
-            .style("top", (tutorialFocus.top - 50) + "px")
+            .style("top", (tutorialFocus.top + window.scrollY - 50) + "px")
             .style("left", isLeft ? tutorialFocus.left + (tutorialFocus.width / 4) + "px" :
                 this.tutorial.select<HTMLDivElement>(".tutorial-content").node().getBoundingClientRect().left + this.tutorial.select<HTMLDivElement>(".tutorial-content").node().getBoundingClientRect().width + "px")
             .style("width", (tutorialFocus.width / 4 * 3) + 50 + "px")
@@ -154,26 +154,26 @@ export class Tutorial implements ITutorial {
             .append("path")
             .attr("d", "M0,0 L0,4 L4,2 L0,0")
             .attr("class", "arrow-head");
-        let xScale = d3.scaleLinear()
+        let xScale = scaleLinear()
             .domain([0, 100])
             .range([0, tutorialArrow.node().getBoundingClientRect().width]);
-        let yScale = d3.scaleLinear()
+        let yScale = scaleLinear()
             .domain([100, 0])
             .range([0, tutorialArrow.node().getBoundingClientRect().height]);
-        let pathGenerator = d3.line<{x: number, y: number}>()
+        let pathGenerator = line<{x: number, y: number}>()
             .x(d => xScale(d.x))
             .y(d => yScale(d.y))
-            .curve(d3.curveCatmullRom);
+            .curve(curveCatmullRom);
         svg.append("path")
             .attr("d", isLeft ? pathGenerator([{x: 95, y: 80}, {x: 25, y: 70}, {x: 25, y:25}]) : pathGenerator([{x: 0, y: 80}, {x: 75, y: 70}, {x: 75, y: 25}]))
             .attr("class", "arrow")
             .attr("marker-end", "url(#arrow-head)");
         
-    };
+    }
     removeTutorial(): void {
-        d3.select("body")
+        select("body")
             .classed("no-overflow", false);
         window.scroll(0, 0)
         this.tutorial.remove();
-    };
+    }
 }

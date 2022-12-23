@@ -1,4 +1,4 @@
-import { IChart } from "../charts/chartBase.js";
+import { IChart } from "../charts/chartBase";
 export interface IHelp {
     helpPopover(id: string, content: string): void;
     removeHelp(chart: IChart): void;

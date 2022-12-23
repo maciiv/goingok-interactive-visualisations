@@ -1,14 +1,13 @@
-import d3 from "d3";
-import { Help } from "../utils/help.js";
-import { IAdminAnalyticsData, AdminAnalyticsData } from "../data/data.js";
-import { IAdminAnalyticsDataRaw, AdminAnalyticsDataRaw } from "../data/db.js";
-import { Loading } from "../utils/loading.js";
-import { Tutorial, TutorialData } from "../utils/tutorial.js";
-import { Histogram } from "../charts/admin/histogram.js";
-import { BarChart } from "../charts/admin/barChart.js";
-import { Timeline } from "../charts/admin/timeline.js";
-import { Users } from "../charts/admin/users.js";
-import { Totals } from "../charts/admin/totals.js";
+import { scaleOrdinal, schemeCategory10, select } from "d3";
+import { Help } from "../utils/help";
+import { IAdminAnalyticsData, AdminAnalyticsData } from "../data/data";
+import { IAdminAnalyticsDataRaw, AdminAnalyticsDataRaw } from "../data/db";
+import { Tutorial, TutorialData } from "../utils/tutorial";
+import { Histogram } from "../charts/admin/histogram";
+import { BarChart } from "../charts/admin/barChart";
+import { Timeline } from "../charts/admin/timeline";
+import { Users } from "../charts/admin/users";
+import { Totals } from "../charts/admin/totals";
 
 export class Dashboard {
     totals: Totals
@@ -16,29 +15,66 @@ export class Dashboard {
     histogram: Histogram
     timeline: Timeline
     users: Users
-    constructor(data: IAdminAnalyticsData[]) {
-        this.totals = new Totals(data)
-        this.barChart = new BarChart(data)
-        this.histogram = new Histogram(data)
-        this.timeline = new Timeline(data)
-        this.users = new Users(data)
+    constructor(entriesRaw: IAdminAnalyticsDataRaw[]) {
+        try {
+            const rawData = entriesRaw.map(d => new AdminAnalyticsDataRaw(d.group, d.value, d.createDate))
+            let data = rawData.map(d => d.transformData())
+            const colourScale = scaleOrdinal(schemeCategory10)
+            data = data.map(d => new AdminAnalyticsData(d.group, d.value, d.createDate, colourScale(d.group), true))
+            try {
+                this.totals = new Totals(data)
+            } catch (e) {
+                this.renderError(e, "users-totals", ".card-title span")
+            }
+            try {
+                this.barChart = new BarChart(data)
+            } catch (e) {
+                this.renderError(e, "users")
+            }
+            try {
+                this.histogram = new Histogram(data)
+            } catch (e) {
+                this.renderError(e, "histogram")
+            }
+            try {
+                this.timeline = new Timeline(data)
+            } catch (e) {
+                this.renderError(e, "timeline")
+            }
+            try {
+                this.users = new Users(data)
+            } catch (e) {
+                this.renderError(e, "reflections")
+            } 
+            this.preloadGroups(data)
+        } catch (e) {
+            this.renderError(e, "users-totals", ".card-title span")
+            this.renderError(e, "users")
+            this.renderError(e, "histogram")
+            this.renderError(e, "timeline")
+            this.renderError(e, "reflections")
+        }      
+    }
+    renderError(e: any, chartId: string, css?: string) {
+        select(`#${chartId} ${css === undefined ? ".chart-container" : css}`)
+            .text(`There was an error rendering the chart. ${e}`)
     }
     sidebarBtn(): void {
         //Handle side bar btn click
-        d3.select("#sidebar-btn").on("click", function () {
-            let isActive = d3.select("#sidebar").attr("class").includes("active");
-            d3.select("#sidebar")
+        select("#sidebar-btn").on("click", function () {
+            let isActive = select("#sidebar").attr("class").includes("active");
+            select("#sidebar")
                 .classed("active", !isActive);
-            d3.select("#groups")
+            select("#groups")
                 .classed("active", isActive);
-            d3.select("#switch-dashboard")
+            select("#switch-dashboard")
                 .classed("active", isActive);
-            d3.select(this)
+            select(this)
                 .classed("active", isActive);
         });
     };
     preloadGroups(allEntries: IAdminAnalyticsData[], enable: boolean = false): IAdminAnalyticsData[] {
-        d3.select("#groups")
+        select("#groups")
             .selectAll<HTMLLIElement, IAdminAnalyticsData>("li")
             .data(allEntries)
             .enter()
@@ -64,51 +100,38 @@ export class Dashboard {
     }
 }
 
-export async function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyticsDataRaw[]) {
-    const loading = new Loading();
-    const rawData = entriesRaw.map(d => new AdminAnalyticsDataRaw(d.group, d.value, d.createDate));
-    let entries = rawData.map(d => d.transformData());
-    const colourScale = d3.scaleOrdinal(d3.schemeCategory10);
-    entries = entries.map(d => new AdminAnalyticsData(d.group, d.value, d.createDate, colourScale(d.group), true));
-    await drawCharts(entries);
+export function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyticsDataRaw[]) {
+    const help = new Help()
+    const dashboard = new Dashboard(entriesRaw)
+    //Handle sidebar button
+    dashboard.sidebarBtn()
+
+    //Create groups chart with current data
+    select("#users .card-subtitle")
+        .html("")
+
+    //Handle groups chart help
+    help.helpPopover(dashboard.barChart.id, `<b>Bar chart</b><br>
+        A bar chart of the users in each group code<br>
+        <u><i>Hover</i></u> over the bars for information on demand`)
+
+    //Handle users histogram chart help
+    help.helpPopover(dashboard.histogram.id, `<b>Histogram</b><br>
+        A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i>
+        <u><i>Hover</i></u> over the boxes for information on demand`)
+
+    //Handle timeline chart help
+    help.helpPopover(dashboard.timeline.id, `<b>Scatter plot</b><br>
+        The data is showed as a collection of points<br>The data represented are <i>reflections over time</i><br>
+        <u><i>Hover</i></u> over the circles for information on demand`)
+
+    //Handle users histogram chart help
+    help.helpPopover("reflections", `<b>Reflections</b><br>
+        Each user's reflections are shown sorted by time. The chart depicts the percentage of reflections in each reflection point group`)
+    
     new Tutorial([ new TutorialData("#groups", "All your groups are selected to visualise and colours assigned. You cannot change this section"),
     new TutorialData(".card-title button", "Click the help symbol in any chart to get additional information"),
     new TutorialData("#users .bar", "Hover for information on demand"), 
     new TutorialData("#histogram .histogram-rect", "Hover for information on demand"),
-    new TutorialData("#timeline .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area")]);
-    loading.isLoading = false;
-    loading.removeDiv();
-    async function drawCharts(allEntries: IAdminAnalyticsData[]) {
-        const help = new Help()
-        const dashboard = new Dashboard(allEntries);
-        //Handle sidebar button
-        dashboard.sidebarBtn();
-        dashboard.preloadGroups(allEntries);
-
-        //Create groups chart with current data
-        d3.select("#users .card-subtitle")
-            .html("");
-
-        //Handle groups chart help
-        help.helpPopover(dashboard.barChart.id, `<b>Bar chart</b><br>
-            A bar chart of the users in each group code<br>
-            <u><i>Hover</i></u> over the bars for information on demand`)
- 
-        //Handle users histogram chart help
-        help.helpPopover(dashboard.histogram.id, `<b>Histogram</b><br>
-            A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i>
-            <u><i>Hover</i></u> over the boxes for information on demand`)
-
-        //Handle timeline chart help
-        d3.select("#timeline .card-title button")
-            .on("click", function (e: Event) {
-                help.helpPopover(`${dashboard.timeline.id}-help`, `<b>Scatter plot</b><br>
-                    The data is showed as a collection of points<br>The data represented are <i>reflections over time</i><br>
-                    <u><i>Hover</i></u> over the circles for information on demand`)
-            });
-
-        //Handle users histogram chart help
-        help.helpPopover("reflections", `<b>Reflections</b><br>
-            Each user's reflections are shown sorted by time. The chart depicts the percentage of reflections in each reflection point group`)
-    }
+    new TutorialData("#timeline .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area")])
 }

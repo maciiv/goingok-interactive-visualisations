@@ -1,4 +1,4 @@
-import { IAdminAnalyticsData } from "../../data/data.js";
+import { IAdminAnalyticsData } from "../../data/data";
 export declare class Totals {
     private _data;
     get data(): IAdminAnalyticsData[];

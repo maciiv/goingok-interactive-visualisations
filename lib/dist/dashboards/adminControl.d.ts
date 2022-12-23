@@ -1,18 +1,19 @@
-import { IAdminAnalyticsData } from "../data/data.js";
-import { IAdminAnalyticsDataRaw } from "../data/db.js";
-import { Histogram } from "../charts/admin/histogram.js";
-import { BarChart } from "../charts/admin/barChart.js";
-import { Timeline } from "../charts/admin/timeline.js";
-import { Users } from "../charts/admin/users.js";
-import { Totals } from "../charts/admin/totals.js";
+import { IAdminAnalyticsData } from "../data/data";
+import { IAdminAnalyticsDataRaw } from "../data/db";
+import { Histogram } from "../charts/admin/histogram";
+import { BarChart } from "../charts/admin/barChart";
+import { Timeline } from "../charts/admin/timeline";
+import { Users } from "../charts/admin/users";
+import { Totals } from "../charts/admin/totals";
 export declare class Dashboard {
     totals: Totals;
     barChart: BarChart;
     histogram: Histogram;
     timeline: Timeline;
     users: Users;
-    constructor(data: IAdminAnalyticsData[]);
+    constructor(entriesRaw: IAdminAnalyticsDataRaw[]);
+    renderError(e: any, chartId: string, css?: string): void;
     sidebarBtn(): void;
     preloadGroups(allEntries: IAdminAnalyticsData[], enable?: boolean): IAdminAnalyticsData[];
 }
-export declare function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyticsDataRaw[]): Promise<void>;
+export declare function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyticsDataRaw[]): void;
