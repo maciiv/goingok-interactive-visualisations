@@ -1,4 +1,5 @@
 import {addDays, calculateMean, calculateSum, getDOMRect, groupBy, maxDate, minDate} from "../../src/utils/utils"
+import {test, expect} from "../../node_modules/@jest/globals"
 
 test("Testing groupBy", () => {
     const obj1 = {"key": "group 1", "values": 1}
