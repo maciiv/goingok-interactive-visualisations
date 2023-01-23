@@ -14,7 +14,7 @@ export function groupBy<T>(arr: Array<T>, criteria: string): IGroupBy<T>[] {
     return newObj
 }
 
-export function caculateSum(arr: number[]): number {
+export function calculateSum(arr: number[]): number {
   let sum = 0
   for (var i = 0; i < arr.length; i++) {
     sum += arr[i]
@@ -23,7 +23,7 @@ export function caculateSum(arr: number[]): number {
 }
 
 export function calculateMean(arr: number[]): number {
-  return caculateSum(arr) / arr.length
+  return calculateSum(arr) / arr.length
 }
 
 export function getDOMRect(id: string): DOMRect {
