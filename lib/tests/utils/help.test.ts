@@ -1,7 +1,8 @@
 import {Help} from "../../src/utils/help"
-import {test, expect} from "../../node_modules/@jest/globals"
+import {test, expect, describe} from "@jest/globals"
 
-document.body.innerHTML = ` <div id="test">
+describe("Testing help class", () => {
+    document.body.innerHTML = ` <div id="test">
                                 <div class="card">
                                     <div class="card-body">
                                         <h5 class="card-title">
@@ -12,8 +13,12 @@ document.body.innerHTML = ` <div id="test">
                                     </div>
                                 </div>
                             </div>`
-const help = new Help()
+    const button = document.querySelector("button")
+    const help = new Help()
 
-test("Testing help class", () => {
-
+    test("Testing createPopover", () => {
+        const actualPopover = help.createPopover("test-help", button)
+        expect(actualPopover.id).toBe("test-help")
+        expect(actualPopover.className).toBe("popover fade bs-popover-left show")
+    })
 })

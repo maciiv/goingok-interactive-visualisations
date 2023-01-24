@@ -7,33 +7,26 @@ export interface IHelp {
 
 export class Help implements IHelp {
     helpPopover(id: string, content: string): void {
+        const _this = this
         const helpId = `${id}-help`
-        const button = document.querySelector<HTMLElement>(`#${id} .card-title button`)
+        const button = document.querySelector<HTMLButtonElement>(`#${id} .card-title button`)
         if (button === null) return;
-        button.addEventListener("click", () => {    
-            let icon = button.querySelector("i")
+        button.addEventListener("click", function() {    
+            let icon = this.querySelector("i")
             if (document.querySelector(`#${helpId}`) === null) {
-                let popover = document.createElement("div")
-                popover.setAttribute("id", helpId)
-                popover.setAttribute("class", "popover fade bs-popover-left show")
-                popover.style.top = `${window.pageYOffset + button.getBoundingClientRect().top}px`
-
+                const popover = _this.createPopover(helpId, this)
                 document.querySelector("body").appendChild(popover)
                 
-                let arrow = document.createElement("div")
-                arrow.setAttribute("class", "arrow")
-                arrow.style.top = "6px"
-                popover.appendChild(arrow);
+                const arrow = _this.createArrow()
+                popover.appendChild(arrow)
 
-                let popoverBody = document.createElement("div")
-                popoverBody.setAttribute("class", "popover-body")
-                popoverBody.innerHTML = content
+                const popoverBody = _this.createPopoverBody(content)
                 popover.appendChild(popoverBody)
 
-                if (button.getBoundingClientRect().left - popover.getBoundingClientRect().width > 0) {
-                    popover.style.left = `${button.getBoundingClientRect().left - popover.getBoundingClientRect().width}px`;
+                if (this.getBoundingClientRect().left - popover.getBoundingClientRect().width > 0) {
+                    popover.style.left = `${this.getBoundingClientRect().left - popover.getBoundingClientRect().width}px`;
                 } else {
-                    popover.style.left = `${button.getBoundingClientRect().right}px`;
+                    popover.style.left = `${this.getBoundingClientRect().right}px`;
                     popover.setAttribute("class", "popover fade bs-popover-right show")
                 }
                 
@@ -52,5 +45,25 @@ export class Help implements IHelp {
         document.querySelector(`#${chart.id}-help-zoom`)?.remove()
         let icon = document.querySelector(`#${chart.id} .card-title i`)
         icon?.setAttribute("class", "fas fa-question-circle")
+    }
+    createPopover(id: string, button: HTMLButtonElement | null): HTMLDivElement {
+        const popover = document.createElement("div")
+        popover.setAttribute("id", id)
+        popover.setAttribute("class", "popover fade bs-popover-left show")
+        const top = button === null ? window.pageYOffset : window.pageYOffset + button.getBoundingClientRect().top
+        popover.style.top = `${top}px`
+        return popover
+    }
+    createArrow(): HTMLDivElement {
+        const arrow = document.createElement("div")
+        arrow.setAttribute("class", "arrow")
+        arrow.style.top = "6px"
+        return arrow
+    }
+    createPopoverBody(content: string): HTMLDivElement {
+        const popoverBody = document.createElement("div")
+        popoverBody.setAttribute("class", "popover-body")
+        popoverBody.innerHTML = content
+        return popoverBody
     }
 }
