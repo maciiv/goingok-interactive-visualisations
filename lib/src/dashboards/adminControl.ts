@@ -1,5 +1,4 @@
 import { scaleOrdinal, schemeCategory10, select } from "d3";
-import { Help } from "../utils/help";
 import { IAdminAnalyticsData, AdminAnalyticsData } from "../data/data";
 import { IAdminAnalyticsDataRaw, AdminAnalyticsDataRaw } from "../data/db";
 import { Tutorial, TutorialData } from "../utils/tutorial";
@@ -101,7 +100,6 @@ export class Dashboard {
 }
 
 export function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyticsDataRaw[]) {
-    const help = new Help()
     const dashboard = new Dashboard(entriesRaw)
     //Handle sidebar button
     dashboard.sidebarBtn()
@@ -111,22 +109,22 @@ export function buildControlAdminAnalyticsCharts(entriesRaw: IAdminAnalyticsData
         .html("")
 
     //Handle groups chart help
-    help.helpPopover(dashboard.barChart.id, `<b>Bar chart</b><br>
+    dashboard.barChart.help.helpPopover(dashboard.barChart.id, `<b>Bar chart</b><br>
         A bar chart of the users in each group code<br>
         <u><i>Hover</i></u> over the bars for information on demand`)
 
     //Handle users histogram chart help
-    help.helpPopover(dashboard.histogram.id, `<b>Histogram</b><br>
+    dashboard.histogram.help.helpPopover(dashboard.histogram.id, `<b>Histogram</b><br>
         A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i>
         <u><i>Hover</i></u> over the boxes for information on demand`)
 
     //Handle timeline chart help
-    help.helpPopover(dashboard.timeline.id, `<b>Scatter plot</b><br>
+    dashboard.timeline.help.helpPopover(dashboard.timeline.id, `<b>Scatter plot</b><br>
         The data is showed as a collection of points<br>The data represented are <i>reflections over time</i><br>
         <u><i>Hover</i></u> over the circles for information on demand`)
 
     //Handle users histogram chart help
-    help.helpPopover("reflections", `<b>Reflections</b><br>
+    dashboard.users.help.helpPopover("reflections", `<b>Reflections</b><br>
         Each user's reflections are shown sorted by time. The chart depicts the percentage of reflections in each reflection point group`)
     
     new Tutorial([ new TutorialData("#groups", "All your groups are selected to visualise and colours assigned. You cannot change this section"),

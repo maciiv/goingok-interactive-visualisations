@@ -2,6 +2,7 @@ import { select, selectAll, sort, BaseType } from "d3";
 import { IAdminAnalyticsData, IReflectionAuthor } from "../../data/data";
 import { Sort } from "../../interactions/sort";
 import { calculateMean, groupBy, maxDate, minDate } from "../../utils/utils";
+import { ChartHelp, IChartHelp } from "../chartBase";
 
 type UserData = {
     pseudonym: string
@@ -16,6 +17,7 @@ export class Users {
     id: string
     sort: Sort<UserData>
     group: string
+    help: IChartHelp
     private _data: IAdminAnalyticsData[]
     get data() {
         return this._data
@@ -38,6 +40,7 @@ export class Users {
         this.id = "reflections"
         this.group = data[0].group
         this.sort = new Sort(this.id, "pseudonym")
+        this.help = new ChartHelp(this.id)
         this.data = data
     }
     render() {

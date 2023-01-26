@@ -6,5 +6,7 @@ export interface IHelp {
 export declare class Help implements IHelp {
     helpPopover(id: string, content: string): void;
     removeHelp(chart: IChart): void;
-    createPopover(): void;
+    createPopover(id: string, button: HTMLButtonElement | null): HTMLDivElement;
+    createArrow(): HTMLDivElement;
+    createPopoverBody(content: string): HTMLDivElement;
 }

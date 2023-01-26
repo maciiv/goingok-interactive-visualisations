@@ -5,12 +5,10 @@ import { Dashboard } from "./adminControl";
 import { IAdminAnalyticsDataRaw } from "../data/db";
 import { Tutorial, TutorialData } from "../utils/tutorial";
 import { Sort } from "../interactions/sort";
-import { Help } from "../utils/help";
 
 export class ExperimentalDashboard extends Dashboard {
     entries: IAdminAnalyticsData[]
     sort: Sort<IAdminAnalyticsData>
-    help = new Help()
     constructor(entriesRaw: IAdminAnalyticsDataRaw[]) {
         super(entriesRaw)
         this.sort = new Sort("sort-groups", "createDate")
@@ -182,7 +180,7 @@ export class ExperimentalDashboard extends Dashboard {
             chart.elements.contentContainer.selectAll(`.${chart.id}-histogram-text-container`).remove()
             select(this).classed("grab", false)
             select(this).classed("grabbing", true)
-            _this.help.removeHelp(chart)
+            chart.help.removeHelp(chart)
         }
         const dragging = function(e: MouseEvent, d: number) {
             if (d > 50) {
@@ -336,16 +334,16 @@ export class ExperimentalDashboard extends Dashboard {
 
             _this.users.data = [new AdminAnalyticsData(groupData.group, usersData, groupData.createDate, groupData.colour, groupData.selected)]
 
-            _this.help.removeHelp(chart);
+            chart.help.removeHelp(chart);
             //Scroll
             document.querySelector(".reflection-selected").scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
         chart.clicking.enableClick(onClick)
     }
     private removeAllHelp(barChart: ChartSeries) {
-        this.help.removeHelp(barChart);
-        this.help.removeHelp(this.histogram);
-        this.help.removeHelp(this.timeline);
+        this.barChart.help.removeHelp(barChart);
+        this.histogram.help.removeHelp(this.histogram);
+        this.timeline.help.removeHelp(this.timeline);
     }
     private getClickData(contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>): unknown {
         if (!contentContainer.select<SVGRectElement | SVGCircleElement>(".clicked").empty()) {
@@ -361,26 +359,26 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAdminAnal
     dashboard.sidebarBtn()
 
     //Handle groups chart help
-    dashboard.help.helpPopover(dashboard.barChart.id, `<b>Bar chart</b><br>
+    dashboard.barChart.help.helpPopover(dashboard.barChart.id, `<b>Bar chart</b><br>
         A bar chart of the users in each group code<br>
         <u><i>Hover</i></u> over the bars for information on demand<br>
         <u><i>Click</i></u> a bar to compare and drill-down`)
 
     //Handle users histogram chart help
-    dashboard.help.helpPopover(dashboard.histogram.id, `<b>Histogram</b><br>
+    dashboard.histogram.help.helpPopover(dashboard.histogram.id, `<b>Histogram</b><br>
         A histogram group data points into user-specific ranges. The data points in this histogram are <i>users average reflection point</i><br>
         <u><i>Hover</i></u> over the boxes for information on demand<br>
         <u><i>Click</i></u> a box to compare and drill-down<br>
         <u><i>Drag</i></u> the lines to change the thresholds`)
 
     //Handle timeline chart help
-    dashboard.help.helpPopover(dashboard.timeline.id, `<b>Scatter plot</b><br>
+    dashboard.timeline.help.helpPopover(dashboard.timeline.id, `<b>Scatter plot</b><br>
         The data is showed as a collection of points<br>The data represented are <i>reflections over time</i><br>
         <u><i>Hover</i></u> over the circles for information on demand<br>
         <u><i>Click</i></u> a circle to connect the user's reflections and drill-down`)
     
     //Handle users histogram chart help
-    dashboard.help.helpPopover("reflections", `<b>Reflections</b><br>
+    dashboard.users.help.helpPopover("reflections", `<b>Reflections</b><br>
         Each user's reflections are shown by group. The chart depicts the user's average reflection point<br>
         <u><i>Sort</i></u> by user's name or average reflection state point`)
     

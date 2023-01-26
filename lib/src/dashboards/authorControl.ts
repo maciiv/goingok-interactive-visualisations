@@ -1,5 +1,4 @@
 import { scaleOrdinal, schemeCategory10, select } from "d3";
-import { Help } from "../utils/help";
 import { AuthorAnalytics, IAuthorAnalyticsData, IEdges, INodes, ITags } from "../data/data";
 import { Tutorial, TutorialData } from "../utils/tutorial";
 import { Network } from "../charts/author/network";
@@ -114,21 +113,20 @@ export class Dashboard {
 
 export function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[], analyticsRaw: IAuthorAnalyticsEntriesRaw[]) {
     const dashboard = new Dashboard(entriesRaw, analyticsRaw)
-    const help = new Help()
 
     //Handle timeline chart help
-    help.helpPopover(dashboard.network.id, `<b>Network diagram</b><br>
+    dashboard.network.help.helpPopover(dashboard.network.id, `<b>Network diagram</b><br>
         A network diagram that shows the phrases and tags associated to your reflections<br>
         The data represented are your <i>reflections over time</i><br>
         <u><i>Hover</i></u> over the network nodes for information on demand`) 
 
     //Handle timeline chart help
-    help.helpPopover(dashboard.timeline.id, `<b>Timeline</b><br>
+    dashboard.timeline.help.helpPopover(dashboard.timeline.id, `<b>Timeline</b><br>
         Your reflections and the tags associated to them are shown over time<br>
         <u><i>Hover</i></u> over a reflection point for information on demand`)
 
     //Handle users histogram chart help
-    help.helpPopover(dashboard.reflections.id, `<b>Reflections</b><br>
+    dashboard.reflections.help.helpPopover(dashboard.reflections.id, `<b>Reflections</b><br>
         Your reflections are shown sorted by time. The words with associated tags have a different outline colour`)
     
     new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
