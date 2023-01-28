@@ -1,5 +1,5 @@
-import {addDays, calculateMean, calculateSum, getDOMRect, groupBy, maxDate, minDate} from "../../src/utils/utils"
-import {test, expect} from "@jest/globals"
+import { addDays, calculateMean, calculateSum, getDOMRect, groupBy, maxDate, minDate } from "../../src/utils/utils"
+import { test, expect } from "@jest/globals"
 
 test("Testing groupBy", () => {
     const obj1 = {"key": "group 1", "values": 1}
@@ -21,7 +21,7 @@ test("Testing calculateMean", () => {
 })
 
 test("Testing getDOMRect", () => {
-    document.body.innerHTML = `<div id="test" style="width: 300px; height: 200px;"></div>`
+    document.body.innerHTML = `<div id="test"></div>`
     const actualDiv = getDOMRect("#test")
     const expectedDiv = document.querySelector("#test")?.getBoundingClientRect()
     expect(actualDiv).toEqual(expectedDiv)

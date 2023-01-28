@@ -14,6 +14,19 @@ export interface IChartBasic {
     height: number
     padding: IChartPadding
 }
+export class ChartBasic {
+    id: string
+    width: number
+    height: number
+    padding: IChartPadding
+    constructor(id: string, containerClass: string = "chart-container", padding?: IChartPadding) {
+        this.id = id
+        let containerDimensions = getDOMRect(`#${id} .${containerClass}`)
+        this.width = containerDimensions.width
+        this.height = containerDimensions.height
+        this.padding = padding !== undefined ? padding : new ChartPadding()
+    }
+}
 
 export interface IChart extends IChartScales, IChartBasic {
     help: IChartHelp
@@ -45,63 +58,60 @@ export class ChartPadding implements IChartPadding {
 export interface IChartHelp {
     id: string
     button: HTMLButtonElement
-    helpPopover(id: string, content: string): void
-    removeHelp(chart: IChart): void
+    icon: HTMLElement
+    popover: HTMLDivElement | undefined
+    isOpen: boolean
+    helpPopover(content: string): void
+    removeHelp(): void
 }
 
 export class ChartHelp implements IChartHelp {
     id: string
     button: HTMLButtonElement
+    icon: HTMLElement
+    popover: HTMLDivElement | undefined
+    isOpen = false
     constructor(id: string) {
         this.id = `${id}-help`
         this.button = document.querySelector<HTMLButtonElement>(`#${id} .card-title button`)
+        this.icon = this.button.querySelector(`#${id} .card-title button i`)
     }
-    helpPopover(id: string, content: string): void {
+    helpPopover(content: string): void {
         const _this = this
-        const helpId = `${id}-help`
-        const button = document.querySelector<HTMLButtonElement>(`#${id} .card-title button`)
-        if (button === null) return;
-        button.addEventListener("click", function() {    
-            let icon = this.querySelector("i")
-            if (document.querySelector(`#${helpId}`) === null) {
-                const popover = _this.createPopover(helpId, this)
-                document.querySelector("body").appendChild(popover)
-                
-                const arrow = _this.createArrow()
-                popover.appendChild(arrow)
+        if (this.button === null) return
+        this.button.addEventListener("click", function () {    
+            if (!_this.isOpen) {
+                _this.isOpen = true
+                _this.createPopover(content)
 
-                const popoverBody = _this.createPopoverBody(content)
-                popover.appendChild(popoverBody)
-
-                if (this.getBoundingClientRect().left - popover.getBoundingClientRect().width > 0) {
-                    popover.style.left = `${this.getBoundingClientRect().left - popover.getBoundingClientRect().width}px`;
+                if (this.getBoundingClientRect().left - _this.popover.getBoundingClientRect().width > 0) {
+                    _this.popover.style.left = `${this.getBoundingClientRect().left - _this.popover.getBoundingClientRect().width}px`;
                 } else {
-                    popover.style.left = `${this.getBoundingClientRect().right}px`;
-                    popover.setAttribute("class", "popover fade bs-popover-right show")
+                    _this.popover.style.left = `${this.getBoundingClientRect().right}px`;
+                    _this.popover.setAttribute("class", "popover fade bs-popover-right show")
                 }
-                
-                icon?.setAttribute("class", "fas fa-window-close")
+                _this.toogleIcon()
             } else {
-                document.querySelector(`#${helpId}`).remove()
-                icon?.setAttribute("class", "fas fa-question-circle")
+                _this.removeHelp()
             }
         })
     }
-    removeHelp(chart: IChart): void {
-        document.querySelector(`#${chart.id}-help`)?.remove()
-        document.querySelector(`#${chart.id}-help-button`)?.remove()
-        document.querySelector(`#${chart.id}-help-data`)?.remove()
-        document.querySelector(`#${chart.id}-help-drag`)?.remove()
-        document.querySelector(`#${chart.id}-help-zoom`)?.remove()
-        let icon = document.querySelector(`#${chart.id} .card-title i`)
-        icon?.setAttribute("class", "fas fa-question-circle")
+    removeHelp(): void {
+        this.isOpen = false
+        this.popover.remove()
+        this.toogleIcon()
     }
-    createPopover(id: string, button: HTMLButtonElement | null): HTMLDivElement {
+    createPopover(content: string): HTMLDivElement {
         const popover = document.createElement("div")
-        popover.setAttribute("id", id)
+        popover.setAttribute("id", this.id)
         popover.setAttribute("class", "popover fade bs-popover-left show")
-        const top = button === null ? window.pageYOffset : window.pageYOffset + button.getBoundingClientRect().top
+        const top = this.button === null ? window.pageYOffset : window.pageYOffset + this.button.getBoundingClientRect().top
         popover.style.top = `${top}px`
+
+        popover.appendChild(this.createArrow())
+        popover.appendChild(this.createPopoverBody(content))
+
+        this.popover = popover
         return popover
     }
     createArrow(): HTMLDivElement {
@@ -116,24 +126,23 @@ export class ChartHelp implements IChartHelp {
         popoverBody.innerHTML = content
         return popoverBody
     }
+    toogleIcon() {
+        this.icon.setAttribute("class", this.isOpen ? "fas fa-window-close" : "fas fa-question-circle")
+    }
 }
 
-export class ChartSeries implements IChart {
+export class ChartSeries extends ChartBasic implements IChart {
     id: string
     width: number
     height: number
+    padding: IChartPadding
     x: ChartSeriesAxis
     y: ChartLinearAxis
     elements: IChartElements
-    padding: IChartPadding
     loading: ILoading
     help: IChartHelp
     constructor(id: string, domain: string[], isGoingOk: boolean = true, yDomain?: number[]) {
-        this.id = id
-        let containerDimensions = getDOMRect(`#${id} .chart-container`)
-        this.width = containerDimensions.width
-        this.height = containerDimensions.height
-        this.padding = new ChartPadding();
+        super(id)
         if (!isGoingOk) {
             this.padding.yAxis = 40
         }
@@ -149,7 +158,7 @@ export class ChartSeries implements IChart {
     }
 }
 
-export class ChartTime implements IChart {
+export class ChartTime extends ChartBasic implements IChart {
     id: string
     width: number
     height: number
@@ -160,11 +169,7 @@ export class ChartTime implements IChart {
     loading: ILoading
     help: IChartHelp
     constructor(id: string, domain: Date[], chartPadding?: ChartPadding) {
-        this.id = id
-        let containerDimensions = getDOMRect(`#${id} .chart-container`)
-        this.width = containerDimensions.width
-        this.height = containerDimensions.height
-        this.padding = chartPadding !== undefined ? chartPadding : new ChartPadding(75, 75, 5)
+        super(id, undefined, chartPadding)
         this.y = new ChartLinearAxis(this.id, "Reflection Point", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left")
         this.x = new ChartTimeAxis(this.id, "Time", domain, [0, this.width - this.padding.yAxis])
         this.elements = new ChartElements(this)
@@ -177,7 +182,7 @@ export class ChartTime implements IChart {
     }
 }
 
-export class ChartNetwork implements IChart {
+export class ChartNetwork extends ChartBasic implements IChart {
     id: string
     width: number
     height: number
@@ -188,11 +193,7 @@ export class ChartNetwork implements IChart {
     loading: ILoading
     help: IChartHelp
     constructor(id: string, containerClass: string, domain: Date[]) {
-        this.id = id
-        let containerDimensions = getDOMRect(`#${id} .${containerClass}`)
-        this.width = containerDimensions.width
-        this.height = containerDimensions.height
-        this.padding = new ChartPadding(30, 10, 10, 10)
+        super(id, containerClass, new ChartPadding(30, 10, 10, 10))
         this.y = new ChartLinearAxis(this.id, "", [-50, 150], [this.height - this.padding.xAxis - this.padding.top, 0], "left")       
         this.x = new ChartTimeAxis(this.id, "", domain, [0, this.width - this.padding.yAxis - this.padding.right])
         this.elements = new ChartElements(this, containerClass);

@@ -1,13 +1,13 @@
 import { select } from "d3";
 import { IChart, IChartBasic } from "./chartBase";
 
-interface IChartElementsContainers {
+export interface IChartElementsContainers {
     svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>
     contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>
     content: d3.Selection<SVGRectElement | SVGCircleElement | SVGPathElement | d3.BaseType, unknown, SVGGElement, any>   
 }
 
-class ChartElementsContainers<T extends IChartBasic> implements IChartElementsContainers {
+export class ChartElementsContainers<T extends IChartBasic> implements IChartElementsContainers {
     protected chart: T
     svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>
     contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>
