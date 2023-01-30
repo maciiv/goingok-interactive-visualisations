@@ -11,6 +11,13 @@ export interface IChartBasic {
     height: number;
     padding: IChartPadding;
 }
+export declare class ChartBasic {
+    id: string;
+    width: number;
+    height: number;
+    padding: IChartPadding;
+    constructor(id: string, containerClass?: string, padding?: IChartPadding);
+}
 export interface IChart extends IChartScales, IChartBasic {
     help: IChartHelp;
     elements: IChartElements;
@@ -33,33 +40,40 @@ export declare class ChartPadding implements IChartPadding {
 export interface IChartHelp {
     id: string;
     button: HTMLButtonElement;
-    helpPopover(id: string, content: string): void;
-    removeHelp(chart: IChart): void;
+    icon: HTMLElement;
+    popover: HTMLDivElement | undefined;
+    isOpen: boolean;
+    helpPopover(content: string): void;
+    removeHelp(): void;
 }
 export declare class ChartHelp implements IChartHelp {
     id: string;
     button: HTMLButtonElement;
+    icon: HTMLElement;
+    popover: HTMLDivElement | undefined;
+    isOpen: boolean;
     constructor(id: string);
-    helpPopover(id: string, content: string): void;
-    removeHelp(chart: IChart): void;
-    createPopover(id: string, button: HTMLButtonElement | null): HTMLDivElement;
+    helpPopover(content: string): void;
+    removeHelp(): void;
+    createPopover(content: string): HTMLDivElement;
     createArrow(): HTMLDivElement;
     createPopoverBody(content: string): HTMLDivElement;
+    toogleIcon(): void;
 }
-export declare class ChartSeries implements IChart {
+export declare class ChartSeries extends ChartBasic implements IChart {
     id: string;
     width: number;
     height: number;
+    padding: IChartPadding;
     x: ChartSeriesAxis;
     y: ChartLinearAxis;
     elements: IChartElements;
-    padding: IChartPadding;
     loading: ILoading;
     help: IChartHelp;
     constructor(id: string, domain: string[], isGoingOk?: boolean, yDomain?: number[]);
     renderError(e: any): void;
 }
-export declare class ChartTime implements IChart {
+export declare class ChartTime extends ChartBasic implements IChart {
     id: string;
     width: number;
     height: number;
@@ -72,7 +86,7 @@ export declare class ChartTime implements IChart {
     constructor(id: string, domain: Date[], chartPadding?: ChartPadding);
     renderError(e: any): void;
 }
-export declare class ChartNetwork implements IChart {
+export declare class ChartNetwork extends ChartBasic implements IChart {
     id: string;
     width: number;
     height: number;

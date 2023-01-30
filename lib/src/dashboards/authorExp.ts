@@ -233,26 +233,26 @@ export function buildExperimentAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesR
     const dashboard = new ExperimentalDashboard(entriesRaw, analyticsRaw)
 
     //Handle timeline chart help
-    dashboard.network.help.helpPopover(dashboard.network.id, `<b>Network diagram</b><br>
+    dashboard.network.help.helpPopover(`<b>Network diagram</b><br>
         A network diagram that shows the phrases and tags associated to your reflections<br>The data represented are your <i>reflections over time</i><br>
         <u><i>Hover</i></u> over the network nodes for information on demand<br>
         <u><i>Drag</i></u> the network nodes to rearrange the network<br>
         <u><i>Click</i></u> to fill the background colour the nodes in the reflection text`) 
 
     //Handle timeline chart help
-    dashboard.timeline.help.helpPopover(dashboard.timeline.id, `<b>Timeline</b><br>
+    dashboard.timeline.help.helpPopover(`<b>Timeline</b><br>
         Your reflections and the tags associated to them are shown over time<br>
         <u><i>Hover</i></u> over a reflection point for information on demand<br>
         <u><i>Click</i></u> a reflection point to filter the network diagram and reflection text`)
 
     //Handle reflections chart help
-    dashboard.reflections.help.helpPopover(dashboard.reflections.id, `<b>Reflections</b><br>
+    dashboard.reflections.help.helpPopover(`<b>Reflections</b><br>
         Your reflections are shown sorted by time. The words with associated tags have a different outline colour<br>
         The reflections can be sorted by time or reflection point`)
     
     new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
-    new TutorialData("#timeline .circle", "Hover for information on demand. Click to drill-down updating the reflections text and network"),
-    new TutorialData("#sort .sort-by", "Sort reflections by date or reflection state point"),
+    new TutorialData("#timeline .circle-ref", "Hover for information on demand. Click to drill-down updating the reflections text and network"),
+    new TutorialData("#reflections .sort-by", "Sort reflections by date or reflection state point"),
     new TutorialData("#reflections .reflection-text span", "Phrases outlined with a colour that matches the tags"),
     new TutorialData("#tags li", "Select which tags to see and change the colours if you like"),
     new TutorialData("#network .network-node-group", "Hover for information on demand. Click to fill the background colour of the nodes in the reflection text"),

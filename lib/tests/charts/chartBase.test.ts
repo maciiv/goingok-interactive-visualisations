@@ -1,4 +1,4 @@
-import { ChartBasic, ChartHelp, ChartPadding } from "../../src/charts/chartBase"
+import { ChartBasic, ChartHelp, ChartPadding, ChartSeries } from "../../src/charts/chartBase"
 import { test, expect, describe } from "@jest/globals"
 
 window.document.body.innerHTML += ` <div id="test">
@@ -15,29 +15,13 @@ window.document.body.innerHTML += ` <div id="test">
                                 </div>
                             </div>`
 
-describe("Testing ChartBasic class", () => {
-    const id = "test"
-    const chart = new ChartBasic(id)
-    test("Testing id", () => {
-        expect(chart.id).toBe(id)
-    })
-    test("Testing width", () => {
-        expect(chart.width).toBe(0)
-    })
-    test("Testing height", () => {
-        expect(chart.height).toBe(0)
-    })
-    test("Testing padding", () => {
-        expect(chart.padding).toEqual(new ChartPadding())
-    })
-})
-
 describe("Testing ChartHelp class", () => {
     const id = "test"
     const help = new ChartHelp(id)
+    const content = "Content test"
+    help.helpPopover(content)
 
-    test("Testing createPopover", () => {
-        const content = "Content test"
+    test("Testing createPopover", () => {      
         const popover = help.createPopover(content)
         expect(popover.id).toBe("test-help")
         expect(popover.className).toBe("popover fade bs-popover-left show")
@@ -48,7 +32,6 @@ describe("Testing ChartHelp class", () => {
         expect(arrow.style.top).toBe("6px")
     })
     test("Testing createPopoverBody", () => {
-        const content = "Content test"
         const popoverBody = help.createPopoverBody(content)
         expect(popoverBody.className).toBe("popover-body")
         expect(popoverBody.innerHTML).toBe(content)
@@ -66,7 +49,34 @@ describe("Testing ChartHelp class", () => {
     test("Testing click to open", () => {
         help.isOpen = false
         help.button.click()
-        expect(help.isOpen).toBe(true)
-        
+        const htmlPopover = document.querySelector(`#${help.id}`)
+        expect(help.isOpen).toBe(true) 
+        expect(help.icon.className).toBe("fas fa-window-close")
+        expect(help.popover).toBeDefined() 
+        expect(htmlPopover).toBeDefined()
+    })
+    test("Testing click to close", () => {
+        help.isOpen = true
+        help.button.click()
+        expect(help.isOpen).toBe(false) 
+        expect(help.icon.className).toBe("fas fa-question-circle")
+        expect(help.popover).toBeUndefined()
+    })
+})
+
+describe("Testing ChartBasic class", () => {
+    const id = "test"
+    const chart = new ChartBasic(id)
+    test("Testing id", () => {
+        expect(chart.id).toBe(id)
+    })
+    test("Testing width", () => {
+        expect(chart.width).toBe(0)
+    })
+    test("Testing height", () => {
+        expect(chart.height).toBe(0)
+    })
+    test("Testing padding", () => {
+        expect(chart.padding).toEqual(new ChartPadding())
     })
 })

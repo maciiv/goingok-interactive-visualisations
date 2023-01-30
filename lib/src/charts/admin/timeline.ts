@@ -157,7 +157,7 @@ export class Timeline extends ChartTime {
 
             _this.x.axis.ticks(newChartRange[1] / 75);
             _this.elements.xAxis.call(_this.x.axis);
-            _this.help.removeHelp(_this);
+            _this.help.removeHelp();
         }
         _this.zoom.enableZoom(zoomed);
     }

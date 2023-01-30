@@ -98,7 +98,8 @@ export class ChartHelp implements IChartHelp {
     }
     removeHelp(): void {
         this.isOpen = false
-        this.popover.remove()
+        this.popover?.remove()
+        this.popover = undefined
         this.toogleIcon()
     }
     createPopover(content: string): HTMLDivElement {
@@ -110,6 +111,7 @@ export class ChartHelp implements IChartHelp {
 
         popover.appendChild(this.createArrow())
         popover.appendChild(this.createPopoverBody(content))
+        document.querySelector("body").appendChild(popover)
 
         this.popover = popover
         return popover
@@ -148,7 +150,7 @@ export class ChartSeries extends ChartBasic implements IChart {
         }
         this.y = new ChartLinearAxis(this.id, isGoingOk ? "Reflection Point" : "", isGoingOk ? [0, 100] : yDomain, [this.height - this.padding.xAxis - this.padding.top, 0], "left", isGoingOk)
         this.x = new ChartSeriesAxis(this.id, "Group Code", domain, [0, this.width - this.padding.yAxis - this.padding.right])
-        this.elements = new ChartElements(this)
+        this.elements = new ChartElements(this.id, this.width, this.height, this.padding, this.x, this.y)
         this.loading = new Loading(this)
         this.help = new ChartHelp(this.id)
     }
@@ -172,7 +174,7 @@ export class ChartTime extends ChartBasic implements IChart {
         super(id, undefined, chartPadding)
         this.y = new ChartLinearAxis(this.id, "Reflection Point", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left")
         this.x = new ChartTimeAxis(this.id, "Time", domain, [0, this.width - this.padding.yAxis])
-        this.elements = new ChartElements(this)
+        this.elements = new ChartElements(this.id, this.width, this.height, this.padding, this.x, this.y)
         this.loading = new Loading(this)
         this.help = new ChartHelp(this.id)
     }
@@ -196,7 +198,7 @@ export class ChartNetwork extends ChartBasic implements IChart {
         super(id, containerClass, new ChartPadding(30, 10, 10, 10))
         this.y = new ChartLinearAxis(this.id, "", [-50, 150], [this.height - this.padding.xAxis - this.padding.top, 0], "left")       
         this.x = new ChartTimeAxis(this.id, "", domain, [0, this.width - this.padding.yAxis - this.padding.right])
-        this.elements = new ChartElements(this, containerClass);
+        this.elements = new ChartElements(this.id, this.width, this.height, this.padding, this.x, this.y, containerClass)
         this.elements.yAxis.remove()
         this.elements.xAxis.remove()
         this.loading = new Loading(this)

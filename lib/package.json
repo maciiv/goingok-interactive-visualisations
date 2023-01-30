@@ -23,7 +23,7 @@
     "d3": "^7.0.0"
   },
   "scripts": {
-    "start": "webpack --config webpack.dev.js",
+    "dev": "webpack --config webpack.dev.js",
     "build": "webpack --config webpack.prod.js",
     "test": "jest"
   },

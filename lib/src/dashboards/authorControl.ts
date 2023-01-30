@@ -115,22 +115,22 @@ export function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[
     const dashboard = new Dashboard(entriesRaw, analyticsRaw)
 
     //Handle timeline chart help
-    dashboard.network.help.helpPopover(dashboard.network.id, `<b>Network diagram</b><br>
+    dashboard.network.help.helpPopover(`<b>Network diagram</b><br>
         A network diagram that shows the phrases and tags associated to your reflections<br>
         The data represented are your <i>reflections over time</i><br>
         <u><i>Hover</i></u> over the network nodes for information on demand`) 
 
     //Handle timeline chart help
-    dashboard.timeline.help.helpPopover(dashboard.timeline.id, `<b>Timeline</b><br>
+    dashboard.timeline.help.helpPopover(`<b>Timeline</b><br>
         Your reflections and the tags associated to them are shown over time<br>
         <u><i>Hover</i></u> over a reflection point for information on demand`)
 
     //Handle users histogram chart help
-    dashboard.reflections.help.helpPopover(dashboard.reflections.id, `<b>Reflections</b><br>
+    dashboard.reflections.help.helpPopover(`<b>Reflections</b><br>
         Your reflections are shown sorted by time. The words with associated tags have a different outline colour`)
     
     new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
-    new TutorialData("#timeline .circle", "Hover for information on demand"),
+    new TutorialData("#timeline .circle-ref", "Hover for information on demand"),
     new TutorialData("#reflections .reflection-text span", "Phrases outlined with a colour that matches the tags"),
     new TutorialData("#network .network-node-group", "Hover for information on demand"),
     new TutorialData("#network .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area")])
