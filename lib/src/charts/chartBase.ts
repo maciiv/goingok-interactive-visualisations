@@ -1,5 +1,4 @@
 import { ChartSeriesAxis, ChartTimeAxis, ChartLinearAxis } from "./scaleBase";
-import { IHelp, Help } from "../utils/help";
 import { IChartElements, ChartElements } from "./render";
 import { getDOMRect } from "../utils/utils";
 import { ILoading, Loading } from "../utils/loading";
@@ -15,8 +14,22 @@ export interface IChartBasic {
     height: number
     padding: IChartPadding
 }
+export class ChartBasic {
+    id: string
+    width: number
+    height: number
+    padding: IChartPadding
+    constructor(id: string, containerClass: string = "chart-container", padding?: IChartPadding) {
+        this.id = id
+        let containerDimensions = getDOMRect(`#${id} .${containerClass}`)
+        this.width = containerDimensions.width
+        this.height = containerDimensions.height
+        this.padding = padding !== undefined ? padding : new ChartPadding()
+    }
+}
 
 export interface IChart extends IChartScales, IChartBasic {
+    help: IChartHelp
     elements: IChartElements
     loading: ILoading
     renderError(e: any): void
@@ -42,28 +55,104 @@ export class ChartPadding implements IChartPadding {
     }
 }
 
-export class ChartSeries implements IChart {
+export interface IChartHelp {
+    id: string
+    button: HTMLButtonElement
+    icon: HTMLElement
+    popover: HTMLDivElement | undefined
+    isOpen: boolean
+    helpPopover(content: string): void
+    removeHelp(): void
+}
+
+export class ChartHelp implements IChartHelp {
+    id: string
+    button: HTMLButtonElement
+    icon: HTMLElement
+    popover: HTMLDivElement | undefined
+    isOpen = false
+    constructor(id: string) {
+        this.id = `${id}-help`
+        this.button = document.querySelector<HTMLButtonElement>(`#${id} .card-title button`)
+        this.icon = this.button.querySelector(`#${id} .card-title button i`)
+    }
+    helpPopover(content: string): void {
+        const _this = this
+        if (this.button === null) return
+        this.button.addEventListener("click", function () {    
+            if (!_this.isOpen) {
+                _this.isOpen = true
+                _this.createPopover(content)
+
+                if (this.getBoundingClientRect().left - _this.popover.getBoundingClientRect().width > 0) {
+                    _this.popover.style.left = `${this.getBoundingClientRect().left - _this.popover.getBoundingClientRect().width}px`;
+                } else {
+                    _this.popover.style.left = `${this.getBoundingClientRect().right}px`;
+                    _this.popover.setAttribute("class", "popover fade bs-popover-right show")
+                }
+                _this.toogleIcon()
+            } else {
+                _this.removeHelp()
+            }
+        })
+    }
+    removeHelp(): void {
+        this.isOpen = false
+        this.popover?.remove()
+        this.popover = undefined
+        this.toogleIcon()
+    }
+    createPopover(content: string): HTMLDivElement {
+        const popover = document.createElement("div")
+        popover.setAttribute("id", this.id)
+        popover.setAttribute("class", "popover fade bs-popover-left show")
+        const top = this.button === null ? window.pageYOffset : window.pageYOffset + this.button.getBoundingClientRect().top
+        popover.style.top = `${top}px`
+
+        popover.appendChild(this.createArrow())
+        popover.appendChild(this.createPopoverBody(content))
+        document.querySelector("body").appendChild(popover)
+
+        this.popover = popover
+        return popover
+    }
+    createArrow(): HTMLDivElement {
+        const arrow = document.createElement("div")
+        arrow.setAttribute("class", "arrow")
+        arrow.style.top = "6px"
+        return arrow
+    }
+    createPopoverBody(content: string): HTMLDivElement {
+        const popoverBody = document.createElement("div")
+        popoverBody.setAttribute("class", "popover-body")
+        popoverBody.innerHTML = content
+        return popoverBody
+    }
+    toogleIcon() {
+        this.icon.setAttribute("class", this.isOpen ? "fas fa-window-close" : "fas fa-question-circle")
+    }
+}
+
+export class ChartSeries extends ChartBasic implements IChart {
     id: string
     width: number
     height: number
+    padding: IChartPadding
     x: ChartSeriesAxis
     y: ChartLinearAxis
     elements: IChartElements
-    padding: IChartPadding
     loading: ILoading
+    help: IChartHelp
     constructor(id: string, domain: string[], isGoingOk: boolean = true, yDomain?: number[]) {
-        this.id = id
-        let containerDimensions = getDOMRect(`#${id} .chart-container`)
-        this.width = containerDimensions.width
-        this.height = containerDimensions.height
-        this.padding = new ChartPadding();
+        super(id)
         if (!isGoingOk) {
             this.padding.yAxis = 40
         }
         this.y = new ChartLinearAxis(this.id, isGoingOk ? "Reflection Point" : "", isGoingOk ? [0, 100] : yDomain, [this.height - this.padding.xAxis - this.padding.top, 0], "left", isGoingOk)
         this.x = new ChartSeriesAxis(this.id, "Group Code", domain, [0, this.width - this.padding.yAxis - this.padding.right])
-        this.elements = new ChartElements(this)
+        this.elements = new ChartElements(this.id, this.width, this.height, this.padding, this.x, this.y)
         this.loading = new Loading(this)
+        this.help = new ChartHelp(this.id)
     }
     renderError(e: any) {
         console.error(e)
@@ -71,27 +160,23 @@ export class ChartSeries implements IChart {
     }
 }
 
-export class ChartTime implements IChart {
+export class ChartTime extends ChartBasic implements IChart {
     id: string
     width: number
     height: number
     x: ChartTimeAxis
     y: ChartLinearAxis
     elements: IChartElements
-    help: IHelp
     padding: IChartPadding
     loading: ILoading
+    help: IChartHelp
     constructor(id: string, domain: Date[], chartPadding?: ChartPadding) {
-        this.id = id
-        let containerDimensions = getDOMRect(`#${id} .chart-container`)
-        this.width = containerDimensions.width
-        this.height = containerDimensions.height
-        this.padding = chartPadding !== undefined ? chartPadding : new ChartPadding(75, 75, 5)
-        this.help = new Help()
+        super(id, undefined, chartPadding)
         this.y = new ChartLinearAxis(this.id, "Reflection Point", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left")
         this.x = new ChartTimeAxis(this.id, "Time", domain, [0, this.width - this.padding.yAxis])
-        this.elements = new ChartElements(this)
+        this.elements = new ChartElements(this.id, this.width, this.height, this.padding, this.x, this.y)
         this.loading = new Loading(this)
+        this.help = new ChartHelp(this.id)
     }
     renderError(e: any) {
         console.error(e)
@@ -99,7 +184,7 @@ export class ChartTime implements IChart {
     }
 }
 
-export class ChartNetwork implements IChart {
+export class ChartNetwork extends ChartBasic implements IChart {
     id: string
     width: number
     height: number
@@ -108,18 +193,16 @@ export class ChartNetwork implements IChart {
     padding: IChartPadding
     elements: IChartElements
     loading: ILoading
+    help: IChartHelp
     constructor(id: string, containerClass: string, domain: Date[]) {
-        this.id = id
-        let containerDimensions = getDOMRect(`#${id} .${containerClass}`)
-        this.width = containerDimensions.width
-        this.height = containerDimensions.height
-        this.padding = new ChartPadding(30, 10, 10, 10)
+        super(id, containerClass, new ChartPadding(30, 10, 10, 10))
         this.y = new ChartLinearAxis(this.id, "", [-50, 150], [this.height - this.padding.xAxis - this.padding.top, 0], "left")       
         this.x = new ChartTimeAxis(this.id, "", domain, [0, this.width - this.padding.yAxis - this.padding.right])
-        this.elements = new ChartElements(this, containerClass);
+        this.elements = new ChartElements(this.id, this.width, this.height, this.padding, this.x, this.y, containerClass)
         this.elements.yAxis.remove()
         this.elements.xAxis.remove()
         this.loading = new Loading(this)
+        this.help = new ChartHelp(this.id)
     }
     renderError(e: any) {
         console.error(e)

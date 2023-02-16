@@ -2,17 +2,6 @@
     "data": {
         "entriesRaw": [
             {
-                "pseudonym": "test 0",
-                "reflections": [
-                    {
-                        "refId": 0,
-                        "timestamp": "2019-09-20T07:31:33.082585",
-                        "point": 80,
-                        "text": "nothing to say."
-                    }
-                ]
-            },
-            {
                 "pseudonym": "test 1",
                 "reflections": [
                     {
@@ -60,15 +49,6 @@
             }           
         ],
         "analyticsRaw": [
-            {
-                "pseudonym": "test 0",
-                "analytics": {
-                    "name": "Network graph 0",
-                    "description": "Network chart author 0",
-                    "nodes": [],
-                    "edges":[]
-                }
-            },
             {
                 "pseudonym": "test 1",
                 "analytics": {

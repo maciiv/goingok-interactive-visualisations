@@ -1,5 +1,6 @@
 import { IAdminAnalyticsData, IReflectionAuthor } from "../../data/data";
 import { Sort } from "../../interactions/sort";
+import { IChartHelp } from "../chartBase";
 type UserData = {
     pseudonym: string;
     avg: number;
@@ -12,6 +13,7 @@ export declare class Users {
     id: string;
     sort: Sort<UserData>;
     group: string;
+    help: IChartHelp;
     private _data;
     get data(): IAdminAnalyticsData[];
     set data(entries: IAdminAnalyticsData[]);
