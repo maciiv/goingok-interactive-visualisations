@@ -1,4 +1,4 @@
-import { HistogramData, IAdminAnalyticsData, IHistogramData } from "../../data/data";
+import { AdminAnalyticsData, IAdminAnalyticsData, IReflectionAuthor } from "../../data/data";
 import { Click } from "../../interactions/click";
 import { Tooltip } from "../../interactions/tooltip";
 import { ChartSeries } from "../chartBase";
@@ -27,5 +27,14 @@ declare class HistogramChartElements<T extends Histogram> extends ChartElements<
 declare class ClickHistogram<T extends Histogram> extends Click<T> {
     clickedBin: string;
     appendThresholdPercentages(data: IAdminAnalyticsData[], clickData: IHistogramData): void;
+}
+export interface IHistogramData extends IAdminAnalyticsData {
+    bin: d3.Bin<number, number>;
+    percentage: number;
+}
+export declare class HistogramData extends AdminAnalyticsData implements IHistogramData {
+    bin: d3.Bin<number, number>;
+    percentage: number;
+    constructor(value: IReflectionAuthor[], group: string, colour: string, bin: d3.Bin<number, number>, percentage: number);
 }
 export {};

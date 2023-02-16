@@ -1,11 +1,12 @@
 import { select, selectAll, drag, line, curveMonotoneX, sort } from "d3";
 import { ChartSeries } from "../charts/chartBase";
-import { IAdminAnalyticsData, IHistogramData, IReflectionAuthor, HistogramData, ITimelineData, AdminAnalyticsData } from "../data/data";
+import { IAdminAnalyticsData, IReflectionAuthor, ITimelineData, AdminAnalyticsData } from "../data/data";
 import { Dashboard } from "./adminControl";
 import { IAdminAnalyticsDataRaw } from "../data/db";
 import { Tutorial, TutorialData } from "../utils/tutorial";
 import { Sort } from "../interactions/sort";
 import { Help } from "../utils/help";
+import { HistogramData, IHistogramData } from "../charts/admin/histogram";
 
 export class ExperimentalDashboard extends Dashboard {
     entries: IAdminAnalyticsData[]

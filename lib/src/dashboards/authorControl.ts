@@ -12,11 +12,10 @@ export class Dashboard {
     timeline: TimelineNetwork
     network: Network
     reflections: Reflections
-    constructor(entriesRaw: IAuthorEntriesRaw[], analyticsRaw: IAuthorAnalyticsEntriesRaw[]) {
+    constructor(entriesRaw: IAuthorEntriesRaw[], analyticsRaw?: IAuthorAnalyticsEntriesRaw[]) {
         try {
             const colourScale = scaleOrdinal(schemeCategory10)
-            const data = entriesRaw.map(d => new AuthorAnalyticsDataRaw(d.reflections, analyticsRaw.find(c => c.pseudonym == d.pseudonym)).transformData(colourScale))
-            this.resizeTimeline()
+            const data = entriesRaw.map(d => new AuthorAnalyticsDataRaw(d.reflections, d.pseudonym, analyticsRaw?.find(c => c.pseudonym == d.pseudonym)).transformData(colourScale))
             try {
                 this.timeline = new TimelineNetwork(data[0].reflections)
             } catch (e) {
@@ -46,10 +45,6 @@ export class Dashboard {
         select(`#${chartId} ${css === undefined ? ".chart-container" : css}`)
             .text(`There was an error rendering the chart. ${e}`)
     }
-    resizeTimeline(): void {
-        let height = document.querySelector("#reflection-entry").getBoundingClientRect().height
-        document.querySelector("#timeline .chart-container").setAttribute("style", `min-height:${height - 80}px`)
-    }
     handleMultiUser(entries: IAuthorAnalyticsData[], extend?: Function): void {
         if (entries.length > 1) {
             select(".multi-user button")
@@ -64,9 +59,22 @@ export class Dashboard {
                 .on("click", (e, d) => {
                     if (extend === undefined) {
                         this.preloadTags(d)
-                        this.timeline.data = d.reflections
-                        this.reflections.data = d.reflections
-                        this.network.data = d.analytics
+                        try {
+                            this.timeline.data = d.reflections
+                        } catch (e) {
+                            this.renderError(e, "timeline")
+                        }
+                        try {
+                            this.reflections.data = d.reflections
+                        } catch (e) {
+                            this.renderError(e, "reflections")
+                        }
+                        try {
+                            this.network.data = d.analytics
+                        } catch (e) {
+                            this.renderError(e, "network")
+                        }
+                        
                     } else {
                         extend(e, d)
                     }
@@ -93,7 +101,7 @@ export class Dashboard {
                             .attr("value", d => d.key)
                             .property("checked", true) :  null)
                         .call(div => div.append("label")
-                            .attr("class", "form-check-label")
+                            .attr("class", "tag-check-label")
                             .attr("for", d => `tag-${d.key}`)
                             .text(d => d.name)))
                     .call(div => div.append("input")
@@ -112,7 +120,7 @@ export class Dashboard {
     }
 }
 
-export function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[], analyticsRaw: IAuthorAnalyticsEntriesRaw[]) {
+export function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[], analyticsRaw?: IAuthorAnalyticsEntriesRaw[]) {
     const dashboard = new Dashboard(entriesRaw, analyticsRaw)
     const help = new Help()
 
@@ -131,9 +139,9 @@ export function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[
     help.helpPopover(dashboard.reflections.id, `<b>Reflections</b><br>
         Your reflections are shown sorted by time. The words with associated tags have a different outline colour`)
     
-    new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
-    new TutorialData("#timeline .circle", "Hover for information on demand"),
-    new TutorialData("#reflections .reflection-text span", "Phrases outlined with a colour that matches the tags"),
-    new TutorialData("#network .network-node-group", "Hover for information on demand"),
-    new TutorialData("#network .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area")])
+    // new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
+    // new TutorialData("#timeline .circle", "Hover for information on demand"),
+    // new TutorialData("#reflections .reflection-text span", "Phrases outlined with a colour that matches the tags"),
+    // new TutorialData("#network .network-node-group", "Hover for information on demand"),
+    // new TutorialData("#network .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area")])
 }

@@ -42,6 +42,7 @@ export declare class AuthorAnalyticsDataRaw implements IAuthorAnalyticsDataRaw {
     pseudonym: string;
     reflections: IReflectionAuthorRaw[];
     analytics: IAnalyticsEntriesRaw;
-    constructor(entries: IReflectionAuthorRaw[], analytics: IAuthorAnalyticsEntriesRaw);
+    constructor(entries: IReflectionAuthorRaw[], pseudonym: string, analytics?: IAuthorAnalyticsEntriesRaw);
     transformData(colourScale?: Function): AuthorAnalyticsData;
+    private createAnalytics;
 }

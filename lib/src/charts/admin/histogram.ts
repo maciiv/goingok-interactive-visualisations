@@ -1,5 +1,5 @@
 import { scaleLinear, select, bin } from "d3";
-import { ClickTextData, HistogramData, IAdminAnalyticsData, IHistogramData } from "../../data/data";
+import { AdminAnalyticsData, IAdminAnalyticsData, IDataStats, IReflectionAuthor } from "../../data/data";
 import { Click } from "../../interactions/click";
 import { Tooltip, TooltipValues } from "../../interactions/tooltip";
 import { groupBy, calculateMean } from "../../utils/utils";
@@ -244,5 +244,29 @@ class ClickHistogram<T extends Histogram> extends Click<T> {
                         )),
                 exit => exit.remove()
             );       
+    }
+}
+
+export interface IHistogramData extends IAdminAnalyticsData {
+    bin: d3.Bin<number, number>
+    percentage: number
+}
+
+export class HistogramData extends AdminAnalyticsData implements IHistogramData {    
+    bin: d3.Bin<number, number>
+    percentage: number
+    constructor(value: IReflectionAuthor[], group: string, colour: string, bin: d3.Bin<number, number>, percentage: number) {
+        super(group, value, undefined, colour)
+        this.bin = bin
+        this.percentage = percentage
+    }
+}
+
+class ClickTextData {
+    clickData: {stat: IDataStats | number, group: string};
+    data: {stat: IDataStats | number, group: string};
+    constructor(clickStat: IDataStats | number, dataStat: IDataStats | number, clickGroup: string, dataGroup: string) {
+        this.clickData = {stat: clickStat, group: clickGroup},
+        this.data = {stat: dataStat, group: dataGroup}
     }
 }

@@ -360,15 +360,14 @@ Author CSS
 ***************************************************/
 
 .chart-container.timeline {
-    min-height: 57vh;
+    min-height: 40vh;
 }
 
 .chart-container.network {
-    min-height: 70vh;
+    min-height: 40vh;
 }
 
 .reflections-tab {
-    height: 70vh;
     overflow-y: auto;
 }
 
@@ -394,6 +393,10 @@ Author CSS
     padding: 2px;
     border: 1px solid #ced4da;
     border-radius: 5px;
+}
+
+.tag-check-label {
+    vertical-align: middle;
 }
 
 .hardline {

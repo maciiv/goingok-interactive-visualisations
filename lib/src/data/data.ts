@@ -48,23 +48,6 @@ export class AdminAnalyticsData implements IAdminAnalyticsData {
     }
 }
 
-export interface IDataStats {
-    stat: string;
-    displayName: string;
-    value: number | Date;
-}
-
-export class DataStats implements IDataStats {
-    stat: string;
-    displayName: string;
-    value: number | Date;
-    constructor(stat: string, displayName: string, value: number | Date){
-        this.stat = stat,
-        this.displayName = displayName,
-        this.value = value
-    }
-}
-
 export interface ITimelineData extends IReflectionAuthor {
     colour: string;
     group: string;
@@ -90,58 +73,10 @@ export class TimelineData implements ITimelineData {
     }
 }
 
-export interface IHistogramData extends IAdminAnalyticsData {
-    bin: d3.Bin<number, number>
-    percentage: number
-}
-
-export class HistogramData extends AdminAnalyticsData implements IHistogramData {    
-    bin: d3.Bin<number, number>
-    percentage: number
-    constructor(value: IReflectionAuthor[], group: string, colour: string, bin: d3.Bin<number, number>, percentage: number) {
-        super(group, value, undefined, colour)
-        this.bin = bin
-        this.percentage = percentage
-    }
-}
-
-export interface IUserChartData {
-    binName: string;
-    percentage: number;
-    value: IReflectionAuthor[];
-    isGroup: boolean;
-}
-
-export class UserChartData implements IUserChartData {
-    binName: string;
-    percentage: number;
-    value: IReflectionAuthor[];
-    isGroup: boolean;
-    constructor(bin: d3.Bin<number, number>, value: IReflectionAuthor[], percentage: number, isGroup: boolean) {
-        if(bin.x0 == 0) {
-            this.binName = "distressed";
-        } else if(bin.x1 == 100) {
-            this.binName = "soaring";
-        } else {
-            this.binName = "going ok";
-        }
-        this.percentage = percentage;
-        this.isGroup = isGroup;
-    }
-}
-
-export interface IClickTextData {
-    clickData: {stat: IDataStats | number, group: string};
-    data: {stat: IDataStats | number, group: string};
-}
-
-export class ClickTextData implements IClickTextData {
-    clickData: {stat: IDataStats | number, group: string};
-    data: {stat: IDataStats | number, group: string};
-    constructor(clickStat: IDataStats | number, dataStat: IDataStats | number, clickGroup: string, dataGroup: string) {
-        this.clickData = {stat: clickStat, group: clickGroup},
-        this.data = {stat: dataStat, group: dataGroup}
-    }
+export interface IDataStats {
+    stat: string;
+    displayName: string;
+    value: number | Date;
 }
 
 export enum NodeType {

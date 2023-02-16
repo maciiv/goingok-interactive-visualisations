@@ -1,8 +1,13 @@
-import { IClickTextData } from "../data/data";
+import { IDataStats } from "../data/data";
 import { IChart } from "../charts/chartBase";
 
 type ClickFunction = {
     (this: SVGRectElement | SVGCircleElement | SVGPathElement | d3.BaseType, event: MouseEvent, d: unknown): void
+}
+
+type ClickTextData = {
+    clickData: {stat: IDataStats | number, group: string};
+    data: {stat: IDataStats | number, group: string};
 }
 
 export interface IClick {
@@ -28,7 +33,7 @@ export class Click<T extends IChart> implements IClick {
         this.chart.elements.content.classed("not-clicked", false)
         this.chart.elements.content.classed("main", false)
     };
-    protected comparativeText(textData: IClickTextData): string[] {
+    protected comparativeText(textData: ClickTextData): string[] {
         let textClass = "click-text";
         let textSymbol = "";
         let textValue;
