@@ -26,37 +26,7 @@
                 <div class="content-wrapper">
                     <div class="container-fluid">            
                         <div class="row" id="analytics-charts">
-                            <div class="col-md-12 mt-3">
-                                <div class="row">
-                                    <div class="col-md-4" id="reflection-entry">
-                                        <div class="card">
-                                            <div class="card-body" style="min-height:40vh">
-                                                <h5 class="card-title">
-                                                    <span>Enter a reflection</span>
-                                                    <button type="button" class="btn btn-light btn-sm float-end" title="help">
-                                                        <i class="fas fa-question-circle"></i>
-                                                    </button>
-                                                </h5>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-8" id="timeline">
-                                        <div class="card h-100">
-                                            <div class="card-body">
-                                                <h5 class="card-title">
-                                                    <span>Your reflections timeline</span>
-                                                    <button type="button" class="btn btn-light btn-sm float-end" title="help">
-                                                        <i class="fas fa-question-circle"></i>
-                                                    </button>
-                                                </h5>
-                                                <h6 class="card-subtitle mb-2 instructions"></h6>
-                                                <div class="chart-container"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-12 mt-3">
+                            <div class="col-md-12">
                                 <div class="card">
                                     <div class="card-body">
                                         <h6 class="card-subtitle d-flex">
@@ -66,36 +36,9 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-12 mt-3">
+                            <div class="col-md-8 mt-3">
                                 <div class="row">
-                                    <div class="col-md-4" id="reflections">
-                                        <div class="card h-100">
-                                            <div class="card-body">
-                                                <h5 class="card-title">
-                                                    <span>Your reflections</span>
-                                                    <button type="button" class="btn btn-light btn-sm float-end" title="help">
-                                                        <i class="fas fa-question-circle"></i>
-                                                    </button>
-                                                </h5>
-                                                <h6 class="card-subtitle d-flex mb-2">
-                                                    <div class="col-md-6 pl-0 text-muted"></div>
-                                                    <div class="col-md-6 d-flex">
-                                                        <div id="sort-reflections" class="ml-auto">
-                                                            <span class="my-auto">Sort by:</span>
-                                                            <div class="btn-group sort-by" role="group">
-                                                                <input type="radio" class="btn-check" name="sort" id="sort-timestamp" value="timestamp" checked>
-                                                                <label class="btn btn-outline-secondary" for="sort-timestamp">Date <i class="fa fa-chevron-down" aria-hidden="true"></i></label>
-                                                                <input type="radio" class="btn-check" name="sort" id="sort-point" value="point">
-                                                                <label class="btn btn-outline-secondary" for="sort-point">Point <i class="fa fa-chevron-down d-none" aria-hidden="true"></i></label>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </h6>
-                                                <div class="reflections-tab"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-8" id="network">
+                                    <div class="col-md-12" id="network">
                                         <div class="card">
                                             <div class="card-body">
                                                 <h5 class="card-title">
@@ -105,6 +48,10 @@
                                                     </button>
                                                 </h5>
                                                 <h6 class="card-subtitle mb-2 d-flex">
+                                                    <div class="form-check my-auto me-auto">
+                                                        <input class="form-check-input" id="group-tags" type="checkbox" value="group=tags" checked>
+                                                        <label class="form-check-label" for="group-tags">Group tags</label>
+                                                    </div>
                                                     <span class="ms-auto my-auto">zoom:</span>
                                                     <div class="input-group input-group-sm zoom-buttons">                                                     
                                                         <button class="btn btn-secondary btn-sm" id="zoom-minus">-</button>
@@ -116,13 +63,52 @@
                                             </div>
                                         </div>
                                     </div>
+                                    <div class="col-md-12 mt-3" id="reflection-entry">
+                                        <div class="card">
+                                            <div class="card-body" style="min-height:40vh">
+                                                <h5 class="card-title">
+                                                    <span>Enter a reflection</span>
+                                                    <button type="button" class="btn btn-light btn-sm float-right">
+                                                        <i class="fas fa-question-circle"></i>
+                                                    </button>
+                                                </h5>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+                            <div class="col-md-4 mt-3" id="reflections">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <span>Your reflections</span>
+                                            <button type="button" class="btn btn-light btn-sm float-right">
+                                                <i class="fas fa-question-circle"></i>
+                                            </button>
+                                        </h5>
+                                        <h6 class="card-subtitle d-flex mb-2">
+                                            <div class="col-md-6 pl-0 text-muted"></div>
+                                            <div class="col-md-6 d-flex">
+                                                <div id="sort-reflections" class="ml-auto">
+                                                    <span class="my-auto">Sort by:</span>
+                                                    <div class="btn-group sort-by" role="group">
+                                                        <input type="radio" class="btn-check" name="sort" id="sort-timestamp" value="timestamp" checked>
+                                                        <label class="btn btn-outline-secondary" for="sort-timestamp">Date <i class="fa fa-chevron-down" aria-hidden="true"></i></label>
+                                                        <input type="radio" class="btn-check" name="sort" id="sort-point" value="point">
+                                                        <label class="btn btn-outline-secondary" for="sort-point">Point <i class="fa fa-chevron-down d-none" aria-hidden="true"></i></label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </h6>
+                                        <div class="reflections-tab"></div>
+                                    </div>
+                                </div>
+                            </div>                                  
                         </div>
                     </div>
                 </div>
             </div>
-        </div>       
+        </div>      
         
         <!--Bootstrap-->
         <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>

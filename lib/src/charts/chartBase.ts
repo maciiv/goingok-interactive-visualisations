@@ -107,18 +107,26 @@ export class ChartNetwork implements IChart {
     y: ChartLinearAxis
     padding: IChartPadding
     elements: IChartElements
+    help: IHelp
     loading: ILoading
     constructor(id: string, containerClass: string, domain: Date[]) {
         this.id = id
         let containerDimensions = getDOMRect(`#${id} .${containerClass}`)
         this.width = containerDimensions.width
         this.height = containerDimensions.height
-        this.padding = new ChartPadding(30, 10, 10, 10)
-        this.y = new ChartLinearAxis(this.id, "", [-50, 150], [this.height - this.padding.xAxis - this.padding.top, 0], "left")       
-        this.x = new ChartTimeAxis(this.id, "", domain, [0, this.width - this.padding.yAxis - this.padding.right])
-        this.elements = new ChartElements(this, containerClass);
-        this.elements.yAxis.remove()
-        this.elements.xAxis.remove()
+        this.padding = new ChartPadding(40, 75, 20, 10)
+        this.help = new Help()
+        this.y = new ChartLinearAxis(this.id, "Reflection Point", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left")       
+        this.x = new ChartTimeAxis(this.id, "Time", domain, [0, this.width - this.padding.yAxis - this.padding.right])
+        this.elements = new ChartElements(this, containerClass)
+        this.elements.contentContainer.append("clipPath")
+            .attr("id", `clip-${this.id}-nodes`)
+            .append("rect")
+            .attr("height", this.height)
+            .attr("width", this.width)
+            .attr("y", - this.padding.top)
+            .attr("x", - this.padding.yAxis)
+        this.elements.contentContainer.attr("clip-path", `url(#clip-${this.id}-nodes)`)
         this.loading = new Loading(this)
     }
     renderError(e: any) {

@@ -63,6 +63,7 @@ export declare class ChartNetwork implements IChart {
     y: ChartLinearAxis;
     padding: IChartPadding;
     elements: IChartElements;
+    help: IHelp;
     loading: ILoading;
     constructor(id: string, containerClass: string, domain: Date[]);
     renderError(e: any): void;

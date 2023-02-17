@@ -3,24 +3,17 @@ import { Help } from "../utils/help";
 import { AuthorAnalytics, IAuthorAnalyticsData, IEdges, INodes, ITags } from "../data/data";
 import { Tutorial, TutorialData } from "../utils/tutorial";
 import { Network } from "../charts/author/network";
-import { TimelineNetwork } from "../charts/author/timelineNetwork";
 import { AuthorAnalyticsDataRaw, IAuthorAnalyticsEntriesRaw, IAuthorEntriesRaw } from "../data/db";
 import { Reflections } from "../charts/author/reflections";
 import { groupBy } from "../utils/utils";
 
 export class Dashboard {
-    timeline: TimelineNetwork
     network: Network
     reflections: Reflections
     constructor(entriesRaw: IAuthorEntriesRaw[], analyticsRaw?: IAuthorAnalyticsEntriesRaw[]) {
         try {
             const colourScale = scaleOrdinal(schemeCategory10)
             const data = entriesRaw.map(d => new AuthorAnalyticsDataRaw(d.reflections, d.pseudonym, analyticsRaw?.find(c => c.pseudonym == d.pseudonym)).transformData(colourScale))
-            try {
-                this.timeline = new TimelineNetwork(data[0].reflections)
-            } catch (e) {
-                this.renderError(e, "timeline")
-            }
             try {
                 this.network = new Network(new AuthorAnalytics(data[0].reflections, data[0].analytics.nodes, data[0].analytics.edges as IEdges<INodes>[]), data[0].reflections.map(d => d.timestamp))
             } catch (e) {
@@ -59,11 +52,6 @@ export class Dashboard {
                 .on("click", (e, d) => {
                     if (extend === undefined) {
                         this.preloadTags(d)
-                        try {
-                            this.timeline.data = d.reflections
-                        } catch (e) {
-                            this.renderError(e, "timeline")
-                        }
                         try {
                             this.reflections.data = d.reflections
                         } catch (e) {
@@ -130,18 +118,11 @@ export function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[
         The data represented are your <i>reflections over time</i><br>
         <u><i>Hover</i></u> over the network nodes for information on demand`) 
 
-    //Handle timeline chart help
-    help.helpPopover(dashboard.timeline.id, `<b>Timeline</b><br>
-        Your reflections and the tags associated to them are shown over time<br>
-        <u><i>Hover</i></u> over a reflection point for information on demand`)
-
     //Handle users histogram chart help
     help.helpPopover(dashboard.reflections.id, `<b>Reflections</b><br>
         Your reflections are shown sorted by time. The words with associated tags have a different outline colour`)
     
-    // new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
-    // new TutorialData("#timeline .circle", "Hover for information on demand"),
-    // new TutorialData("#reflections .reflection-text span", "Phrases outlined with a colour that matches the tags"),
-    // new TutorialData("#network .network-node-group", "Hover for information on demand"),
-    // new TutorialData("#network .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area")])
+    new Tutorial([new TutorialData("#reflections .reflection-text span", "Phrases outlined with a colour that matches the tags"),
+    new TutorialData("#network .network-node-group", "Hover for information on demand"),
+    new TutorialData("#network .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area")])
 }

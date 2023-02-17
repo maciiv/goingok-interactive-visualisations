@@ -32,13 +32,13 @@ class ChartElementsContainers<T extends IChartBasic> implements IChartElementsCo
         result.append("rect")
             .attr("class", "zoom-rect")
             .attr("width", this.chart.width - this.chart.padding.yAxis - this.chart.padding.right)
-            .attr("height", this.chart.height - this.chart.padding.xAxis - this.chart.padding.top);
+            .attr("height", this.chart.height - this.chart.padding.xAxis - this.chart.padding.top)
         result.append("clipPath")
             .attr("id", `clip-${this.chart.id}`)
             .append("rect")
             .attr("x", 1)
             .attr("width", this.chart.width - this.chart.padding.yAxis)
-            .attr("height", this.chart.height - this.chart.padding.xAxis - this.chart.padding.top);
+            .attr("height", this.chart.height - this.chart.padding.xAxis - this.chart.padding.top)
         return result;
     }
 }

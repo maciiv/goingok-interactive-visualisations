@@ -22,8 +22,13 @@ export declare class Network extends ChartNetwork {
     openNodes(data: INodes[], applyForce?: boolean): void;
     closeNodes(applyForce?: boolean): void;
     private processSimulation;
+    private setYForce;
+    private setXForce;
     private filterData;
     private fixGroupNodes;
+    private rScale;
+    private renderLines;
+    private getLines;
 }
 declare class ClickNetwork<T extends Network> extends Click<T> {
     removeClick(): void;

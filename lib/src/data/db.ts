@@ -98,6 +98,7 @@ export class AuthorAnalyticsDataRaw implements IAuthorAnalyticsDataRaw {
                         "labelType": "SYS",
                         "description": d.description,
                         "name": d.name,
+                        "total": 1,
                         "selected": true
                     })
                 }

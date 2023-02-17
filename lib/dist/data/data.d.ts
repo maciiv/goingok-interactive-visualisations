@@ -54,12 +54,14 @@ export interface IDataStats {
 export declare enum NodeType {
     Sys = "SYS",
     Usr = "USR",
-    Grp = "GRP"
+    Grp = "GRP",
+    Ref = "REF"
 }
 export declare enum EdgeType {
     Sys = "SYS",
     Usr = "USR",
-    Grp = "GRP"
+    Grp = "GRP",
+    Ref = "REF"
 }
 export declare enum GroupByType {
     Ref = "refId",
@@ -80,6 +82,7 @@ export interface INodes extends INodesBase, d3.SimulationNodeDatum {
     description: string;
     selected?: boolean;
     properties: any;
+    total: number;
 }
 export interface IEdgesBase<T> extends d3.SimulationLinkDatum<T> {
     idx: number;
@@ -108,12 +111,13 @@ export declare class Analytics implements IAnalytics {
     constructor(reflections: IReflection[], nodes: INodes[], edges: IEdges<number | INodes>[]);
 }
 export interface IAuthorAnalytics extends IAnalytics {
-    groupByKey: GroupByType;
+    groupByKey?: GroupByType;
 }
 export declare class AuthorAnalytics extends Analytics implements IAuthorAnalytics {
-    groupByKey: GroupByType;
-    constructor(reflections: IReflection[], nodes: INodes[], edges: IEdges<INodes>[], groupByKey?: GroupByType);
-    private addGroupByAnalytics;
+    groupByKey?: GroupByType;
+    constructor(reflections: IReflection[], nodes: INodes[], edges: IEdges<number | INodes>[], groupByKey?: GroupByType);
+    private groupByNodeCode;
+    private addRefNodesEdges;
 }
 export interface IReflectionAnalytics extends IReflection {
     nodes: INodes[];
@@ -132,12 +136,12 @@ export interface ITags {
 export interface IAuthorAnalyticsData {
     pseudonym: string;
     reflections: IReflectionAnalytics[];
-    analytics: IAnalytics;
+    analytics: IAuthorAnalytics;
 }
 export declare class AuthorAnalyticsData implements IAuthorAnalyticsData {
     pseudonym: string;
     reflections: IReflectionAnalytics[];
-    analytics: IAnalytics;
-    constructor(reflections: IReflection[], analytics: IAnalytics, pseudonym: string, colourScale: Function);
+    analytics: IAuthorAnalytics;
+    constructor(reflections: IReflection[], analytics: IAuthorAnalytics, pseudonym: string, colourScale: Function);
     private processColour;
 }

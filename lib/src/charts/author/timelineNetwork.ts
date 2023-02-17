@@ -126,9 +126,9 @@ export class TimelineNetwork extends ChartTime {
     }
     private getLines() {
         const hardLine = line<IReflectionAnalytics>()
-        .x(d => this.x.scale(d.timestamp))
-        .y(d => this.y.scale(d.point))
-        .curve(curveMonotoneX)
+            .x(d => this.x.scale(d.timestamp))
+            .y(d => this.y.scale(d.point))
+            .curve(curveMonotoneX)
 
         const softLine = line<IReflectionAnalytics>()
             .x(d => this.x.scale(d.timestamp))
