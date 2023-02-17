@@ -1,5 +1,4 @@
 import { select, selectAll, drag, line, curveMonotoneX, sort } from "d3";
-import { ChartSeries } from "../charts/chartBase";
 import { IAdminAnalyticsData, IReflectionAuthor, ITimelineData, AdminAnalyticsData } from "../data/data";
 import { Dashboard } from "./adminControl";
 import { IAdminAnalyticsDataRaw } from "../data/db";

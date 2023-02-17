@@ -85,10 +85,9 @@ export class ChartHelp implements IChartHelp {
                 _this.createPopover(content)
 
                 if (this.getBoundingClientRect().left - _this.popover.getBoundingClientRect().width > 0) {
-                    _this.popover.style.left = `${this.getBoundingClientRect().left - _this.popover.getBoundingClientRect().width}px`;
+                    _this.popover.style.left = `${this.getBoundingClientRect().left - _this.popover.getBoundingClientRect().width}px`
                 } else {
-                    _this.popover.style.left = `${this.getBoundingClientRect().right}px`;
-                    _this.popover.setAttribute("class", "popover fade bs-popover-right show")
+                    _this.popover.style.left = `${this.getBoundingClientRect().right}px`
                 }
                 _this.toogleIcon()
             } else {
@@ -105,7 +104,7 @@ export class ChartHelp implements IChartHelp {
     createPopover(content: string): HTMLDivElement {
         const popover = document.createElement("div")
         popover.setAttribute("id", this.id)
-        popover.setAttribute("class", "popover fade bs-popover-left show")
+        popover.setAttribute("class", "popover fade show")
         const top = this.button === null ? window.pageYOffset : window.pageYOffset + this.button.getBoundingClientRect().top
         popover.style.top = `${top}px`
 

@@ -1,3 +1,4 @@
+import { IChartHelp } from "../charts/chartBase";
 export interface IReflection {
     refId: number;
     timestamp: Date;
@@ -132,6 +133,8 @@ export interface ITags {
     name: string;
     properties: any;
     selected?: boolean;
+    description: string;
+    help: IChartHelp;
 }
 export interface IAuthorAnalyticsData {
     pseudonym: string;

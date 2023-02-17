@@ -5,6 +5,7 @@ import { Network } from "../charts/author/network";
 import { AuthorAnalyticsDataRaw, IAuthorAnalyticsEntriesRaw, IAuthorEntriesRaw } from "../data/db";
 import { Reflections } from "../charts/author/reflections";
 import { groupBy } from "../utils/utils";
+import { ChartHelp } from "../charts/chartBase";
 
 export class Dashboard {
     network: Network
@@ -72,7 +73,16 @@ export class Dashboard {
         }
     }
     preloadTags(entries: IAuthorAnalyticsData, enable: boolean = false): ITags[] {
-        const tags = groupBy(entries.analytics.nodes, "nodeCode").map(r => { return {"key": r.key, "name": r.value[0].name !== null ? r.value[0].name : r.key, "properties": r.value[0].properties, "selected": r.value[0].selected, "total": r.value.length} as ITags})
+        const tags = groupBy(entries.analytics.nodes, "nodeCode").map(r => 
+            { 
+                return {
+                    "key": r.key, 
+                    "name": r.value[0].name !== null ? r.value[0].name : r.key, 
+                    "properties": r.value[0].properties, 
+                    "selected": r.value[0].selected, 
+                    "description": r.value[0].description
+                } as ITags
+            })
         select("#tags").selectAll("li")
             .data(tags)
             .join(
@@ -91,9 +101,23 @@ export class Dashboard {
                             .attr("class", "tag-check-label")
                             .attr("for", d => `tag-${d.key}`)
                             .text(d => d.name)))
-                    .call(div => div.append("span")
-                        .attr("class", "badge rounded-pill bg-secondary tag-description")
-                        .attr("id", d => `${d.key}-help`)
+                    .call(div => div.append("button")
+                        .attr("class", "badge rounded-pill bg-secondary tag-help")
+                        .on("click", function(e: Event, d: ITags) {
+                            const popover = select(`#${d.key}-help`)
+                            if (popover.empty()) {
+                                select("body").append("div")
+                                    .attr("id", `${d.key}-help`)
+                                    .attr("class", "popover fade show")
+                                    .style("top", `${window.pageYOffset + this.getBoundingClientRect().top + this.getBoundingClientRect().height}px`)
+                                    .call(div => div.append("div")
+                                        .attr("class", "popover-body")
+                                        .text(d.description))
+                                    .call(div => div.style("left", `${this.getBoundingClientRect().left - (div.node().getBoundingClientRect().width / 2)}px`))
+                            } else {
+                                popover.remove()
+                            }
+                        })
                         .append("i")
                         .attr("class", "fas fa-info"))
                     .call(div => div.append("input")

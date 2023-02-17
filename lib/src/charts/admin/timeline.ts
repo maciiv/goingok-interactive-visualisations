@@ -4,7 +4,7 @@ import { Click } from "../../interactions/click";
 import { ITooltipValues, Tooltip, TooltipValues } from "../../interactions/tooltip";
 import { Zoom } from "../../interactions/zoom";
 import { maxDate, minDate } from "../../utils/utils";
-import { ChartTime, IChart, IChartScales } from "../chartBase";
+import { ChartPadding, ChartTime, IChart, IChartScales } from "../chartBase";
 import { ChartTimeAxis, ChartLinearAxis } from "../scaleBase";
 
 export class Timeline extends ChartTime {
@@ -28,7 +28,7 @@ export class Timeline extends ChartTime {
         this.extend !== undefined ? this.extend() : null
     }
     constructor(data: IAdminAnalyticsData[]) {
-        super("timeline", [minDate(data.map(d => minDate(d.value.map(c => c.timestamp)))), maxDate(data.map(d => maxDate(d.value.map(c => c.timestamp))))])
+        super("timeline", [minDate(data.map(d => minDate(d.value.map(c => c.timestamp)))), maxDate(data.map(d => maxDate(d.value.map(c => c.timestamp))))], new ChartPadding(75, 75, 5))
         this.zoomChart = new ChartTimeZoom(this, [this.minTimelineDate(data), this.maxTimelineDate(data)])
         this.clicking = new ClickTimeline(this)
         this.data = data

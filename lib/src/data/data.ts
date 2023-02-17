@@ -1,3 +1,4 @@
+import { IChartHelp } from "../charts/chartBase";
 import { calculateMean, groupBy } from "../utils/utils";
 
 export interface IReflection {
@@ -229,6 +230,8 @@ export interface ITags {
     name: string
     properties: any
     selected?: boolean
+    description: string
+    help: IChartHelp
 }
 
 export interface IAuthorAnalyticsData {

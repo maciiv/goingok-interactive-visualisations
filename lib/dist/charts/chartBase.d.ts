@@ -94,7 +94,6 @@ export declare class ChartNetwork extends ChartBasic implements IChart {
     y: ChartLinearAxis;
     padding: IChartPadding;
     elements: IChartElements;
-    help: IHelp;
     loading: ILoading;
     help: IChartHelp;
     constructor(id: string, containerClass: string, domain: Date[]);
