@@ -73,7 +73,7 @@ export class Dashboard {
         }
     }
     preloadTags(entries: IAuthorAnalyticsData, enable: boolean = false): ITags[] {
-        let tags = groupBy(entries.analytics.nodes, "nodeCode").map(r => { return {"key": r.key, "name": r.value[0].name !== null ? r.value[0].name : r.key, "properties": r.value[0].properties, "selected": r.value[0].selected, "total": r.value.length} as ITags})
+        const tags = groupBy(entries.analytics.nodes, "nodeCode").map(r => { return {"key": r.key, "name": r.value[0].name !== null ? r.value[0].name : r.key, "properties": r.value[0].properties, "selected": r.value[0].selected, "total": r.value.length} as ITags})
         select("#tags").selectAll("li")
             .data(tags)
             .join(
@@ -92,6 +92,11 @@ export class Dashboard {
                             .attr("class", "tag-check-label")
                             .attr("for", d => `tag-${d.key}`)
                             .text(d => d.name)))
+                    .call(div => div.append("span")
+                        .attr("class", "badge rounded-pill bg-secondary tag-description")
+                        .attr("id", d => `${d.key}-help`)
+                        .append("i")
+                        .attr("class", "fas fa-info"))
                     .call(div => div.append("input")
                         .attr("class", "tag-color-picker")
                         .attr("id", d => `colour-${d.key}`)

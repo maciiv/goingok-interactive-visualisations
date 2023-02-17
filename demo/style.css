@@ -399,6 +399,12 @@ Author CSS
     vertical-align: middle;
 }
 
+.tag-help {
+    height: 25%;
+    font-size: 0.5rem !important;
+    margin-right: 0.5rem;
+}
+
 .hardline {
     fill: none;
     stroke: #bbeeff;

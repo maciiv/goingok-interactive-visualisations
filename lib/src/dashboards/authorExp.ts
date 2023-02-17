@@ -177,10 +177,11 @@ export function buildExperimentAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesR
 
     //Handle timeline chart help
     help.helpPopover(dashboard.network.id, `<b>Network diagram</b><br>
-        A network diagram that shows the phrases and tags associated to your reflections<br>The data represented are your <i>reflections over time</i><br>
+        A network diagram that shows the phrases and tags associated to your reflections<br>When grouped the size of the circle increases depending on the amount of nodes contained in that tag. The data represented are your <i>reflections over time</i><br>
         <u><i>Hover</i></u> over the network nodes for information on demand<br>
-        <u><i>Drag</i></u> the network nodes to rearrange the network<br>
-        <u><i>Click</i></u> to fill the background colour the nodes in the reflection text`) 
+        <u><i>Click</i></u> to fill the background colour the nodes in the reflection text<br>
+        <u><i>Group tags</i></u> to reduce or increase the amount of nodes<br>
+        <u><i>Zoom</i></u> to explore the nodes closely`) 
 
     //Handle reflections chart help
     help.helpPopover(dashboard.reflections.id, `<b>Reflections</b><br>
