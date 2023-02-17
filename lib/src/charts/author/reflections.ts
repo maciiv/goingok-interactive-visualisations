@@ -1,10 +1,12 @@
 import { select, selectAll } from "d3"
 import { INodes, IReflection, IReflectionAnalytics } from "../../data/data"
 import { Sort } from "../../interactions/sort"
+import { ChartHelp, IChartHelp } from "../chartBase"
 
 export class Reflections {
     id: string
     sort: Sort<IReflectionAnalytics>
+    help: IChartHelp
     extend?: Function
     private _nodes: INodes[]
     get nodes() {
@@ -30,6 +32,7 @@ export class Reflections {
     constructor(data: IReflectionAnalytics[]) {
         this.id = "reflections"
         this.sort = new Sort("sort-reflections", "timestamp")
+        this.help = new ChartHelp(this.id)
         this.data = data
     }
     render() {

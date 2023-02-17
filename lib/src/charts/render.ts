@@ -1,44 +1,55 @@
 import { select } from "d3";
-import { IChart, IChartBasic } from "./chartBase";
+import { IChartPadding } from "./chartBase";
+import { ChartLinearAxis, ChartSeriesAxis, ChartTimeAxis } from "./scaleBase";
 
-interface IChartElementsContainers {
+export interface IChartElementsContainers {
+    id: string
+    width: number
+    height: number
+    padding: IChartPadding
     svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>
     contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>
     content: d3.Selection<SVGRectElement | SVGCircleElement | SVGPathElement | d3.BaseType, unknown, SVGGElement, any>   
 }
 
-class ChartElementsContainers<T extends IChartBasic> implements IChartElementsContainers {
-    protected chart: T
+export class ChartElementsContainers implements IChartElementsContainers {
+    id: string
+    width: number
+    height: number
+    padding: IChartPadding
     svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>
     contentContainer: d3.Selection<SVGGElement, unknown, HTMLElement, any>
     content: d3.Selection<SVGRectElement | SVGCircleElement | SVGPathElement, unknown, SVGGElement, any>
-    constructor(chart: T, containerClass?: string) {
-        this.chart = chart
+    constructor(id: string, width: number, height: number, padding: IChartPadding, containerClass?: string) {
+        this.id = id
+        this.width = width
+        this.height = height
+        this.padding = padding
         this.svg = this.appendSVG(containerClass);
         this.contentContainer = this.appendContentContainer();
     }
     private appendSVG(containerClass?: string): d3.Selection<SVGSVGElement, unknown, HTMLElement, any> {
-        return select(`#${this.chart.id} ${containerClass == undefined ? ".chart-container" : "." + containerClass}`)
+        return select(`#${this.id} ${containerClass == undefined ? ".chart-container" : "." + containerClass}`)
             .append("svg")
             .attr("class", "chart-svg")
             .attr("preserveAspectRatio", "xMinYMin meet")
-            .attr("viewBox", `0 0 ${this.chart.width} ${this.chart.height}`);
+            .attr("viewBox", `0 0 ${this.width} ${this.height}`);
     }
     private appendContentContainer(): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
         let result = this.svg.append("g")
             .attr("class", "content-container")
-            .attr("transform", `translate(${this.chart.padding.yAxis}, ${this.chart.padding.top})`)
-            .attr("clip-path", `url(#clip-${this.chart.id})`);
+            .attr("transform", `translate(${this.padding.yAxis}, ${this.padding.top})`)
+            .attr("clip-path", `url(#clip-${this.id})`);
         result.append("rect")
             .attr("class", "zoom-rect")
-            .attr("width", this.chart.width - this.chart.padding.yAxis - this.chart.padding.right)
-            .attr("height", this.chart.height - this.chart.padding.xAxis - this.chart.padding.top)
+            .attr("width", this.width - this.padding.yAxis - this.padding.right)
+            .attr("height", this.height - this.padding.xAxis - this.padding.top);
         result.append("clipPath")
-            .attr("id", `clip-${this.chart.id}`)
+            .attr("id", `clip-${this.id}`)
             .append("rect")
             .attr("x", 1)
-            .attr("width", this.chart.width - this.chart.padding.yAxis)
-            .attr("height", this.chart.height - this.chart.padding.xAxis - this.chart.padding.top)
+            .attr("width", this.width - this.padding.yAxis)
+            .attr("height", this.height - this.padding.xAxis - this.padding.top);
         return result;
     }
 }
@@ -50,47 +61,47 @@ export interface IChartElements extends IChartElementsContainers {
     zoomFocus: d3.Selection<SVGGElement, unknown, HTMLElement, any>;
 }
 
-export class ChartElements<T extends IChart> extends ChartElementsContainers<T> implements IChartElements {
+export class ChartElements extends ChartElementsContainers implements IChartElements {
     xAxis: d3.Selection<SVGGElement, unknown, HTMLElement, any>
     yAxis: d3.Selection<SVGGElement, unknown, HTMLElement, any>
     zoomSVG: d3.Selection<SVGGElement, unknown, HTMLElement, any>
     zoomFocus: d3.Selection<SVGGElement, unknown, HTMLElement, any>
-    constructor(chart: T, containerClass?: string) {
-        super(chart, containerClass)
-        this.xAxis = this.appendXAxis();
-        this.appendXAxisLabel();
-        this.yAxis = this.appendYAxis();
-        this.appendYAxisLabel();
+    constructor(id: string, width: number, height: number, padding: IChartPadding, x: ChartSeriesAxis | ChartTimeAxis | ChartLinearAxis, y: ChartLinearAxis | ChartSeriesAxis, containerClass?: string) {
+        super(id, width, height, padding, containerClass)
+        this.xAxis = this.appendXAxis(x)
+        this.appendXAxisLabel(x)
+        this.yAxis = this.appendYAxis(y)
+        this.appendYAxisLabel(y)
     }
-    private appendXAxis(): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
+    private appendXAxis(x: ChartSeriesAxis | ChartTimeAxis | ChartLinearAxis): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
         return this.svg.append("g")
-            .attr("transform", `translate(${this.chart.padding.yAxis}, ${this.chart.height - this.chart.padding.xAxis})`)
+            .attr("transform", `translate(${this.padding.yAxis}, ${this.height - this.padding.xAxis})`)
             .attr("class", "x-axis")
-            .attr("clip-path", `url(#clip-${this.chart.id})`)
-            .call(this.chart.x.axis);
+            .attr("clip-path", `url(#clip-${this.id})`)
+            .call(x.axis);
     };
-    private appendXAxisLabel(): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
+    private appendXAxisLabel(x: ChartSeriesAxis | ChartTimeAxis | ChartLinearAxis): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
         return this.svg.append("g")
             .attr("class", "x-label-container")
-            .attr("transform", "translate(" + (this.svg.select<SVGGElement>(".x-axis").node().getBBox().width / 2 + this.chart.padding.yAxis) + ", " + (this.chart.height - this.chart.padding.xAxis + this.svg.select<SVGGElement>(".x-axis").node().getBBox().height * 2) + ")")
+            .attr("transform", "translate(" + (this.svg.select<SVGGElement>(".x-axis").node().getBBox().width / 2 + this.padding.yAxis) + ", " + (this.height - this.padding.xAxis + this.svg.select<SVGGElement>(".x-axis").node().getBBox().height * 2) + ")")
             .append("text")
             .attr("class", "x-label-text")
             .attr("text-anchor", "middle")
-            .text(this.chart.x.label);
+            .text(x.label);
     };
-    private appendYAxis(): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
+    private appendYAxis(y: ChartLinearAxis | ChartSeriesAxis): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
         return this.svg.append("g")
-            .attr("transform", `translate(${this.chart.padding.yAxis}, ${this.chart.padding.top})`)
+            .attr("transform", `translate(${this.padding.yAxis}, ${this.padding.top})`)
             .attr("class", "y-axis")
-            .call(this.chart.y.axis);
+            .call(y.axis);
     };
-    private appendYAxisLabel(): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
+    private appendYAxisLabel(y: ChartLinearAxis | ChartSeriesAxis): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
         return this.svg.append("g")
             .attr("class", "y-label-container")
-            .attr("transform", "translate(" + (this.chart.padding.yAxis - this.svg.select<SVGGElement>(".y-axis").node().getBBox().width) + ", " + (this.chart.padding.top + this.svg.select<SVGGElement>(".y-axis").node().getBBox().height / 2) + ") rotate(-90)")
+            .attr("transform", "translate(" + (this.padding.yAxis - this.svg.select<SVGGElement>(".y-axis").node().getBBox().width) + ", " + (this.padding.top + this.svg.select<SVGGElement>(".y-axis").node().getBBox().height / 2) + ") rotate(-90)")
             .append("text")
             .attr("class", "y-label-text")
             .attr("text-anchor", "middle")
-            .text(this.chart.y.label);
+            .text(y.label);
     }
 }

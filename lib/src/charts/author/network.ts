@@ -5,12 +5,10 @@ import { Tooltip } from "../../interactions/tooltip";
 import { Zoom } from "../../interactions/zoom";
 import { addDays, calculateMean, maxDate, minDate } from "../../utils/utils";
 import { ChartNetwork } from "../chartBase";
-import { Help } from "../../utils/help";
 
 export class Network extends ChartNetwork {
     tooltip = new Tooltip(this)
     zoom: ZoomNetwork<this>
-    help = new Help()
     groupByKey = GroupByType.Code
     clicking: ClickNetwork<this>
     groupBySimulation: d3.Simulation<INodes, undefined>
@@ -188,7 +186,7 @@ export class Network extends ChartNetwork {
 
             _this.x.axis.ticks(newChartRange[1] / 75)
             _this.elements.xAxis.call(_this.x.axis)
-            _this.help.removeHelp(_this)
+            _this.help.removeHelp()
         }
         //Enable zoom
         _this.zoom.enableZoom(zoomed)

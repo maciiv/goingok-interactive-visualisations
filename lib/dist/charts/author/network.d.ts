@@ -3,11 +3,9 @@ import { Click } from "../../interactions/click";
 import { Tooltip } from "../../interactions/tooltip";
 import { Zoom } from "../../interactions/zoom";
 import { ChartNetwork } from "../chartBase";
-import { Help } from "../../utils/help";
 export declare class Network extends ChartNetwork {
     tooltip: Tooltip<this>;
     zoom: ZoomNetwork<this>;
-    help: Help;
     groupByKey: GroupByType;
     clicking: ClickNetwork<this>;
     groupBySimulation: d3.Simulation<INodes, undefined>;

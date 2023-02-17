@@ -1,10 +1,11 @@
 import { AdminAnalyticsData, IAdminAnalyticsData, IReflectionAuthor } from "../../data/data";
 import { Click } from "../../interactions/click";
 import { Tooltip } from "../../interactions/tooltip";
-import { ChartSeries } from "../chartBase";
+import { ChartSeries, IChartPadding } from "../chartBase";
 import { ChartElements } from "../render";
+import { ChartLinearAxis, ChartSeriesAxis } from "../scaleBase";
 export declare class Histogram extends ChartSeries {
-    elements: HistogramChartElements<this>;
+    elements: HistogramChartElements;
     thresholdAxis: d3.Axis<d3.NumberValue>;
     bandwidth: d3.ScaleLinear<number, number, never>;
     tooltip: Tooltip<this>;
@@ -17,12 +18,12 @@ export declare class Histogram extends ChartSeries {
     getBinData(d: IAdminAnalyticsData): HistogramData[];
     render(): void;
 }
-declare class HistogramChartElements<T extends Histogram> extends ChartElements<T> {
-    constructor(chart: T);
+declare class HistogramChartElements extends ChartElements {
+    constructor(id: string, width: number, height: number, padding: IChartPadding, x: ChartSeriesAxis, y: ChartLinearAxis, thresholdAxis: d3.Axis<d3.NumberValue>, containerClass?: string);
     private appendThresholdAxis;
     private appendThresholdLabel;
     private appendThresholdIndicators;
-    getThresholdsValues(): number[];
+    getThresholdsValues(x: ChartSeriesAxis, y: ChartLinearAxis): number[];
 }
 declare class ClickHistogram<T extends Histogram> extends Click<T> {
     clickedBin: string;

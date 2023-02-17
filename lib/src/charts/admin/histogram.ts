@@ -3,12 +3,12 @@ import { AdminAnalyticsData, IAdminAnalyticsData, IDataStats, IReflectionAuthor 
 import { Click } from "../../interactions/click";
 import { Tooltip, TooltipValues } from "../../interactions/tooltip";
 import { groupBy, calculateMean } from "../../utils/utils";
-import { ChartSeries, ChartPadding } from "../chartBase";
+import { ChartSeries, ChartPadding, IChartPadding } from "../chartBase";
 import { ChartElements } from "../render";
-import { ChartSeriesAxis } from "../scaleBase";
+import { ChartLinearAxis, ChartSeriesAxis, ChartTimeAxis } from "../scaleBase";
 
 export class Histogram extends ChartSeries {
-    elements: HistogramChartElements<this>
+    elements: HistogramChartElements
     thresholdAxis: d3.Axis<d3.NumberValue>
     bandwidth: d3.ScaleLinear<number, number, never>
     tooltip = new Tooltip(this)
@@ -20,26 +20,27 @@ export class Histogram extends ChartSeries {
     }
     set data(entries: IAdminAnalyticsData[]) {
         this._data = entries.filter(d => d.selected)
-        this.x.scale.domain(entries.filter(d => d.selected).map(d => d.group));
+        this.x.scale.domain(entries.filter(d => d.selected).map(d => d.group))
         this.bandwidth = scaleLinear()
             .range([0, this.x.scale.bandwidth()])
-            .domain([-100, 100]);
+            .domain([-100, 100])
         this.x.transition(this.data.map(d => d.group))
-        this.render();
+        this.render()
         this.extend !== undefined ? this.extend() : null
     }
     constructor(data: IAdminAnalyticsData[]) {
-        super("histogram", data.map(d => d.group));
-        this.padding = new ChartPadding(40, 75, 5, 85);
-        this.x = new ChartSeriesAxis(this.id, "Group Code", data.map(d => d.group), [0, this.width - this.padding.yAxis - this.padding.right]);
-        select(`#${this.id} svg`).remove();
-        this.thresholdAxis = this.y.setThresholdAxis(30, 70);
-        this.elements = new HistogramChartElements(this);
+        super("histogram", data.map(d => d.group))
+        this.padding = new ChartPadding(40, 75, 5, 85)
+        this.x = new ChartSeriesAxis(this.id, "Group Code", data.map(d => d.group), [0, this.width - this.padding.yAxis - this.padding.right])
+        select(`#${this.id} svg`).remove()
+        this.thresholdAxis = this.y.setThresholdAxis(30, 70)
+        this.elements = new HistogramChartElements(this.id, this.width, this.height, this.padding, this.x, this.y, this.thresholdAxis)
         this.clicking = new ClickHistogram(this)
         this.data = data
     }
     getBinData(d: IAdminAnalyticsData): HistogramData[] {
-        const binData = bin().domain([0, 100]).thresholds([0, this.elements.getThresholdsValues()[0], this.elements.getThresholdsValues()[1]])
+        const thresholdValues = this.elements.getThresholdsValues(this.x, this.y)
+        const binData = bin().domain([0, 100]).thresholds([0, thresholdValues[0], thresholdValues[1]])
         const usersData = groupBy(d.value, "pseudonym").map(c => { return { "pseudonym": c.key, "mean": calculateMean(c.value.map(r => r.point))} })
         return binData(usersData.map(c => c.mean)).map(c => { 
             return new HistogramData(d.value.filter(a => usersData.filter(r => c.includes(r.mean)).map(r => r.pseudonym).includes(a.pseudonym)), d.group, d.colour, c, Math.round(c.length / usersData.length * 100)) 
@@ -128,19 +129,19 @@ export class Histogram extends ChartSeries {
     }
 }
 
-class HistogramChartElements<T extends Histogram> extends ChartElements<T> {
-    constructor(chart: T) {
-        super(chart);
-        let thresholds = this.getThresholdsValues();
-        this.appendThresholdAxis();
-        this.appendThresholdIndicators(thresholds);
-        this.appendThresholdLabel();
+class HistogramChartElements extends ChartElements {
+    constructor(id: string, width: number, height: number, padding: IChartPadding, x: ChartSeriesAxis, y: ChartLinearAxis, thresholdAxis: d3.Axis<d3.NumberValue>, containerClass?: string) {
+        super(id, width, height, padding, x, y, containerClass)
+        let thresholds = this.getThresholdsValues(x, y)
+        this.appendThresholdAxis(thresholdAxis)
+        this.appendThresholdIndicators(thresholds, y)
+        this.appendThresholdLabel()
     }
-    private appendThresholdAxis(): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
+    private appendThresholdAxis(thresholdAxis: d3.Axis<d3.NumberValue>): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
         return this.contentContainer.append("g")
-            .attr("transform", `translate(${this.chart.width - this.chart.padding.yAxis - this.chart.padding.right}, 0)`)
+            .attr("transform", `translate(${this.width - this.padding.yAxis - this.padding.right}, 0)`)
             .attr("class", "threshold-axis")
-            .call(this.chart.thresholdAxis);
+            .call(thresholdAxis);
     };
     private appendThresholdLabel(): d3.Selection<SVGGElement, unknown, HTMLElement, any> {
         let label = this.svg.append("g")
@@ -149,10 +150,10 @@ class HistogramChartElements<T extends Histogram> extends ChartElements<T> {
             .attr("class", "y-label-text")
             .attr("text-anchor", "middle")
             .text("Thresholds");
-        label.attr("transform", `translate(${this.chart.width - this.chart.padding.right + this.contentContainer.select<SVGGElement>(".threshold-axis").node().getBBox().width + label.node().getBBox().height}, ${this.chart.padding.top + this.svg.select<SVGGElement>(".y-axis").node().getBBox().height / 2}) rotate(-90)`);
+        label.attr("transform", `translate(${this.width - this.padding.right + this.contentContainer.select<SVGGElement>(".threshold-axis").node().getBBox().width + label.node().getBBox().height}, ${this.padding.top + this.svg.select<SVGGElement>(".y-axis").node().getBBox().height / 2}) rotate(-90)`);
         return label;
     };
-    private appendThresholdIndicators(thresholds: number[]): void {
+    private appendThresholdIndicators(thresholds: number[], y: ChartLinearAxis): void {
         this.contentContainer.selectAll(".threshold-indicator-container")
             .data(thresholds)
             .enter()
@@ -160,7 +161,7 @@ class HistogramChartElements<T extends Histogram> extends ChartElements<T> {
             .attr("class", "threshold-indicator-container")
             .classed("distressed", d => d < 50 ? true : false)
             .classed("soaring", d => d > 50 ? true : false)
-            .attr("transform", d => `translate(${this.chart.width - this.chart.padding.yAxis - this.chart.padding.right + 5}, ${d < 50 ? this.chart.y.scale(d) + 25 : this.chart.y.scale(d) - 15})`)
+            .attr("transform", d => `translate(${this.width - this.padding.yAxis - this.padding.right + 5}, ${d < 50 ? y.scale(d) + 25 : y.scale(d) - 15})`)
             .call(g => g.append("rect")
                 .attr("class", "threshold-indicator-box")
                 .attr("rx", 5)
@@ -184,19 +185,19 @@ class HistogramChartElements<T extends Histogram> extends ChartElements<T> {
             .classed("distressed", d => d < 50 ? true : false)
             .classed("soaring", d => d > 50 ? true : false)
             .attr("x1", 0)
-            .attr("x2", this.chart.width - this.chart.padding.yAxis - this.chart.padding.right)
-            .attr("y1", d => this.chart.y.scale(d))
-            .attr("y2", d => this.chart.y.scale(d));
+            .attr("x2", this.width - this.padding.yAxis - this.padding.right)
+            .attr("y1", d => y.scale(d))
+            .attr("y2", d => y.scale(d));
     }
-    getThresholdsValues(): number[] {
+    getThresholdsValues(x: ChartSeriesAxis, y: ChartLinearAxis): number[] {
         let result: number[] = [30, 70];
         let dThreshold = this.contentContainer.select<SVGLineElement>(".threshold-line.distressed");
         if (!dThreshold.empty()) {
-            result[0] = this.chart.y.scale.invert(parseInt(dThreshold.attr("y1")));
+            result[0] = y.scale.invert(parseInt(dThreshold.attr("y1")));
         }
         let sThreshold = this.contentContainer.select<SVGLineElement>(".threshold-line.soaring");
         if (!sThreshold.empty()) {
-            result[1] = this.chart.y.scale.invert(parseInt(sThreshold.attr("y1")));
+            result[1] = y.scale.invert(parseInt(sThreshold.attr("y1")));
         }
         return result;
     };
@@ -205,9 +206,9 @@ class HistogramChartElements<T extends Histogram> extends ChartElements<T> {
 class ClickHistogram<T extends Histogram> extends Click<T> {
     clickedBin: string
     appendThresholdPercentages(data: IAdminAnalyticsData[], clickData: IHistogramData): void {
-        let thresholds = this.chart.elements.getThresholdsValues();
-        let tDistressed = thresholds[0];
-        let tSoaring = thresholds[1];
+        let thresholds = this.chart.elements.getThresholdsValues(this.chart.x, this.chart.y)
+        let tDistressed = thresholds[0]
+        let tSoaring = thresholds[1]
         this.clickedBin = clickData.bin.x0 === 0 ? "distressed" : clickData.bin.x1 === 100 ? "soaring" : "going ok"
 
         this.chart.elements.content.classed("clicked", (d: IHistogramData) => d.group == clickData.group && clickData.bin.length - d.bin.length == 0);

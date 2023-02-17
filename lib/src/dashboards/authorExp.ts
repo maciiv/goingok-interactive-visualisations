@@ -3,7 +3,6 @@ import { IAnalytics, INodes, IAuthorAnalyticsData, ITags, IReflectionAnalytics, 
 import { Dashboard } from "./authorControl";
 import { Tutorial, TutorialData } from "../utils/tutorial";
 import { IAuthorAnalyticsEntriesRaw, IAuthorEntriesRaw } from "../data/db";
-import { Help } from "../utils/help";
 import { NodeType } from "../data/data";
 
 export class ExperimentalDashboard extends Dashboard {
@@ -173,18 +172,17 @@ export class ExperimentalDashboard extends Dashboard {
 
 export function buildExperimentAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[], analyticsRaw: IAuthorAnalyticsEntriesRaw[]) {
     const dashboard = new ExperimentalDashboard(entriesRaw, analyticsRaw)
-    const help = new Help()
 
     //Handle timeline chart help
-    help.helpPopover(dashboard.network.id, `<b>Network diagram</b><br>
-        A network diagram that shows the phrases and tags associated to your reflections<br>When grouped the size of the circle increases depending on the amount of nodes contained in that tag. The data represented are your <i>reflections over time</i><br>
-        <u><i>Hover</i></u> over the network nodes for information on demand<br>
-        <u><i>Click</i></u> to fill the background colour the nodes in the reflection text<br>
-        <u><i>Group tags</i></u> to reduce or increase the amount of nodes<br>
-        <u><i>Zoom</i></u> to explore the nodes closely`) 
+    dashboard.network.help.helpPopover(`<b>Network diagram</b><br>
+    A network diagram that shows the phrases and tags associated to your reflections<br>When grouped the size of the circle increases depending on the amount of nodes contained in that tag. The data represented are your <i>reflections over time</i><br>
+    <u><i>Hover</i></u> over the network nodes for information on demand<br>
+    <u><i>Click</i></u> to fill the background colour the nodes in the reflection text<br>
+    <u><i>Group tags</i></u> to reduce or increase the amount of nodes<br>
+    <u><i>Zoom</i></u> to explore the nodes closely`) 
 
     //Handle reflections chart help
-    help.helpPopover(dashboard.reflections.id, `<b>Reflections</b><br>
+    dashboard.reflections.help.helpPopover(`<b>Reflections</b><br>
         Your reflections are shown sorted by time. The words with associated tags have a different outline colour<br>
         The reflections can be sorted by time or reflection point`)
     
