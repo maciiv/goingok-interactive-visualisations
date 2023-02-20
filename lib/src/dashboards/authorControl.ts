@@ -5,7 +5,6 @@ import { Network } from "../charts/author/network";
 import { AuthorAnalyticsDataRaw, IAuthorAnalyticsEntriesRaw, IAuthorEntriesRaw } from "../data/db";
 import { Reflections } from "../charts/author/reflections";
 import { groupBy } from "../utils/utils";
-import { ChartHelp } from "../charts/chartBase";
 
 export class Dashboard {
     network: Network
@@ -55,7 +54,7 @@ export class Dashboard {
                         try {
                             this.reflections.data = d.reflections
                         } catch (e) {
-                            this.renderError(e, "reflections")
+                            this.renderError(e, "reflections", ".reflections-tab")
                         }
                         try {
                             this.network.data = d.analytics
@@ -152,9 +151,7 @@ export function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[
     dashboard.reflections.help.helpPopover(`<b>Reflections</b><br>
         Your reflections are shown sorted by time. The words with associated tags have a different outline colour`)
     
-    new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
-    new TutorialData("#timeline .circle-ref", "Hover for information on demand"),
-    new TutorialData("#reflections .reflection-text span", "Phrases outlined with a colour that matches the tags"),
+    new Tutorial([new TutorialData("#reflections .reflection-text span", "Phrases outlined with a colour that matches the tags"),
     new TutorialData("#network .network-node-group", "Hover for information on demand"),
     new TutorialData("#network .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area")])
 }
