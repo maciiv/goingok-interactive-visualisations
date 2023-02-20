@@ -22,7 +22,10 @@ export class Network extends ChartNetwork {
         (async () => {
             this.loading.isLoading = true
             this._data = this.filterData(entries)
-            this.x.scale.domain([addDays(minDate(entries.reflections.map(d => d.timestamp)), -30), addDays(maxDate(entries.reflections.map(d => d.timestamp)), 30)])
+            const earlyDate = minDate(entries.reflections.map(d => d.timestamp))
+            const lateDate = maxDate(entries.reflections.map(d => d.timestamp))
+            const extraTime = new Date(Math.round((lateDate.getTime() - earlyDate.getTime()) * 0.1))
+            this.x.scale.domain([addDays(earlyDate, -extraTime.getDate()), addDays(lateDate, extraTime.getDate())])
             if (this.data.nodes.some(d => d.index === undefined)) this.processSimulation()
             try {
                 await this.render()
@@ -348,10 +351,17 @@ class ClickNetwork<T extends Network> extends Click<T> {
 class ZoomNetwork<T extends Network> extends Zoom<T> {
     protected handleZoomMinus(): void {
         this.chart.simulation.stop()
-        setTimeout(() => super.handleZoomMinus(), 100)
+        setTimeout(() => {
+            super.handleZoomMinus()
+            if (this. k === 1) this.chart.elements.contentContainer.attr("clip-path", `url(#clip-${this.chart.id}-nodes)`)
+        }, 100)
+        
     }
     protected handleZoomPlus(): void {
         this.chart.simulation.stop()
-        setTimeout(() => super.handleZoomPlus(), 100)
+        setTimeout(() => {
+            super.handleZoomPlus()
+            if (this.k > 1) this.chart.elements.contentContainer.attr("clip-path", `url(#clip-${this.chart.id})`)
+        }, 100)
     }
 }

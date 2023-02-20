@@ -105,6 +105,7 @@ export class Dashboard {
                         .attr("class", "badge rounded-pill bg-secondary tag-help")
                         .on("click", function(e: Event, d: ITags) {
                             const popover = select(`#${d.key}-help`)
+                            const icon = select(this).select("i")
                             if (popover.empty()) {
                                 select("body").append("div")
                                     .attr("id", `${d.key}-help`)
@@ -114,8 +115,10 @@ export class Dashboard {
                                         .attr("class", "popover-body")
                                         .text(d.description))
                                     .call(div => div.style("left", `${this.getBoundingClientRect().left - (div.node().getBoundingClientRect().width / 2)}px`))
+                                icon?.attr("class", "fas fa-times")
                             } else {
                                 popover.remove()
+                                icon?.attr("class", "fas fa-info")
                             }
                         })
                         .append("i")
