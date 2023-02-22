@@ -155,9 +155,5 @@ export function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[
 
     //Handle users histogram chart help
     dashboard.reflections.help.helpPopover(`<b>Reflections</b><br>
-        Your reflections are shown sorted by time. The words with associated tags have a different outline colour`)
-    
-    new Tutorial([new TutorialData("#reflections .reflection-text span", "Phrases outlined with a colour that matches the tags"),
-    new TutorialData("#network .network-node-group", "Hover for information on demand"),
-    new TutorialData("#network .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area")])
+        Your reflections are shown sorted by time`)
 }
