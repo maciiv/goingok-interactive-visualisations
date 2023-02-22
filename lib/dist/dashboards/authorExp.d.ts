@@ -12,8 +12,8 @@ export declare class ExperimentalDashboard extends Dashboard {
     handleTagsColours(): void;
     handleGroupTags(): void;
     extendNetwork(): void;
-    private handleFilterButton;
     private updateReflectionNodesData;
     private updateAnalyticsData;
+    private logReflectionEntry;
 }
 export declare function buildExperimentAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[], analyticsRaw: IAuthorAnalyticsEntriesRaw[]): void;

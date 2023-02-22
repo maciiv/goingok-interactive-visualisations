@@ -13,6 +13,7 @@ export class ExperimentalDashboard extends Dashboard {
         super(entriesRaw, analyticsRaw)
         this.network.extend = this.extendNetwork.bind(this)
         this.extendNetwork()
+        this.logReflectionEntry()
     }
     handleMultiUser(entries: IAuthorAnalyticsData[]): void {
         const extendFunction = (e: any, d: IAuthorAnalyticsData) => {
@@ -132,12 +133,6 @@ export class ExperimentalDashboard extends Dashboard {
         }
         chart.clicking.enableClick(onClick)
     }
-    private handleFilterButton(): void {
-        const reflectionsData = this.updateReflectionNodesData()
-        this.reflections.data = reflectionsData
-        this.network.clicking.removeClick()
-        this.network.data = this.updateAnalyticsData()
-    };
     private updateReflectionNodesData(analytics?: IReflectionAnalytics): IReflectionAnalytics[] {
         const reflectionAnalytics = analytics === undefined ? 
             this.reflectionAnalytics : 
@@ -175,6 +170,16 @@ export class ExperimentalDashboard extends Dashboard {
             return c
         })
         return new AuthorAnalytics(this.analytics.reflections, nodes, edges)
+    }
+    private logReflectionEntry() {
+        select("#reflection-entry input[type=range]").on("change", (e: Event) => {
+            const target = e.target as HTMLInputElement
+            this.network.logger.logUIEvent(`reflection-entry-slider ${target.value} change`)
+        })
+        select("#reflection-entry textarea").on("change", (e: Event) => {
+            const target = e.target as HTMLTextAreaElement
+            this.network.logger.logUIEvent(`reflection-entry-textarea change`)
+        })
     }
 }
 
