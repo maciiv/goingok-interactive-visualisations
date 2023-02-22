@@ -67,7 +67,8 @@
                             "name": "AR UI",
                             "description": "Anteroreflexive",
                             "selected": true,
-                            "properties": {}
+                            "properties": {},
+                            "total": 1
                         },
                         { 
                             "idx": 2,
@@ -81,7 +82,8 @@
                             "name": "AF UI",
                             "description": "Affective",
                             "selected": true,
-                            "properties": {}
+                            "properties": {},
+                            "total": 1
                         },
                         { 
                             "idx": 3,
@@ -95,7 +97,8 @@
                             "name": "EP UI",
                             "description": "Epistemic",
                             "selected": true,
-                            "properties": {}
+                            "properties": {},
+                            "total": 1
                         },
                         { 
                             "idx": 4,
@@ -109,7 +112,8 @@
                             "name": "AR UI",
                             "description": "Anteroreflexive",
                             "selected": true,
-                            "properties": {}
+                            "properties": {},
+                            "total": 1
                         },
                         { 
                             "idx": 5,
@@ -123,7 +127,8 @@
                             "name": "AF UI",
                             "description": "Affective",
                             "selected": true,
-                            "properties": {}
+                            "properties": {},
+                            "total": 1
                         },
                         { 
                             "idx": 6,
@@ -137,7 +142,8 @@
                             "name": "AF UI",
                             "description": "Affective",
                             "selected": true,
-                            "properties": {}
+                            "properties": {},
+                            "total": 1
                         },
                         { 
                             "idx": 7,
@@ -151,7 +157,8 @@
                             "name": "AF UI",
                             "description": "Affective",
                             "selected": true,
-                            "properties": {}
+                            "properties": {},
+                            "total": 1
                         },
                         { 
                             "idx": 8,
@@ -165,7 +172,8 @@
                             "name": "AR UI",
                             "description": "Anteroreflexive",
                             "selected": true,
-                            "properties": {}
+                            "properties": {},
+                            "total": 1
                         },
                         { 
                             "idx": 9,
@@ -179,7 +187,8 @@
                             "name": "EP UI",
                             "description": "Epistemic",
                             "selected": true,
-                            "properties": {}
+                            "properties": {},
+                            "total": 1
                         },
                         { 
                             "idx": 10,
@@ -193,7 +202,8 @@
                             "name": "EP UI",
                             "description": "Epistemic",
                             "selected": true,
-                            "properties": {}
+                            "properties": {},
+                            "total": 1
                         }
                     ],
                     "edges":[

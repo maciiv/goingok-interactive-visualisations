@@ -14,11 +14,11 @@ export class Network extends ChartNetwork {
     groupBySimulation: d3.Simulation<INodes, undefined>
     simulation: d3.Simulation<INodes, undefined>
     extend?: Function
-    private _data: IAnalytics
+    private _data: IAuthorAnalytics
     get data() {
         return this._data
     }
-    set data(entries: IAnalytics) {
+    set data(entries: IAuthorAnalytics) {
         (async () => {
             this.loading.isLoading = true
             this._data = this.filterData(entries)
@@ -293,7 +293,7 @@ export class Network extends ChartNetwork {
     private rScale(d: INodes, enter: d3.Selection<SVGGElement | d3.BaseType, INodes, SVGGElement | HTMLElement, unknown>): number { 
         return scaleLinear()
             .domain([1, Math.max.apply(null, enter.data().filter(c => c.refId == d.refId).map(c => c.total)) + 1])
-            .range([10, 30])(d.total)
+            .range([10, 20])(d.total)
     }
     private renderLines() {
         this.elements.contentContainer.selectAll(".timeline-line-container")
@@ -344,7 +344,7 @@ class ClickNetwork<T extends Network> extends Click<T> {
         selectAll<HTMLSpanElement, unknown>("#reflections .reflections-tab span")
             .style("background-color", null)   
         selectAll("#reflections i")
-            .classed("selected", false)   
+            .classed("selected", false) 
     }
 }
 
@@ -354,6 +354,7 @@ class ZoomNetwork<T extends Network> extends Zoom<T> {
         setTimeout(() => {
             super.handleZoomMinus()
             if (this. k === 1) this.chart.elements.contentContainer.attr("clip-path", `url(#clip-${this.chart.id}-nodes)`)
+            this.chart.logger.logUIEvent("zoom-out click")
         }, 100)
         
     }
@@ -362,6 +363,7 @@ class ZoomNetwork<T extends Network> extends Zoom<T> {
         setTimeout(() => {
             super.handleZoomPlus()
             if (this.k > 1) this.chart.elements.contentContainer.attr("clip-path", `url(#clip-${this.chart.id})`)
+            this.chart.logger.logUIEvent("zoom-in click")
         }, 100)
     }
 }

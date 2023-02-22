@@ -15,7 +15,7 @@
             <h3 class="mb-1 mt-1 text-light d-block">GoingOk Navbar</h3>
             <ul class="nav navbar-nav mx-auto">
                 <li class="nav-item dropdown pointer multi-user">
-                    <button type="button" class="btn btn-sm btn-outline-light" data-toggle="dropdown" disabled>test@pseudonym</button>
+                    <button type="button" class="btn btn-sm btn-outline-light" data-bs-toggle="dropdown" disabled>test@pseudonym</button>
                     <div class="dropdown-menu">
                     </div>
                 </li>
@@ -26,17 +26,7 @@
                 <div class="content-wrapper">
                     <div class="container-fluid">            
                         <div class="row" id="analytics-charts">
-                            <div class="col-md-12">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h6 class="card-subtitle d-flex">
-                                            <span class="my-auto">Your tags:</span>
-                                            <ul id="tags" class="list-unstyled d-flex m-0"></ul>
-                                        </h6>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-8 mt-3">
+                            <div class="col-md-8">
                                 <div class="row">
                                     <div class="col-md-12" id="network">
                                         <div class="card">
@@ -49,22 +39,27 @@
                                                 </h5>
                                                 <h6 class="card-subtitle mb-2 d-flex">
                                                     <div id="group-tags-div" class="form-check my-auto me-auto">
-                                                        <input class="form-check-input" id="group-tags" type="checkbox" value="group=tags" checked>
+                                                        <div class="group-tags-check-div on">
+                                                            <input class="group-tags-check-input" id="group-tags" type="checkbox" value="group=tags" checked>
+                                                        </div>
                                                         <label class="form-check-label" for="group-tags">Group tags</label>
                                                     </div>
                                                     <span class="ms-auto my-auto me-2">zoom:</span>
                                                     <div class="input-group input-group-sm zoom-buttons">                                                     
-                                                        <button class="btn btn-secondary btn-sm" id="zoom-minus">-</button>
+                                                        <button class="btn btn-secondary btn-sm my-auto" id="zoom-minus">-</button>
                                                         <input type="text" value="100%" class="form-control text-center" id="zoom-number" title="zoom-text" disabled />
-                                                        <button class="btn btn-secondary btn-sm" id="zoom-plus">+</button>
+                                                        <button class="btn btn-secondary btn-sm my-auto" id="zoom-plus">+</button>
                                                     </div>
                                                 </h6>
                                                 <div class="chart-container network"></div>
+                                                <div class="d-flex mt-3">
+                                                    <ul id="tags" class="list-unstyled d-flex m-0"></ul>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-12 mt-3" id="reflection-entry">
-                                        <div class="card">
+                                    <div class="col-md-12 mt-3" id="reflection-entry" style="height: 300px">
+                                        <div class="card h-100">
                                             <div class="card-body">
                                                 <h5 class="card-title">
                                                     <span>Enter a reflection</span>
@@ -77,8 +72,8 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4 mt-3" id="reflections">
-                                <div class="card h-100">
+                            <div class="col-md-4" id="reflections">
+                                <div class="card">
                                     <div class="card-body">
                                         <h5 class="card-title">
                                             <span>Your reflections</span>
@@ -113,8 +108,12 @@
         <!--Bootstrap-->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
         <script type="module">
+            const notFound = [
+                {"pseudonym": "test 1", "analytics": {"name": "not found", "description": "not found", "nodes": [], "edges": []}},
+                {"pseudonym": "test 2", "analytics": {"name": "not found", "description": "not found", "nodes": [], "edges": []}}
+            ]
             d3.json("analytics.json").then(function (c) {  
-                gokd3.buildExperimentAuthorAnalyticsCharts(c["data"]["entriesRaw"]);
+                gokd3.buildExperimentAuthorAnalyticsCharts(c["data"]["entriesRaw"], notFound);
             })
         </script>
     </body>

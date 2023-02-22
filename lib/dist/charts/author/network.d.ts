@@ -12,8 +12,8 @@ export declare class Network extends ChartNetwork {
     simulation: d3.Simulation<INodes, undefined>;
     extend?: Function;
     private _data;
-    get data(): IAnalytics;
-    set data(entries: IAnalytics);
+    get data(): IAuthorAnalytics;
+    set data(entries: IAuthorAnalytics);
     constructor(data: IAuthorAnalytics, domain: Date[]);
     render(): Promise<void>;
     getTooltipNodes(data: IAnalytics, nodeData: INodes): INodes[];

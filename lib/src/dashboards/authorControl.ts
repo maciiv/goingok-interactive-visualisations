@@ -19,6 +19,7 @@ export class Dashboard {
                 this.renderError(e, "network")
             }
             try {
+                this.resizeReflections()
                 this.reflections = new Reflections(data[0].reflections)
             } catch (e) {
                 this.renderError(e, "reflections", ".reflections-tab")
@@ -36,6 +37,11 @@ export class Dashboard {
         console.error(e)
         select(`#${chartId} ${css === undefined ? ".chart-container" : css}`)
             .text(`There was an error rendering the chart. ${e}`)
+    }
+    protected resizeReflections() {
+        const rowHeight = select<HTMLDivElement, unknown>("#analytics-charts").node().getBoundingClientRect().height
+        const cardHeight = select<HTMLDivElement, unknown>("#reflections .card").node().getBoundingClientRect().height
+        select("#reflections .reflections-tab").style("height", `${rowHeight - cardHeight}px`)
     }
     handleMultiUser(entries: IAuthorAnalyticsData[], extend?: Function): void {
         if (entries.length > 1) {
@@ -89,9 +95,9 @@ export class Dashboard {
                     .append("div")
                     .attr("class", "input-group input-group-sm")
                     .call(div => div.append("div")
-                        .attr("class", "form-check me-2")
+                        .attr("class", "me-2")
                         .call(div => enable ? div.append("input")
-                            .attr("class", "form-check-input")
+                            .attr("class", "d-none")
                             .attr("id", d => `tag-${d.key}`)
                             .attr("type", "checkbox")
                             .attr("value", d => d.key)

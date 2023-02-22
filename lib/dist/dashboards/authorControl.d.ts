@@ -7,6 +7,7 @@ export declare class Dashboard {
     reflections: Reflections;
     constructor(entriesRaw: IAuthorEntriesRaw[], analyticsRaw?: IAuthorAnalyticsEntriesRaw[]);
     renderError(e: any, chartId: string, css?: string): void;
+    protected resizeReflections(): void;
     handleMultiUser(entries: IAuthorAnalyticsData[], extend?: Function): void;
     preloadTags(entries: IAuthorAnalyticsData, enable?: boolean): ITags[];
 }

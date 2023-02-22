@@ -8,17 +8,47 @@ export interface IChartScales {
     y: ChartLinearAxis | ChartSeriesAxis
 }
 
+export interface ILogger {
+    logUIEvent(eventDetail: string): void
+}
+
+export class Logger implements ILogger {
+    logUIEvent(eventDetail: string): void {
+        fetch("/analytics/logUIevent", {
+            method: "POST",
+            body: JSON.stringify({
+                "event": eventDetail
+            }),
+            headers: {
+                "Content-type": "application/json"
+            }
+        })
+        .then(response => response.status)
+        .then(status => {
+            switch (status) {
+                case 200:
+                    console.log("Event registered successfully")
+                    return
+                default:
+                    console.log(`Error response status ${status}`)
+            }
+        })
+    }
+}
+
 export interface IChartBasic {
     id: string
     width: number
     height: number
     padding: IChartPadding
+    logger: ILogger
 }
 export class ChartBasic {
     id: string
     width: number
     height: number
     padding: IChartPadding
+    logger = new Logger()
     constructor(id: string, containerClass: string = "chart-container", padding?: IChartPadding) {
         this.id = id
         let containerDimensions = getDOMRect(`#${id} .${containerClass}`)

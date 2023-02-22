@@ -64,7 +64,7 @@ export class AuthorAnalyticsDataRaw implements IAuthorAnalyticsDataRaw {
     constructor(entries: IReflectionAuthorRaw[], pseudonym: string, analytics?: IAuthorAnalyticsEntriesRaw) {
         this.pseudonym = pseudonym
         this.reflections = entries
-        this.analytics = analytics !== undefined ? analytics.analytics : this.createAnalytics(entries)
+        this.analytics = analytics !== undefined && analytics.analytics.nodes.length !== 0 ? analytics.analytics : this.createAnalytics(entries)
     }
     transformData(colourScale?: Function): AuthorAnalyticsData {
         let reflections = this.reflections.map(d => { 

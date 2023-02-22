@@ -5,7 +5,7 @@ import { Tooltip, TooltipValues } from "../../interactions/tooltip";
 import { groupBy, calculateMean } from "../../utils/utils";
 import { ChartSeries, ChartPadding, IChartPadding } from "../chartBase";
 import { ChartElements } from "../render";
-import { ChartLinearAxis, ChartSeriesAxis, ChartTimeAxis } from "../scaleBase";
+import { ChartLinearAxis, ChartSeriesAxis } from "../scaleBase";
 
 export class Histogram extends ChartSeries {
     elements: HistogramChartElements

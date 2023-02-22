@@ -5,17 +5,25 @@ export interface IChartScales {
     x: ChartSeriesAxis | ChartTimeAxis | ChartLinearAxis;
     y: ChartLinearAxis | ChartSeriesAxis;
 }
+export interface ILogger {
+    logUIEvent(eventDetail: string): void;
+}
+export declare class Logger implements ILogger {
+    logUIEvent(eventDetail: string): void;
+}
 export interface IChartBasic {
     id: string;
     width: number;
     height: number;
     padding: IChartPadding;
+    logger: ILogger;
 }
 export declare class ChartBasic {
     id: string;
     width: number;
     height: number;
     padding: IChartPadding;
+    logger: Logger;
     constructor(id: string, containerClass?: string, padding?: IChartPadding);
 }
 export interface IChart extends IChartScales, IChartBasic {
