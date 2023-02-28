@@ -382,13 +382,13 @@ export async function buildExperimentAdminAnalyticsCharts(entriesRaw: IAdminAnal
         Each user's reflections are shown by group. The chart depicts the user's average reflection point<br>
         <u><i>Sort</i></u> by user's name or average reflection state point`)
     
-    new Tutorial([new TutorialData("#groups", "Add groups to the charts and change their colours"),
-    new TutorialData("#sort-groups .sort-by", "Sort groups by creation date, name or users' reflection point average"),
-    new TutorialData(".card-title button", "Click the help symbol in any chart to get additional information"),
-    new TutorialData("#users .bar", "Hover for information on demand or click to compare and drill-down. Other charts will show only the selected group"), 
-    new TutorialData("#histogram .threshold-line", "Drag to change the threshold (soaring or distressed) and recalculate the bins"), 
-    new TutorialData("#histogram .histogram-rect", "Click to compare the bin with other's group bins and drill-down"),
-    new TutorialData("#timeline .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area"),
-    new TutorialData("#timeline .circle", "Hover for information on demand or click to connect the user's reflections"),
-    new TutorialData("#reflections .sort-by", "Sort users alphabetically or by their average reflection state point")])
+    // new Tutorial([new TutorialData("#groups", "Add groups to the charts and change their colours"),
+    // new TutorialData("#sort-groups .sort-by", "Sort groups by creation date, name or users' reflection point average"),
+    // new TutorialData(".card-title button", "Click the help symbol in any chart to get additional information"),
+    // new TutorialData("#users .bar", "Hover for information on demand or click to compare and drill-down. Other charts will show only the selected group"), 
+    // new TutorialData("#histogram .threshold-line", "Drag to change the threshold (soaring or distressed) and recalculate the bins"), 
+    // new TutorialData("#histogram .histogram-rect", "Click to compare the bin with other's group bins and drill-down"),
+    // new TutorialData("#timeline .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area"),
+    // new TutorialData("#timeline .circle", "Hover for information on demand or click to connect the user's reflections"),
+    // new TutorialData("#reflections .sort-by", "Sort users alphabetically or by their average reflection state point")])
 }
