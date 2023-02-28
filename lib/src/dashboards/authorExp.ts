@@ -199,11 +199,11 @@ export function buildExperimentAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesR
         Your reflections are shown sorted by time. The words with associated tags have a different outline colour<br>
         The reflections can be sorted by time or reflection point`)
     
-    new Tutorial([new TutorialData(".card-title button", "Click the help symbol in any chart to get additional information"),
-        new TutorialData("#network #group-tags-div", "Group network nodes that are part of the same tag"),
-        new TutorialData("#network .network-node-group", "Hover for information on demand. Click to fill the background colour of the nodes in the reflection text"),
-        new TutorialData("#network .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area"),
-        new TutorialData("#sort-reflections .sort-by", "Sort reflections by date or reflection state point"),
-        new TutorialData("#reflections .reflection-text span", "Phrases are outlined with a colour that matches the tags"),
-        new TutorialData("#tags li", "Select which tags to see, change the colours if you like and find more information about the tag")])
+    // new Tutorial([new TutorialData(".card-title button", "Click the help symbol in any chart to get additional information"),
+    //     new TutorialData("#network #group-tags-div", "Group network nodes that are part of the same tag"),
+    //     new TutorialData("#network .network-node-group", "Hover for information on demand. Click to fill the background colour of the nodes in the reflection text"),
+    //     new TutorialData("#network .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area"),
+    //     new TutorialData("#sort-reflections .sort-by", "Sort reflections by date or reflection state point"),
+    //     new TutorialData("#reflections .reflection-text span", "Phrases are outlined with a colour that matches the tags"),
+    //     new TutorialData("#tags li", "Select which tags to see, change the colours if you like and find more information about the tag")])
 }
