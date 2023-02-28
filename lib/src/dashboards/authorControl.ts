@@ -2,31 +2,24 @@ import { scaleOrdinal, schemeCategory10, select } from "d3";
 import { AuthorAnalytics, IAuthorAnalyticsData, IEdges, INodes, ITags } from "../data/data";
 import { Tutorial, TutorialData } from "../utils/tutorial";
 import { Network } from "../charts/author/network";
-import { TimelineNetwork } from "../charts/author/timelineNetwork";
 import { AuthorAnalyticsDataRaw, IAuthorAnalyticsEntriesRaw, IAuthorEntriesRaw } from "../data/db";
 import { Reflections } from "../charts/author/reflections";
 import { groupBy } from "../utils/utils";
 
 export class Dashboard {
-    timeline: TimelineNetwork
     network: Network
     reflections: Reflections
-    constructor(entriesRaw: IAuthorEntriesRaw[], analyticsRaw: IAuthorAnalyticsEntriesRaw[]) {
+    constructor(entriesRaw: IAuthorEntriesRaw[], analyticsRaw?: IAuthorAnalyticsEntriesRaw[]) {
         try {
             const colourScale = scaleOrdinal(schemeCategory10)
-            const data = entriesRaw.map(d => new AuthorAnalyticsDataRaw(d.reflections, analyticsRaw.find(c => c.pseudonym == d.pseudonym)).transformData(colourScale))
-            this.resizeTimeline()
-            try {
-                this.timeline = new TimelineNetwork(data[0].reflections)
-            } catch (e) {
-                this.renderError(e, "timeline")
-            }
+            const data = entriesRaw.map(d => new AuthorAnalyticsDataRaw(d.reflections, d.pseudonym, analyticsRaw?.find(c => c.pseudonym == d.pseudonym)).transformData(colourScale))
             try {
                 this.network = new Network(new AuthorAnalytics(data[0].reflections, data[0].analytics.nodes, data[0].analytics.edges as IEdges<INodes>[]), data[0].reflections.map(d => d.timestamp))
             } catch (e) {
                 this.renderError(e, "network")
             }
             try {
+                this.resizeReflections()
                 this.reflections = new Reflections(data[0].reflections)
             } catch (e) {
                 this.renderError(e, "reflections", ".reflections-tab")
@@ -45,9 +38,10 @@ export class Dashboard {
         select(`#${chartId} ${css === undefined ? ".chart-container" : css}`)
             .text(`There was an error rendering the chart. ${e}`)
     }
-    resizeTimeline(): void {
-        let height = document.querySelector("#reflection-entry").getBoundingClientRect().height
-        document.querySelector("#timeline .chart-container").setAttribute("style", `min-height:${height - 80}px`)
+    protected resizeReflections() {
+        const rowHeight = select<HTMLDivElement, unknown>("#analytics-charts").node().getBoundingClientRect().height
+        const cardHeight = select<HTMLDivElement, unknown>("#reflections .card").node().getBoundingClientRect().height
+        select("#reflections .reflections-tab").style("height", `${rowHeight - cardHeight}px`)
     }
     handleMultiUser(entries: IAuthorAnalyticsData[], extend?: Function): void {
         if (entries.length > 1) {
@@ -63,9 +57,17 @@ export class Dashboard {
                 .on("click", (e, d) => {
                     if (extend === undefined) {
                         this.preloadTags(d)
-                        this.timeline.data = d.reflections
-                        this.reflections.data = d.reflections
-                        this.network.data = d.analytics
+                        try {
+                            this.reflections.data = d.reflections
+                        } catch (e) {
+                            this.renderError(e, "reflections", ".reflections-tab")
+                        }
+                        try {
+                            this.network.data = d.analytics
+                        } catch (e) {
+                            this.renderError(e, "network")
+                        }
+                        
                     } else {
                         extend(e, d)
                     }
@@ -76,7 +78,16 @@ export class Dashboard {
         }
     }
     preloadTags(entries: IAuthorAnalyticsData, enable: boolean = false): ITags[] {
-        let tags = groupBy(entries.analytics.nodes, "nodeCode").map(r => { return {"key": r.key, "name": r.value[0].name !== null ? r.value[0].name : r.key, "properties": r.value[0].properties, "selected": r.value[0].selected, "total": r.value.length} as ITags})
+        const tags = groupBy(entries.analytics.nodes, "nodeCode").map(r => 
+            { 
+                return {
+                    "key": r.key, 
+                    "name": r.value[0].name !== null ? r.value[0].name : r.key, 
+                    "properties": r.value[0].properties, 
+                    "selected": r.value[0].selected, 
+                    "description": r.value[0].description
+                } as ITags
+            })
         select("#tags").selectAll("li")
             .data(tags)
             .join(
@@ -84,17 +95,39 @@ export class Dashboard {
                     .append("div")
                     .attr("class", "input-group input-group-sm")
                     .call(div => div.append("div")
-                        .attr("class", "form-check me-2")
+                        .attr("class", "me-2")
                         .call(div => enable ? div.append("input")
-                            .attr("class", "form-check-input")
+                            .attr("class", "d-none")
                             .attr("id", d => `tag-${d.key}`)
                             .attr("type", "checkbox")
                             .attr("value", d => d.key)
                             .property("checked", true) :  null)
                         .call(div => div.append("label")
-                            .attr("class", "form-check-label")
+                            .attr("class", "tag-check-label")
                             .attr("for", d => `tag-${d.key}`)
                             .text(d => d.name)))
+                    .call(div => div.append("button")
+                        .attr("class", "badge rounded-pill bg-secondary tag-help")
+                        .on("click", function(e: Event, d: ITags) {
+                            const popover = select(`#${d.key}-help`)
+                            const icon = select(this).select("i")
+                            if (popover.empty()) {
+                                select("body").append("div")
+                                    .attr("id", `${d.key}-help`)
+                                    .attr("class", "popover fade show")
+                                    .style("top", `${window.pageYOffset + this.getBoundingClientRect().top + this.getBoundingClientRect().height}px`)
+                                    .call(div => div.append("div")
+                                        .attr("class", "popover-body")
+                                        .text(d.description))
+                                    .call(div => div.style("left", `${this.getBoundingClientRect().left - (div.node().getBoundingClientRect().width / 2)}px`))
+                                icon?.attr("class", "fas fa-times")
+                            } else {
+                                popover.remove()
+                                icon?.attr("class", "fas fa-info")
+                            }
+                        })
+                        .append("i")
+                        .attr("class", "fas fa-info"))
                     .call(div => div.append("input")
                         .attr("class", "tag-color-picker")
                         .attr("id", d => `colour-${d.key}`)
@@ -111,7 +144,7 @@ export class Dashboard {
     }
 }
 
-export function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[], analyticsRaw: IAuthorAnalyticsEntriesRaw[]) {
+export function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[], analyticsRaw?: IAuthorAnalyticsEntriesRaw[]) {
     const dashboard = new Dashboard(entriesRaw, analyticsRaw)
 
     //Handle timeline chart help
@@ -120,18 +153,7 @@ export function buildControlAuthorAnalyticsCharts(entriesRaw: IAuthorEntriesRaw[
         The data represented are your <i>reflections over time</i><br>
         <u><i>Hover</i></u> over the network nodes for information on demand`) 
 
-    //Handle timeline chart help
-    dashboard.timeline.help.helpPopover(`<b>Timeline</b><br>
-        Your reflections and the tags associated to them are shown over time<br>
-        <u><i>Hover</i></u> over a reflection point for information on demand`)
-
     //Handle users histogram chart help
     dashboard.reflections.help.helpPopover(`<b>Reflections</b><br>
-        Your reflections are shown sorted by time. The words with associated tags have a different outline colour`)
-    
-    new Tutorial([new TutorialData("#timeline .card-title button", "Click the help symbol in any chart to get additional information"),
-    new TutorialData("#timeline .circle-ref", "Hover for information on demand"),
-    new TutorialData("#reflections .reflection-text span", "Phrases outlined with a colour that matches the tags"),
-    new TutorialData("#network .network-node-group", "Hover for information on demand"),
-    new TutorialData("#network .zoom-buttons", "Click to zoom in and out. To pan the chart click, hold and move left or right in any blank area")])
+        Your reflections are shown sorted by time`)
 }

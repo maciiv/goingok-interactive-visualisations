@@ -8,17 +8,47 @@ export interface IChartScales {
     y: ChartLinearAxis | ChartSeriesAxis
 }
 
+export interface ILogger {
+    logUIEvent(eventDetail: string): void
+}
+
+export class Logger implements ILogger {
+    logUIEvent(eventDetail: string): void {
+        fetch("/analytics/logUIevent", {
+            method: "POST",
+            body: JSON.stringify({
+                "event": eventDetail
+            }),
+            headers: {
+                "Content-type": "application/json"
+            }
+        })
+        .then(response => response.status)
+        .then(status => {
+            switch (status) {
+                case 200:
+                    console.log("Event registered successfully")
+                    return
+                default:
+                    console.log(`Error response status ${status}`)
+            }
+        })
+    }
+}
+
 export interface IChartBasic {
     id: string
     width: number
     height: number
     padding: IChartPadding
+    logger: ILogger
 }
 export class ChartBasic {
     id: string
     width: number
     height: number
     padding: IChartPadding
+    logger = new Logger()
     constructor(id: string, containerClass: string = "chart-container", padding?: IChartPadding) {
         this.id = id
         let containerDimensions = getDOMRect(`#${id} .${containerClass}`)
@@ -85,10 +115,9 @@ export class ChartHelp implements IChartHelp {
                 _this.createPopover(content)
 
                 if (this.getBoundingClientRect().left - _this.popover.getBoundingClientRect().width > 0) {
-                    _this.popover.style.left = `${this.getBoundingClientRect().left - _this.popover.getBoundingClientRect().width}px`;
+                    _this.popover.style.left = `${this.getBoundingClientRect().left - _this.popover.getBoundingClientRect().width}px`
                 } else {
-                    _this.popover.style.left = `${this.getBoundingClientRect().right}px`;
-                    _this.popover.setAttribute("class", "popover fade bs-popover-right show")
+                    _this.popover.style.left = `${this.getBoundingClientRect().right}px`
                 }
                 _this.toogleIcon()
             } else {
@@ -105,7 +134,7 @@ export class ChartHelp implements IChartHelp {
     createPopover(content: string): HTMLDivElement {
         const popover = document.createElement("div")
         popover.setAttribute("id", this.id)
-        popover.setAttribute("class", "popover fade bs-popover-left show")
+        popover.setAttribute("class", "popover fade show")
         const top = this.button === null ? window.pageYOffset : window.pageYOffset + this.button.getBoundingClientRect().top
         popover.style.top = `${top}px`
 
@@ -195,12 +224,18 @@ export class ChartNetwork extends ChartBasic implements IChart {
     loading: ILoading
     help: IChartHelp
     constructor(id: string, containerClass: string, domain: Date[]) {
-        super(id, containerClass, new ChartPadding(30, 10, 10, 10))
-        this.y = new ChartLinearAxis(this.id, "", [-50, 150], [this.height - this.padding.xAxis - this.padding.top, 0], "left")       
-        this.x = new ChartTimeAxis(this.id, "", domain, [0, this.width - this.padding.yAxis - this.padding.right])
+        super(id, containerClass, new ChartPadding(40, 75, 20, 10))
+        this.y = new ChartLinearAxis(this.id, "Reflection Point", [0, 100], [this.height - this.padding.xAxis - this.padding.top, 0], "left")       
+        this.x = new ChartTimeAxis(this.id, "Time", domain, [0, this.width - this.padding.yAxis - this.padding.right])
         this.elements = new ChartElements(this.id, this.width, this.height, this.padding, this.x, this.y, containerClass)
-        this.elements.yAxis.remove()
-        this.elements.xAxis.remove()
+        this.elements.contentContainer.append("clipPath")
+            .attr("id", `clip-${this.id}-nodes`)
+            .append("rect")
+            .attr("height", this.height)
+            .attr("width", this.width)
+            .attr("y", - this.padding.top)
+            .attr("x", - this.padding.yAxis)
+        this.elements.contentContainer.attr("clip-path", `url(#clip-${this.id}-nodes)`)
         this.loading = new Loading(this)
         this.help = new ChartHelp(this.id)
     }

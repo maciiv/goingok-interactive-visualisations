@@ -18,6 +18,7 @@ export interface ITutorial {
     tutorial: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>
     tutorialData: ITutorialData[]
     slide: number
+    isDone: boolean
     appendTutorial(id: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>
     removeTutorial(): void
 }
@@ -26,6 +27,7 @@ export class Tutorial implements ITutorial {
     tutorial: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>
     tutorialData: ITutorialData[]
     slide: number
+    isDone = localStorage.getItem("author-tutorial") !== null 
     constructor(data: ITutorialData[]) {
         this.tutorial = this.appendTutorial()
         this.tutorialData = data
@@ -41,13 +43,18 @@ export class Tutorial implements ITutorial {
         return div
     };
     private appendTutorialBackdrop(): void {
-        if (this.slide >= this.tutorialData.length) {
+        if (this.slide >= this.tutorialData.length || this.isDone) {
             this.removeTutorial()
             return
         }
-        window.scroll(0, 0);
-        let tutorialData = this.tutorialData[this.slide]
-        let tutorialFocus = select<HTMLDivElement, unknown>(tutorialData.id).node().getBoundingClientRect()
+        window.scroll(0, 0)
+        const tutorialData = this.tutorialData[this.slide]
+        const tutorialFocusNode = select<HTMLDivElement, unknown>(tutorialData.id).node()
+        if (tutorialFocusNode === null) {
+            this.removeTutorial()
+            return
+        }
+        const tutorialFocus = tutorialFocusNode.getBoundingClientRect()
         class TutorialContentData {
             top: string
             left: string
@@ -172,8 +179,9 @@ export class Tutorial implements ITutorial {
     }
     removeTutorial(): void {
         select("body")
-            .classed("no-overflow", false);
+            .classed("no-overflow", false)
         window.scroll(0, 0)
-        this.tutorial.remove();
+        localStorage.setItem("author-tutorial", "true")
+        this.tutorial.remove()
     }
 }

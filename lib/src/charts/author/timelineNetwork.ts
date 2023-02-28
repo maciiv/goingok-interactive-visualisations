@@ -33,7 +33,10 @@ export class TimelineNetwork extends ChartTime {
         })()     
     }
     constructor(data: IReflectionAnalytics[]){
-        super("timeline", [addDays(minDate(data.map(d => d.timestamp)), -30), addDays(maxDate(data.map(d => d.timestamp)), 30)], new ChartPadding(40, 75, 10, 10))
+        super("timeline", [addDays(minDate(data.map(d => d.timestamp)), -30), addDays(maxDate(data.map(d => d.timestamp)), 30)], new ChartPadding(40, 75, 50, 10))
+        this.elements.contentContainer.select("clipPath rect")
+            .attr("height", this.height - this.padding.xAxis)
+            .attr("y", -this.padding.top)
         this.clicking = new ClickTimelineNetwork(this)
         this.data = data
     }
@@ -123,9 +126,9 @@ export class TimelineNetwork extends ChartTime {
     }
     private getLines() {
         const hardLine = line<IReflectionAnalytics>()
-        .x(d => this.x.scale(d.timestamp))
-        .y(d => this.y.scale(d.point))
-        .curve(curveMonotoneX)
+            .x(d => this.x.scale(d.timestamp))
+            .y(d => this.y.scale(d.point))
+            .curve(curveMonotoneX)
 
         const softLine = line<IReflectionAnalytics>()
             .x(d => this.x.scale(d.timestamp))

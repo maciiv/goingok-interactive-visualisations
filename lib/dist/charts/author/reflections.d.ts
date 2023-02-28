@@ -1,11 +1,12 @@
 import { INodes, IReflectionAnalytics } from "../../data/data";
 import { Sort } from "../../interactions/sort";
-import { IChartHelp } from "../chartBase";
+import { IChartHelp, Logger } from "../chartBase";
 export declare class Reflections {
     id: string;
     sort: Sort<IReflectionAnalytics>;
     help: IChartHelp;
     extend?: Function;
+    logger: Logger;
     private _nodes;
     get nodes(): INodes[];
     set nodes(nodes: INodes[]);

@@ -1,3 +1,4 @@
+import { IChartHelp } from "../charts/chartBase";
 import { calculateMean, groupBy } from "../utils/utils";
 
 export interface IReflection {
@@ -48,23 +49,6 @@ export class AdminAnalyticsData implements IAdminAnalyticsData {
     }
 }
 
-export interface IDataStats {
-    stat: string;
-    displayName: string;
-    value: number | Date;
-}
-
-export class DataStats implements IDataStats {
-    stat: string;
-    displayName: string;
-    value: number | Date;
-    constructor(stat: string, displayName: string, value: number | Date){
-        this.stat = stat,
-        this.displayName = displayName,
-        this.value = value
-    }
-}
-
 export interface ITimelineData extends IReflectionAuthor {
     colour: string;
     group: string;
@@ -90,70 +74,24 @@ export class TimelineData implements ITimelineData {
     }
 }
 
-export interface IHistogramData extends IAdminAnalyticsData {
-    bin: d3.Bin<number, number>
-    percentage: number
-}
-
-export class HistogramData extends AdminAnalyticsData implements IHistogramData {    
-    bin: d3.Bin<number, number>
-    percentage: number
-    constructor(value: IReflectionAuthor[], group: string, colour: string, bin: d3.Bin<number, number>, percentage: number) {
-        super(group, value, undefined, colour)
-        this.bin = bin
-        this.percentage = percentage
-    }
-}
-
-export interface IUserChartData {
-    binName: string;
-    percentage: number;
-    value: IReflectionAuthor[];
-    isGroup: boolean;
-}
-
-export class UserChartData implements IUserChartData {
-    binName: string;
-    percentage: number;
-    value: IReflectionAuthor[];
-    isGroup: boolean;
-    constructor(bin: d3.Bin<number, number>, value: IReflectionAuthor[], percentage: number, isGroup: boolean) {
-        if(bin.x0 == 0) {
-            this.binName = "distressed";
-        } else if(bin.x1 == 100) {
-            this.binName = "soaring";
-        } else {
-            this.binName = "going ok";
-        }
-        this.percentage = percentage;
-        this.isGroup = isGroup;
-    }
-}
-
-export interface IClickTextData {
-    clickData: {stat: IDataStats | number, group: string};
-    data: {stat: IDataStats | number, group: string};
-}
-
-export class ClickTextData implements IClickTextData {
-    clickData: {stat: IDataStats | number, group: string};
-    data: {stat: IDataStats | number, group: string};
-    constructor(clickStat: IDataStats | number, dataStat: IDataStats | number, clickGroup: string, dataGroup: string) {
-        this.clickData = {stat: clickStat, group: clickGroup},
-        this.data = {stat: dataStat, group: dataGroup}
-    }
+export interface IDataStats {
+    stat: string;
+    displayName: string;
+    value: number | Date;
 }
 
 export enum NodeType {
     Sys = "SYS",
     Usr = "USR",
-    Grp = "GRP"
+    Grp = "GRP",
+    Ref = "REF"
 }
 
 export enum EdgeType {
     Sys = "SYS",
     Usr = "USR",
-    Grp = "GRP"
+    Grp = "GRP",
+    Ref = "REF"
 }
 
 export enum GroupByType {
@@ -177,6 +115,7 @@ export interface INodes extends INodesBase, d3.SimulationNodeDatum {
     description: string
     selected?: boolean
     properties: any
+    total: number
 }
 
 export interface IEdgesBase<T> extends d3.SimulationLinkDatum<T> {
@@ -214,33 +153,58 @@ export class Analytics implements IAnalytics {
 }
 
 export interface IAuthorAnalytics extends IAnalytics { 
-    groupByKey: GroupByType
+    groupByKey?: GroupByType
 }
 
 export class AuthorAnalytics extends Analytics implements IAuthorAnalytics {
-    groupByKey: GroupByType
-    constructor(reflections: IReflection[], nodes: INodes[], edges: IEdges<INodes>[], groupByKey: GroupByType = GroupByType.Ref) {
+    groupByKey?: GroupByType
+    constructor(reflections: IReflection[], nodes: INodes[], edges: IEdges<number | INodes>[], groupByKey?: GroupByType) {
         super(reflections, nodes, edges)
         this.groupByKey = groupByKey
-        this.addGroupByAnalytics()
+        if (groupByKey === GroupByType.Code) {
+            const nodesEdges = this.groupByNodeCode()
+            this.nodes = nodesEdges.nodes
+            this.edges = nodesEdges.edges
+        }
+        this.addRefNodesEdges()
     }
-    private addGroupByAnalytics() {
-        let nodes = groupBy(this.nodes, this.groupByKey).map((d, i) => {
+    private groupByNodeCode(): { nodes: INodes[], edges: IEdges<INodes>[] } {
+        const reflectionNodes = this.reflections.map(r => {
+            let nodes = [] as INodes[]
+            groupBy(this.nodes.filter(c => c.refId === r.refId), GroupByType.Code).forEach(d => {
+                nodes.push({
+                    "idx": - this.reflections.length - 1,
+                    "nodeCode": d.key,
+                    "nodeType": NodeType.Grp,
+                    "refId": r.refId,
+                    "expression": d.value[0].name !== null ? `${d.value[0].name} : ${d.value.length}` : `${d.key} : ${d.value.length}`,
+                    "properties": d.value[0].properties,
+                    "total": d.value.length,
+                    "selected": true
+                } as INodes)
+            })
+            return nodes
+        })
+        return { "nodes": reflectionNodes.flat(), "edges": [] }
+    }
+    private addRefNodesEdges() {
+        let nodes = this.reflections.map((d, i) => {
             return {
                 "idx": -i - 1,
-                "nodeCode": d.key,
-                "nodeType": NodeType.Grp,
-                "refId": parseInt(d.key),
-                "expression": GroupByType.Ref === this.groupByKey ? this.reflections.find(c => c.refId.toString() == d.key)?.timestamp.toDateString() : d.key,
-                "properties": {"color": "#999999"}
+                "nodeCode": d.refId.toString(),
+                "nodeType": NodeType.Ref,
+                "refId": d.refId,
+                "expression": d.timestamp.toDateString(),
+                "properties": {"color": "#999999"},
+                "total": 1
             } as INodes
         })
         let edges = nodes.map((d, i) => {
-            let nodesTarget = this.nodes.filter(c => this.groupByKey == GroupByType.Ref ? c.refId.toString() == d.nodeCode : c.nodeCode == d.nodeCode)
+            let nodesTarget = this.nodes.filter(c => c.refId.toString() == d.nodeCode)
             return nodesTarget.map((c, x) => {
                 return {
                     "idx": -x - 1,
-                    "edgeType": EdgeType.Grp,
+                    "edgeType": EdgeType.Ref,
                     "source": d,
                     "target": c
                 } as IEdges<INodes>
@@ -266,19 +230,21 @@ export interface ITags {
     name: string
     properties: any
     selected?: boolean
+    description: string
+    help: IChartHelp
 }
 
 export interface IAuthorAnalyticsData {
     pseudonym: string
     reflections: IReflectionAnalytics[]
-    analytics: IAnalytics
+    analytics: IAuthorAnalytics
 }
 
 export class AuthorAnalyticsData implements IAuthorAnalyticsData {
     pseudonym: string
     reflections: IReflectionAnalytics[]
-    analytics: IAnalytics
-    constructor(reflections: IReflection[], analytics: IAnalytics, pseudonym: string, colourScale: Function) {
+    analytics: IAuthorAnalytics
+    constructor(reflections: IReflection[], analytics: IAuthorAnalytics, pseudonym: string, colourScale: Function) {
         this.reflections = reflections.map(c => { 
             let nodes = JSON.parse(JSON.stringify(analytics.nodes.filter(r => r.refId === c.refId))) as INodes[]
             nodes.forEach(r => this.processColour(r, colourScale))

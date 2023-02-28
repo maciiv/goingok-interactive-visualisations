@@ -11,6 +11,7 @@ export interface ITutorial {
     tutorial: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
     tutorialData: ITutorialData[];
     slide: number;
+    isDone: boolean;
     appendTutorial(id: string): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
     removeTutorial(): void;
 }
@@ -18,6 +19,7 @@ export declare class Tutorial implements ITutorial {
     tutorial: d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
     tutorialData: ITutorialData[];
     slide: number;
+    isDone: boolean;
     constructor(data: ITutorialData[]);
     appendTutorial(): d3.Selection<HTMLDivElement, unknown, HTMLElement, any>;
     private appendTutorialBackdrop;

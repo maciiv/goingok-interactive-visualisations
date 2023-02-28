@@ -1,4 +1,5 @@
-import { IReflectionAuthor, AdminAnalyticsData, AuthorAnalyticsData, IReflection, IAnalytics, INodes, IEdges, Analytics } from "./data";
+import { IReflectionAuthor, AdminAnalyticsData, AuthorAnalyticsData, IReflection, INodes, IEdges, Analytics, NodeType } from "./data";
+import { ngrams } from "./ngrams";
 
 export interface IReflectionAuthorRaw {
     refId: string
@@ -60,10 +61,10 @@ export class AuthorAnalyticsDataRaw implements IAuthorAnalyticsDataRaw {
     pseudonym: string
     reflections: IReflectionAuthorRaw[]
     analytics: IAnalyticsEntriesRaw
-    constructor(entries: IReflectionAuthorRaw[], analytics: IAuthorAnalyticsEntriesRaw) {
-        this.pseudonym = analytics.pseudonym
+    constructor(entries: IReflectionAuthorRaw[], pseudonym: string, analytics?: IAuthorAnalyticsEntriesRaw) {
+        this.pseudonym = pseudonym
         this.reflections = entries
-        this.analytics = analytics.analytics
+        this.analytics = analytics === undefined ? this.createEmptyAnalytics() : analytics.analytics.nodes.length !== 0 ? analytics.analytics : this.createAnalytics(entries)
     }
     transformData(colourScale?: Function): AuthorAnalyticsData {
         let reflections = this.reflections.map(d => { 
@@ -75,5 +76,38 @@ export class AuthorAnalyticsDataRaw implements IAuthorAnalyticsDataRaw {
             } as IReflection
         })
         return new AuthorAnalyticsData(reflections, new Analytics(reflections, this.analytics.nodes, this.analytics.edges), this.pseudonym, colourScale)
+    }
+    private createAnalytics(entries: IReflectionAuthorRaw[]): IAnalyticsEntriesRaw {
+        let idx = 0
+        const nodes = entries.map(c => {
+            let nodes = [] as INodes[]
+            ngrams.forEach(d => {
+                const regex = new RegExp(d.ngram, "i")
+                const search = c.text.search(regex)
+                if (search > 0) {
+                    idx = idx + 1
+                    nodes.push({
+                        "idx": idx,
+                        "startIdx": search,
+                        "endIdx": search + d.ngram.length - 1,
+                        "nodeCode": d.category,
+                        "nodeType": NodeType.Sys,
+                        "refId": parseInt(c.refId),
+                        "expression": d.ngram,
+                        "properties": {},
+                        "labelType": "SYS",
+                        "description": d.description,
+                        "name": d.name,
+                        "total": 1,
+                        "selected": true
+                    })
+                }
+            })
+            return nodes
+        }) 
+        return { "nodes": nodes.flat(), "edges": [] }
+    }
+    private createEmptyAnalytics(): IAnalyticsEntriesRaw {
+        return { "nodes": [], "edges": [] }
     }
 }
