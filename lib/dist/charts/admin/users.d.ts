@@ -1,6 +1,6 @@
-import { IAdminAnalyticsData, IReflectionAuthor } from "../../data/data";
-import { Sort } from "../../interactions/sort";
-import { IChartHelp } from "../chartBase";
+import { IAdminAnalyticsData, IReflectionAuthor } from '../../data/data';
+import { Sort } from '../../interactions/sort';
+import { IChartHelp } from '../chartBase';
 type UserData = {
     pseudonym: string;
     avg: number;
