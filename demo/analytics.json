@@ -1,548 +1,548 @@
 {
-    "data": {
-        "entriesRaw": [
-            {
-                "pseudonym": "test 1",
-                "reflections": [
-                    {
-                        "refId": 1,
-                        "timestamp": "2019-09-26T07:31:33.082585",
-                        "point": 100,
-                        "text": "still waiting for my grades back from assignment 2, but I think I should still feeling good as other examinations have returned their grades and I am doing really well."
-                    },
-                    {
-                        "refId": 2,
-                        "timestamp": "2020-03-10T05:34:14.108458",
-                        "point": 75,
-                        "text": "Weeks 1 and 2 have been ok with the content delivered. Week 3 will be more stressful due to the amount of assessment released. Luckily things have settled and I and stable with the new place I moved into."
-                    },
-                    {
-                        "refId": 3,
-                        "timestamp": "2019-10-17T23:07:50.824921",
-                        "point": 37,
-                        "text": "Have not had the time to advance the third assignment more, two major assignments were due before this one so I have been focusing om them since one of them is a group assignment and another one is the biggest assignment of the most challenging unit this semester."
-                    }
-                ]
-            },
-            {
-                "pseudonym": "test 2",
-                "reflections": [
-                    {
-                        "refId": 4,
-                        "timestamp": "2018-09-26T07:31:33.082585",
-                        "point": 10,
-                        "text": "still waiting for my grades back from assignment 2, but still feeling good as other examinations have returned their grades and I am doing really well."
-                    },
-                    {
-                        "refId": 5,
-                        "timestamp": "2018-03-10T05:34:14.108458",
-                        "point": 55,
-                        "text": "Weeks 1 and 2 have been ok with the content delivered. Week 3 will be more stressful due to the amount of assessment released. Luckily things have settled and I and stable with the new place I moved into."
-                    },
-                    {
-                        "refId": 6,
-                        "timestamp": "2018-10-17T23:07:50.824921",
-                        "point": 77,
-                        "text": "Have not had the time to advance the third assignment more, two major assignments were due before this one so I have been focusing om them since one of them is a group assignment and another one is the biggest assignment of the most challenging unit this semester."
-                    }
-                ]
-            }           
-        ],
-        "analyticsRaw": [
-            {
-                "pseudonym": "test 1",
-                "analytics": {
-                    "name": "Network graph",
-                    "description": "Network chart author 1",
-                    "nodes": [
-                        { 
-                            "idx": 1,
-                            "nodeType": "SYS",
-                            "nodeCode": "AR",
-                            "refId": 1,
-                            "startIdx": 6, 
-                            "endIdx": 26,
-                            "expression": "waiting for my grades", 
-                            "labelType": "SYS",
-                            "name": "AR UI",
-                            "description": "Anteroreflexive",
-                            "selected": true,
-                            "properties": {},
-                            "total": 1
-                        },
-                        { 
-                            "idx": 2,
-                            "nodeType": "SYS",
-                            "nodeCode": "AF",
-                            "refId": 1,
-                            "startIdx": 52, 
-                            "endIdx": 68,
-                            "expression": "but still feeling", 
-                            "labelType": "SYS",
-                            "name": "AF UI",
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {},
-                            "total": 1
-                        },
-                        { 
-                            "idx": 3,
-                            "nodeType": "SYS",
-                            "nodeCode": "EP",
-                            "refId": 1,
-                            "startIdx": 139, 
-                            "endIdx": 149,
-                            "expression": "really well", 
-                            "labelType": "SYS",
-                            "name": "EP UI",
-                            "description": "Epistemic",
-                            "selected": true,
-                            "properties": {},
-                            "total": 1
-                        },
-                        { 
-                            "idx": 4,
-                            "nodeType": "SYS",
-                            "nodeCode": "AR",
-                            "refId": 2,
-                            "startIdx": 14, 
-                            "endIdx": 22,
-                            "expression": "have been", 
-                            "labelType": "SYS",
-                            "name": "AR UI",
-                            "description": "Anteroreflexive",
-                            "selected": true,
-                            "properties": {},
-                            "total": 1
-                        },
-                        { 
-                            "idx": 5,
-                            "nodeType": "SYS",
-                            "nodeCode": "AF",
-                            "refId": 2,
-                            "startIdx": 75, 
-                            "endIdx": 83,
-                            "expression": "stressfull", 
-                            "labelType": "SYS",
-                            "name": "AF UI",
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {},
-                            "total": 1
-                        },
-                        { 
-                            "idx": 6,
-                            "nodeType": "SYS",
-                            "nodeCode": "AF",
-                            "refId": 2,
-                            "startIdx": 127, 
-                            "endIdx": 145,
-                            "expression": "luckily things have", 
-                            "labelType": "SYS",
-                            "name": "AF UI",
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {},
-                            "total": 1
-                        },
-                        { 
-                            "idx": 7,
-                            "nodeType": "SYS",
-                            "nodeCode": "AF",
-                            "refId": 2,
-                            "startIdx": 191, 
-                            "endIdx": 202,
-                            "expression": "i moved into", 
-                            "labelType": "SYS",
-                            "name": "AF UI",
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {},
-                            "total": 1
-                        },
-                        { 
-                            "idx": 8,
-                            "nodeType": "SYS",
-                            "nodeCode": "AR",
-                            "refId": 3,
-                            "startIdx": 0, 
-                            "endIdx": 11,
-                            "expression": "have not had", 
-                            "labelType": "SYS",
-                            "name": "AR UI",
-                            "description": "Anteroreflexive",
-                            "selected": true,
-                            "properties": {},
-                            "total": 1
-                        },
-                        { 
-                            "idx": 9,
-                            "nodeType": "SYS",
-                            "nodeCode": "EP",
-                            "refId": 3,
-                            "startIdx": 82, 
-                            "endIdx": 96,
-                            "expression": "were due before", 
-                            "labelType": "SYS",
-                            "name": "EP UI",
-                            "description": "Epistemic",
-                            "selected": true,
-                            "properties": {},
-                            "total": 1
-                        },
-                        { 
-                            "idx": 10,
-                            "nodeType": "SYS",
-                            "nodeCode": "EP",
-                            "refId": 3,
-                            "startIdx": 110, 
-                            "endIdx": 120,
-                            "expression": "i have been", 
-                            "labelType": "SYS",
-                            "name": "EP UI",
-                            "description": "Epistemic",
-                            "selected": true,
-                            "properties": {},
-                            "total": 1
-                        }
-                    ],
-                    "edges":[
-                        {
-                            "idx": 1,
-                            "edgeType": "SYS",
-                            "source": 1,
-                            "target": 2,
-                            "directional": true,
-                            "weight": 1,
-                            "labelType": "SYS",
-                            "name": "AF",
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {}
-                        },
-                        {
-                            "idx": 2,
-                            "edgeType": "SYS",
-                            "source": 1,
-                            "target": 3,
-                            "directional": true,
-                            "weight": 1,
-                            "labelType": "SYS",
-                            "name": "AF",
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {}
-                        },
-                        {
-                            "idx": 3,
-                            "edgeType": "SYS",
-                            "source": 4,
-                            "target": 5,
-                            "directional": true,
-                            "weight": 1,
-                            "labelType": "SYS",
-                            "name": "AF",
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {}
-                        },
-                        {
-                            "idx": 4,
-                            "edgeType": "SYS",
-                            "source": 4,
-                            "target": 6,
-                            "directional": true,
-                            "weight": 1,
-                            "labelType": "SYS",
-                            "name": "AF",
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {}
-                        },
-                        {
-                            "idx": 5,
-                            "edgeType": "SYS",
-                            "source": 5,
-                            "target": 6,
-                            "directional": true,
-                            "weight": 1,
-                            "labelType": "SYS",
-                            "name": "AF",
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {}
-                        },
-                        {
-                            "idx": 6,
-                            "edgeType": "SYS",
-                            "source": 8,
-                            "target": 9,
-                            "directional": true,
-                            "weight": 1,
-                            "labelType": "SYS",
-                            "name": "AF",
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {}
-                        },
-                        {
-                            "idx": 7,
-                            "edgeType": "SYS",
-                            "source": 9,
-                            "target": 10,
-                            "directional": true,
-                            "weight": 1,
-                            "labelType": "SYS",
-                            "name": "AF",
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {}
-                        }
-                    ]
-                }
-            },
-            {
-                "pseudonym": "test 2",
-                "analytics": {
-                    "name": "Network graph 2",
-                    "description": "Network chart author 2",
-                    "nodes": [
-                        { 
-                            "idx": 11,
-                            "nodeType": "SYS",
-                            "nodeCode": "AR",
-                            "refId": 4,
-                            "startIdx": 6, 
-                            "endIdx": 26,
-                            "expression": "waiting for my grades", 
-                            "labelType": "SYS",
-                            "name": null,
-                            "description": "Anteroreflexive",
-                            "selected": true,
-                            "properties": {}
-                        },
-                        { 
-                            "idx": 12,
-                            "nodeType": "SYS",
-                            "nodeCode": "AF",
-                            "refId": 4,
-                            "startIdx": 52, 
-                            "endIdx": 68,
-                            "expression": "but still feeling", 
-                            "labelType": "SYS",
-                            "name": null,
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {}
-                        },
-                        { 
-                            "idx": 13,
-                            "nodeType": "SYS",
-                            "nodeCode": "EP",
-                            "refId": 5,
-                            "startIdx": 139, 
-                            "endIdx": 149,
-                            "expression": "really well", 
-                            "labelType": "SYS",
-                            "name": null,
-                            "description": "Epistemic",
-                            "selected": true,
-                            "properties": {}
-                        },
-                        { 
-                            "idx": 14,
-                            "nodeType": "SYS",
-                            "nodeCode": "AR",
-                            "refId": 5,
-                            "startIdx": 14, 
-                            "endIdx": 22,
-                            "expression": "have been", 
-                            "labelType": "SYS",
-                            "name": null,
-                            "description": "Anteroreflexive",
-                            "selected": true,
-                            "properties": {}
-                        },
-                        { 
-                            "idx": 15,
-                            "nodeType": "SYS",
-                            "nodeCode": "AF",
-                            "refId": 5,
-                            "startIdx": 75, 
-                            "endIdx": 83,
-                            "expression": "stressfull", 
-                            "labelType": "SYS",
-                            "name": null,
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {}
-                        },
-                        { 
-                            "idx": 16,
-                            "nodeType": "SYS",
-                            "nodeCode": "AF",
-                            "refId": 6,
-                            "startIdx": 127, 
-                            "endIdx": 145,
-                            "expression": "luckily things have", 
-                            "labelType": "SYS",
-                            "name": null,
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {}
-                        },
-                        { 
-                            "idx": 17,
-                            "nodeType": "SYS",
-                            "nodeCode": "AF",
-                            "refId": 6,
-                            "startIdx": 191, 
-                            "endIdx": 202,
-                            "expression": "i moved into", 
-                            "labelType": "SYS",
-                            "name": null,
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {}
-                        },
-                        { 
-                            "idx": 18,
-                            "nodeType": "SYS",
-                            "nodeCode": "AR",
-                            "refId": 6,
-                            "startIdx": 0, 
-                            "endIdx": 11,
-                            "expression": "have not had", 
-                            "labelType": "SYS",
-                            "name": null,
-                            "description": "Anteroreflexive",
-                            "selected": true,
-                            "properties": {}
-                        },
-                        { 
-                            "idx": 19,
-                            "nodeType": "SYS",
-                            "nodeCode": "EP",
-                            "refId": 6,
-                            "startIdx": 82, 
-                            "endIdx": 96,
-                            "expression": "were due before", 
-                            "labelType": "SYS",
-                            "name": null,
-                            "description": "Epistemic",
-                            "selected": true,
-                            "properties": {}
-                        },
-                        { 
-                            "idx": 20,
-                            "nodeType": "SYS",
-                            "nodeCode": "AF",
-                            "refId": 6,
-                            "startIdx": 110, 
-                            "endIdx": 120,
-                            "expression": "i have been", 
-                            "labelType": "SYS",
-                            "name": null,
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {}
-                        }
-                    ],
-                    "edges":[
-                        {
-                            "idx": 8,
-                            "edgeType": "SYS",
-                            "source": 11,
-                            "target": 12,
-                            "directional": true,
-                            "weight": 1,
-                            "labelType": "SYS",
-                            "name": "AF",
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {}
-                        },
-                        {
-                            "idx": 9,
-                            "edgeType": "SYS",
-                            "source": 13,
-                            "target": 15,
-                            "directional": true,
-                            "weight": 1,
-                            "labelType": "SYS",
-                            "name": "AF",
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {}
-                        },
-                        {
-                            "idx": 10,
-                            "edgeType": "SYS",
-                            "source": 18,
-                            "target": 19,
-                            "directional": true,
-                            "weight": 1,
-                            "labelType": "SYS",
-                            "name": "AF",
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {}
-                        },
-                        {
-                            "idx": 11,
-                            "edgeType": "SYS",
-                            "source": 14,
-                            "target": 15,
-                            "directional": true,
-                            "weight": 1,
-                            "labelType": "SYS",
-                            "name": "AF",
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {}
-                        },
-                        {
-                            "idx": 12,
-                            "edgeType": "SYS",
-                            "source": 17,
-                            "target": 18,
-                            "directional": true,
-                            "weight": 1,
-                            "labelType": "SYS",
-                            "name": "AF",
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {}
-                        },
-                        {
-                            "idx": 13,
-                            "edgeType": "SYS",
-                            "source": 16,
-                            "target": 19,
-                            "directional": true,
-                            "weight": 1,
-                            "labelType": "SYS",
-                            "name": "AF",
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {}
-                        },
-                        {
-                            "idx": 14,
-                            "edgeType": "SYS",
-                            "source": 19,
-                            "target": 20,
-                            "directional": true,
-                            "weight": 1,
-                            "labelType": "SYS",
-                            "name": "AF",
-                            "description": "Affective",
-                            "selected": true,
-                            "properties": {}
-                        }
-                    ]
-                }
-            }
-        ]        
-    }
+	"data": {
+		"entriesRaw": [
+			{
+				"pseudonym": "test 1",
+				"reflections": [
+					{
+						"refId": 1,
+						"timestamp": "2019-09-26T07:31:33.082585",
+						"point": 100,
+						"text": "still waiting for my grades back from assignment 2, but I think I should still feeling good as other examinations have returned their grades and I feel we are really well. I was worried about that before."
+					},
+					{
+						"refId": 2,
+						"timestamp": "2020-03-10T05:34:14.108458",
+						"point": 75,
+						"text": "Weeks 1 and 2 have been ok with the content delivered, I think I can do it. Week 3, I think everyone in the unit will be more stressful due to the amount of assessment released. Luckily things have settled and I and stable and is due to the fact of the new place I moved into. I know that this is good. I feel more confident in the future."
+					},
+					{
+						"refId": 3,
+						"timestamp": "2019-10-17T23:07:50.824921",
+						"point": 37,
+						"text": "Have not had the time to advance the third assignment more, two major assignments were due before this one so I have been focusing om them since one of them is a group assignment and another one is the biggest assignment of the most challenging unit this semester. I have been able to take a different approach for this assignment."
+					}
+				]
+			},
+			{
+				"pseudonym": "test 2",
+				"reflections": [
+					{
+						"refId": 4,
+						"timestamp": "2018-09-26T07:31:33.082585",
+						"point": 10,
+						"text": "still waiting for my grades back from assignment 2, but still feeling good as other examinations have returned their grades and I am doing really well."
+					},
+					{
+						"refId": 5,
+						"timestamp": "2018-03-10T05:34:14.108458",
+						"point": 55,
+						"text": "Weeks 1 and 2 have been ok with the content delivered. Week 3 will be more stressful due to the amount of assessment released. Luckily things have settled and I and stable with the new place I moved into."
+					},
+					{
+						"refId": 6,
+						"timestamp": "2018-10-17T23:07:50.824921",
+						"point": 77,
+						"text": "Have not had the time to advance the third assignment more, two major assignments were due before this one so I have been focusing om them since one of them is a group assignment and another one is the biggest assignment of the most challenging unit this semester."
+					}
+				]
+			}
+		],
+		"analyticsRaw": [
+			{
+				"pseudonym": "test 1",
+				"analytics": {
+					"name": "Network graph",
+					"description": "Network chart author 1",
+					"nodes": [
+						{
+							"idx": 1,
+							"nodeType": "SYS",
+							"nodeCode": "AR",
+							"refId": 1,
+							"startIdx": 6,
+							"endIdx": 26,
+							"expression": "waiting for my grades",
+							"labelType": "SYS",
+							"name": "AR UI",
+							"description": "Anteroreflexive",
+							"selected": true,
+							"properties": {},
+							"total": 1
+						},
+						{
+							"idx": 2,
+							"nodeType": "SYS",
+							"nodeCode": "AF",
+							"refId": 1,
+							"startIdx": 52,
+							"endIdx": 68,
+							"expression": "but still feeling",
+							"labelType": "SYS",
+							"name": "AF UI",
+							"description": "Affective",
+							"selected": true,
+							"properties": {},
+							"total": 1
+						},
+						{
+							"idx": 3,
+							"nodeType": "SYS",
+							"nodeCode": "EP",
+							"refId": 1,
+							"startIdx": 139,
+							"endIdx": 149,
+							"expression": "really well",
+							"labelType": "SYS",
+							"name": "EP UI",
+							"description": "Epistemic",
+							"selected": true,
+							"properties": {},
+							"total": 1
+						},
+						{
+							"idx": 4,
+							"nodeType": "SYS",
+							"nodeCode": "AR",
+							"refId": 2,
+							"startIdx": 14,
+							"endIdx": 22,
+							"expression": "have been",
+							"labelType": "SYS",
+							"name": "AR UI",
+							"description": "Anteroreflexive",
+							"selected": true,
+							"properties": {},
+							"total": 1
+						},
+						{
+							"idx": 5,
+							"nodeType": "SYS",
+							"nodeCode": "AF",
+							"refId": 2,
+							"startIdx": 75,
+							"endIdx": 83,
+							"expression": "stressfull",
+							"labelType": "SYS",
+							"name": "AF UI",
+							"description": "Affective",
+							"selected": true,
+							"properties": {},
+							"total": 1
+						},
+						{
+							"idx": 6,
+							"nodeType": "SYS",
+							"nodeCode": "AF",
+							"refId": 2,
+							"startIdx": 127,
+							"endIdx": 145,
+							"expression": "luckily things have",
+							"labelType": "SYS",
+							"name": "AF UI",
+							"description": "Affective",
+							"selected": true,
+							"properties": {},
+							"total": 1
+						},
+						{
+							"idx": 7,
+							"nodeType": "SYS",
+							"nodeCode": "AF",
+							"refId": 2,
+							"startIdx": 191,
+							"endIdx": 202,
+							"expression": "i moved into",
+							"labelType": "SYS",
+							"name": "AF UI",
+							"description": "Affective",
+							"selected": true,
+							"properties": {},
+							"total": 1
+						},
+						{
+							"idx": 8,
+							"nodeType": "SYS",
+							"nodeCode": "AR",
+							"refId": 3,
+							"startIdx": 0,
+							"endIdx": 11,
+							"expression": "have not had",
+							"labelType": "SYS",
+							"name": "AR UI",
+							"description": "Anteroreflexive",
+							"selected": true,
+							"properties": {},
+							"total": 1
+						},
+						{
+							"idx": 9,
+							"nodeType": "SYS",
+							"nodeCode": "EP",
+							"refId": 3,
+							"startIdx": 82,
+							"endIdx": 96,
+							"expression": "were due before",
+							"labelType": "SYS",
+							"name": "EP UI",
+							"description": "Epistemic",
+							"selected": true,
+							"properties": {},
+							"total": 1
+						},
+						{
+							"idx": 10,
+							"nodeType": "SYS",
+							"nodeCode": "EP",
+							"refId": 3,
+							"startIdx": 110,
+							"endIdx": 120,
+							"expression": "i have been",
+							"labelType": "SYS",
+							"name": "EP UI",
+							"description": "Epistemic",
+							"selected": true,
+							"properties": {},
+							"total": 1
+						}
+					],
+					"edges": [
+						{
+							"idx": 1,
+							"edgeType": "SYS",
+							"source": 1,
+							"target": 2,
+							"directional": true,
+							"weight": 1,
+							"labelType": "SYS",
+							"name": "AF",
+							"description": "Affective",
+							"selected": true,
+							"properties": {}
+						},
+						{
+							"idx": 2,
+							"edgeType": "SYS",
+							"source": 1,
+							"target": 3,
+							"directional": true,
+							"weight": 1,
+							"labelType": "SYS",
+							"name": "AF",
+							"description": "Affective",
+							"selected": true,
+							"properties": {}
+						},
+						{
+							"idx": 3,
+							"edgeType": "SYS",
+							"source": 4,
+							"target": 5,
+							"directional": true,
+							"weight": 1,
+							"labelType": "SYS",
+							"name": "AF",
+							"description": "Affective",
+							"selected": true,
+							"properties": {}
+						},
+						{
+							"idx": 4,
+							"edgeType": "SYS",
+							"source": 4,
+							"target": 6,
+							"directional": true,
+							"weight": 1,
+							"labelType": "SYS",
+							"name": "AF",
+							"description": "Affective",
+							"selected": true,
+							"properties": {}
+						},
+						{
+							"idx": 5,
+							"edgeType": "SYS",
+							"source": 5,
+							"target": 6,
+							"directional": true,
+							"weight": 1,
+							"labelType": "SYS",
+							"name": "AF",
+							"description": "Affective",
+							"selected": true,
+							"properties": {}
+						},
+						{
+							"idx": 6,
+							"edgeType": "SYS",
+							"source": 8,
+							"target": 9,
+							"directional": true,
+							"weight": 1,
+							"labelType": "SYS",
+							"name": "AF",
+							"description": "Affective",
+							"selected": true,
+							"properties": {}
+						},
+						{
+							"idx": 7,
+							"edgeType": "SYS",
+							"source": 9,
+							"target": 10,
+							"directional": true,
+							"weight": 1,
+							"labelType": "SYS",
+							"name": "AF",
+							"description": "Affective",
+							"selected": true,
+							"properties": {}
+						}
+					]
+				}
+			},
+			{
+				"pseudonym": "test 2",
+				"analytics": {
+					"name": "Network graph 2",
+					"description": "Network chart author 2",
+					"nodes": [
+						{
+							"idx": 11,
+							"nodeType": "SYS",
+							"nodeCode": "AR",
+							"refId": 4,
+							"startIdx": 6,
+							"endIdx": 26,
+							"expression": "waiting for my grades",
+							"labelType": "SYS",
+							"name": null,
+							"description": "Anteroreflexive",
+							"selected": true,
+							"properties": {}
+						},
+						{
+							"idx": 12,
+							"nodeType": "SYS",
+							"nodeCode": "AF",
+							"refId": 4,
+							"startIdx": 52,
+							"endIdx": 68,
+							"expression": "but still feeling",
+							"labelType": "SYS",
+							"name": null,
+							"description": "Affective",
+							"selected": true,
+							"properties": {}
+						},
+						{
+							"idx": 13,
+							"nodeType": "SYS",
+							"nodeCode": "EP",
+							"refId": 5,
+							"startIdx": 139,
+							"endIdx": 149,
+							"expression": "really well",
+							"labelType": "SYS",
+							"name": null,
+							"description": "Epistemic",
+							"selected": true,
+							"properties": {}
+						},
+						{
+							"idx": 14,
+							"nodeType": "SYS",
+							"nodeCode": "AR",
+							"refId": 5,
+							"startIdx": 14,
+							"endIdx": 22,
+							"expression": "have been",
+							"labelType": "SYS",
+							"name": null,
+							"description": "Anteroreflexive",
+							"selected": true,
+							"properties": {}
+						},
+						{
+							"idx": 15,
+							"nodeType": "SYS",
+							"nodeCode": "AF",
+							"refId": 5,
+							"startIdx": 75,
+							"endIdx": 83,
+							"expression": "stressfull",
+							"labelType": "SYS",
+							"name": null,
+							"description": "Affective",
+							"selected": true,
+							"properties": {}
+						},
+						{
+							"idx": 16,
+							"nodeType": "SYS",
+							"nodeCode": "AF",
+							"refId": 6,
+							"startIdx": 127,
+							"endIdx": 145,
+							"expression": "luckily things have",
+							"labelType": "SYS",
+							"name": null,
+							"description": "Affective",
+							"selected": true,
+							"properties": {}
+						},
+						{
+							"idx": 17,
+							"nodeType": "SYS",
+							"nodeCode": "AF",
+							"refId": 6,
+							"startIdx": 191,
+							"endIdx": 202,
+							"expression": "i moved into",
+							"labelType": "SYS",
+							"name": null,
+							"description": "Affective",
+							"selected": true,
+							"properties": {}
+						},
+						{
+							"idx": 18,
+							"nodeType": "SYS",
+							"nodeCode": "AR",
+							"refId": 6,
+							"startIdx": 0,
+							"endIdx": 11,
+							"expression": "have not had",
+							"labelType": "SYS",
+							"name": null,
+							"description": "Anteroreflexive",
+							"selected": true,
+							"properties": {}
+						},
+						{
+							"idx": 19,
+							"nodeType": "SYS",
+							"nodeCode": "EP",
+							"refId": 6,
+							"startIdx": 82,
+							"endIdx": 96,
+							"expression": "were due before",
+							"labelType": "SYS",
+							"name": null,
+							"description": "Epistemic",
+							"selected": true,
+							"properties": {}
+						},
+						{
+							"idx": 20,
+							"nodeType": "SYS",
+							"nodeCode": "AF",
+							"refId": 6,
+							"startIdx": 110,
+							"endIdx": 120,
+							"expression": "i have been",
+							"labelType": "SYS",
+							"name": null,
+							"description": "Affective",
+							"selected": true,
+							"properties": {}
+						}
+					],
+					"edges": [
+						{
+							"idx": 8,
+							"edgeType": "SYS",
+							"source": 11,
+							"target": 12,
+							"directional": true,
+							"weight": 1,
+							"labelType": "SYS",
+							"name": "AF",
+							"description": "Affective",
+							"selected": true,
+							"properties": {}
+						},
+						{
+							"idx": 9,
+							"edgeType": "SYS",
+							"source": 13,
+							"target": 15,
+							"directional": true,
+							"weight": 1,
+							"labelType": "SYS",
+							"name": "AF",
+							"description": "Affective",
+							"selected": true,
+							"properties": {}
+						},
+						{
+							"idx": 10,
+							"edgeType": "SYS",
+							"source": 18,
+							"target": 19,
+							"directional": true,
+							"weight": 1,
+							"labelType": "SYS",
+							"name": "AF",
+							"description": "Affective",
+							"selected": true,
+							"properties": {}
+						},
+						{
+							"idx": 11,
+							"edgeType": "SYS",
+							"source": 14,
+							"target": 15,
+							"directional": true,
+							"weight": 1,
+							"labelType": "SYS",
+							"name": "AF",
+							"description": "Affective",
+							"selected": true,
+							"properties": {}
+						},
+						{
+							"idx": 12,
+							"edgeType": "SYS",
+							"source": 17,
+							"target": 18,
+							"directional": true,
+							"weight": 1,
+							"labelType": "SYS",
+							"name": "AF",
+							"description": "Affective",
+							"selected": true,
+							"properties": {}
+						},
+						{
+							"idx": 13,
+							"edgeType": "SYS",
+							"source": 16,
+							"target": 19,
+							"directional": true,
+							"weight": 1,
+							"labelType": "SYS",
+							"name": "AF",
+							"description": "Affective",
+							"selected": true,
+							"properties": {}
+						},
+						{
+							"idx": 14,
+							"edgeType": "SYS",
+							"source": 19,
+							"target": 20,
+							"directional": true,
+							"weight": 1,
+							"labelType": "SYS",
+							"name": "AF",
+							"description": "Affective",
+							"selected": true,
+							"properties": {}
+						}
+					]
+				}
+			}
+		]
+	}
 }
