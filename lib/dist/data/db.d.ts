@@ -1,4 +1,4 @@
-import { IReflectionAuthor, AdminAnalyticsData, AuthorAnalyticsData, INodes, IEdges } from "./data";
+import { IReflectionAuthor, AdminAnalyticsData, AuthorAnalyticsData, INodes, IEdges } from './data';
 export interface IReflectionAuthorRaw {
     refId: string;
     timestamp: string;
@@ -46,4 +46,5 @@ export declare class AuthorAnalyticsDataRaw implements IAuthorAnalyticsDataRaw {
     transformData(colourScale?: Function): AuthorAnalyticsData;
     private createAnalytics;
     private createEmptyAnalytics;
+    private searchNgram;
 }
